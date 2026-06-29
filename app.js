@@ -10,7 +10,7 @@
   var WHO = {
     utku:  { label: "Utku", emoji: "🧔", cls: "utku-bg" },
     gozde: { label: "Gözde", emoji: "👩", cls: "gozde-bg" },
-    both:  { label: "Ortak", emoji: "💑", cls: "both-bg" }
+    both:  { label: "Ortak", emoji: "👩‍❤️‍👨", cls: "both-bg" }
   };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
@@ -130,7 +130,7 @@
   }
 
   function breakdownText(c) {
-    return "🧔 " + (c.utku + c.both) + " · 👩 " + (c.gozde + c.both) + " · 💑 " + c.both;
+    return "🧔 " + (c.utku + c.both) + " · 👩 " + (c.gozde + c.both) + " · 👩‍❤️‍👨 " + c.both;
   }
 
   function renderStatCards() {
@@ -236,7 +236,7 @@
       // Ortak oranı
       if (all.total > 0) {
         var pct = Math.round(all.both / all.total * 100);
-        items.push({ e: "💑", t: "Sigaraların %" + pct + "'ini birlikte içtiniz." });
+        items.push({ e: "👩‍❤️‍👨", t: "Sigaraların %" + pct + "'ini birlikte içtiniz." });
       }
 
       // En yoğun gün (son 30 gün)
