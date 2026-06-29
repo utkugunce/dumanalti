@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1115" />
+  <meta name="description" content="Utku & Gözde sigara takip uygulaması" />
+  <title>Dumanaltı 🚬</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Dumanaltı" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <span class="brand-logo">🚬</span>
+        <div>
+          <h1>Dumanaltı</h1>
+          <p class="subtitle">Utku &amp; Gözde sigara takibi</p>
+        </div>
+      </div>
+      <button id="themeToggle" class="icon-btn" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
+    </header>
+
+    <!-- Action buttons -->
+    <section class="actions" aria-label="Sigara ekle">
+      <button class="action-btn utku" data-who="utku">
+        <span class="action-emoji">🧔</span>
+        <span class="action-label">Utku içti</span>
+        <span class="action-today" id="btnTodayUtku">bugün 0</span>
+      </button>
+      <button class="action-btn gozde" data-who="gozde">
+        <span class="action-emoji">👩</span>
+        <span class="action-label">Gözde içti</span>
+        <span class="action-today" id="btnTodayGozde">bugün 0</span>
+      </button>
+      <button class="action-btn both" data-who="both">
+        <span class="action-emoji">💑</span>
+        <span class="action-label">Ortak içtik</span>
+        <span class="action-today" id="btnTodayBoth">bugün 0</span>
+      </button>
+    </section>
+
+    <!-- Undo bar -->
+    <div id="undoBar" class="undo-bar hidden">
+      <span id="undoText">Eklendi</span>
+      <button id="undoBtn" class="undo-btn">Geri al</button>
+    </div>
+
+    <!-- Today summary -->
+    <section class="card today-card">
+      <div class="card-head">
+        <h2>Bugün</h2>
+        <span class="date-chip" id="todayDate"></span>
+      </div>
+      <div class="today-grid">
+        <div class="today-stat">
+          <span class="today-num" id="todayUtku">0</span>
+          <span class="today-name">🧔 Utku</span>
+        </div>
+        <div class="today-stat">
+          <span class="today-num" id="todayGozde">0</span>
+          <span class="today-name">👩 Gözde</span>
+        </div>
+        <div class="today-stat total">
+          <span class="today-num" id="todayTotal">0</span>
+          <span class="today-name">🔥 Toplam</span>
+        </div>
+      </div>
+      <div class="last-row">
+        <span>Son sigara:</span>
+        <strong id="lastSmoke">—</strong>
+      </div>
+    </section>
+
+    <!-- Stat cards -->
+    <section class="stats-grid">
+      <div class="card stat-mini">
+        <span class="stat-label">Bu hafta</span>
+        <span class="stat-value" id="weekTotal">0</span>
+        <span class="stat-sub" id="weekBreakdown">—</span>
+      </div>
+      <div class="card stat-mini">
+        <span class="stat-label">Bu ay</span>
+        <span class="stat-value" id="monthTotal">0</span>
+        <span class="stat-sub" id="monthBreakdown">—</span>
+      </div>
+      <div class="card stat-mini">
+        <span class="stat-label">Günlük ortalama</span>
+        <span class="stat-value" id="dailyAvg">0</span>
+        <span class="stat-sub">son 7 gün</span>
+      </div>
+      <div class="card stat-mini">
+        <span class="stat-label">Tüm zamanlar</span>
+        <span class="stat-value" id="allTotal">0</span>
+        <span class="stat-sub" id="allBreakdown">—</span>
+      </div>
+    </section>
+
+    <!-- 7 day chart -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Son 7 gün</h2>
+        <span class="legend">
+          <i class="dot utku-bg"></i>Utku
+          <i class="dot gozde-bg"></i>Gözde
+          <i class="dot both-bg"></i>Ortak
+        </span>
+      </div>
+      <div class="chart" id="chart" aria-label="Son 7 günün grafiği"></div>
+    </section>
+
+    <!-- Insights -->
+    <section class="card insights" id="insights">
+      <div class="card-head"><h2>Bilgiler</h2></div>
+      <ul id="insightList" class="insight-list"></ul>
+    </section>
+
+    <!-- History -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Geçmiş</h2>
+        <span class="muted" id="historyCount"></span>
+      </div>
+      <ul id="historyList" class="history-list"></ul>
+      <p id="historyEmpty" class="empty">Henüz kayıt yok. Yukarıdaki butonlardan birine bas 👆</p>
+    </section>
+
+    <!-- Data tools -->
+    <section class="card data-tools">
+      <div class="card-head"><h2>Veri</h2></div>
+      <div class="data-buttons">
+        <button id="exportBtn" class="ghost-btn">📤 Dışa aktar</button>
+        <button id="importBtn" class="ghost-btn">📥 İçe aktar</button>
+        <button id="resetBtn" class="ghost-btn danger">🗑️ Sıfırla</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" hidden />
+    </section>
+
+    <footer class="footer">
+      <span>Çevrimdışı çalışır · Veriler cihazında saklanır</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
