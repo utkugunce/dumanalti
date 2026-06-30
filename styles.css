@@ -51,6 +51,16 @@ body {
 
 .view { display: flex; flex-direction: column; gap: 16px; }
 
+/* Mini 7-day summary (home) */
+.mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 66px; }
+.mini-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
+.mini-bar { width: 62%; max-width: 24px; min-height: 4px; background: var(--utku); border-radius: 4px 4px 0 0; transition: height 0.3s ease; }
+.mini-col.is-today .mini-bar { background: var(--accent); }
+.mini-val { font-size: 10px; font-weight: 700; color: var(--muted); height: 12px; line-height: 12px; }
+.mini-col.is-today .mini-val { color: var(--accent); }
+.mini-lab { font-size: 9px; color: var(--muted); }
+.mini-col.is-today .mini-lab { color: var(--accent); font-weight: 700; }
+
 /* Bottom tab bar */
 .tabbar {
   position: fixed;
