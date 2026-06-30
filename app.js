@@ -30,6 +30,14 @@
 
   var sb = null;        // Supabase client
   var cloudReady = false;
+  var lastCloudError = null;
+
+  function cloudError(err) {
+    var msg = (err && (err.message || err.error_description || err.details)) || String(err);
+    lastCloudError = msg;
+    try { console.error("Dumanaltı bulut hatası:", err); } catch (e) {}
+    refreshStatus();
+  }
 
   // ---------- Local cache ----------
   function loadCache() {
@@ -344,6 +352,7 @@
   function refreshStatus() {
     if (!sb) { setStatus("📴 Yerel mod · bulut kapalı"); return; }
     if (!navigator.onLine) { setStatus("📴 Çevrimdışı · internet gelince senkronlanır"); return; }
+    if (lastCloudError) { setStatus("⚠️ Bulut hatası: " + lastCloudError + " (" + outbox.length + " bekliyor)"); return; }
     if (outbox.length) { setStatus("🔄 Senkronlanıyor… (" + outbox.length + " bekliyor)"); return; }
     setStatus(cloudReady ? "☁️ Bulutta senkron · Utku & Gözde ortak görür" : "☁️ Bağlanıyor…");
   }
@@ -459,20 +468,22 @@
         var idx = outbox.indexOf(op);
         if (idx !== -1) outbox.splice(idx, 1);
         saveOutbox();
+        lastCloudError = null;
         return step(i + 1);
       });
     }
 
-    return step(0).then(function () { refreshStatus(); }).catch(function () {
-      // ağ hatası: kalanlar kuyrukta kalsın, sonra tekrar denenecek
-      refreshStatus();
+    return step(0).then(function () { lastCloudError = null; refreshStatus(); }).catch(function (err) {
+      // hata: kalanlar kuyrukta kalsın, sonra tekrar denenecek; sebebi göster
+      cloudError(err);
     });
   }
 
   function syncFromRemote() {
     if (!sb || !navigator.onLine) return Promise.resolve();
     return sb.from(TABLE).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
-      if (res.error || !res.data) return;
+      if (res.error) { cloudError(res.error); return; }
+      if (!res.data) return;
       var map = {};
       res.data.forEach(function (r) { map[r.id] = { id: r.id, who: r.who, ts: Number(r.ts) }; });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
@@ -486,7 +497,7 @@
       cloudReady = true;
       render();
       refreshStatus();
-    });
+    }).catch(function (err) { cloudError(err); });
   }
 
   function subscribeRealtime() {
@@ -510,6 +521,10 @@
       })
       .subscribe(function (status) {
         if (status === "SUBSCRIBED") { cloudReady = true; refreshStatus(); }
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          // Canlı güncelleme bağlanamadı; veri okuma/yazma yine de çalışır.
+          console.warn("Realtime durumu:", status);
+        }
       });
   }
 

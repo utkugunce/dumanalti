@@ -1,5 +1,5 @@
 /* Dumanaltı service worker — offline destek */
-var CACHE = "dumanalti-v2";
+var CACHE = "dumanalti-v3";
 var ASSETS = [
   "./",
   "./index.html",
