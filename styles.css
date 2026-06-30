@@ -333,8 +333,8 @@ body {
 /* Undo bar */
 .undo-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
   background: var(--bg-elev-2);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -342,6 +342,19 @@ body {
   font-size: 13px;
   animation: slideIn 0.25s ease;
 }
+.undo-top { display: flex; align-items: center; justify-content: space-between; }
+.undo-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tag-chip.on { background: var(--accent); color: #1a1300; border-color: var(--accent); font-weight: 700; }
 @keyframes slideIn { from { opacity: 0; transform: translateY(-6px);} to {opacity:1; transform:none;} }
 .undo-btn {
   background: var(--accent);
@@ -483,6 +496,46 @@ body {
 .badge-emoji { font-size: 26px; }
 .badge-name { font-size: 10px; color: var(--muted); line-height: 1.2; }
 .badge.got .badge-name { color: var(--text); }
+
+/* Daily limit ring */
+.ring-wrap { position: relative; width: 150px; height: 150px; margin: 4px auto 2px; }
+.ring { width: 150px; height: 150px; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--bg-elev-2); stroke-width: 9; }
+.ring-fg { fill: none; stroke: #36d399; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease, stroke 0.3s; }
+.ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-num { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+.ring-sub { font-size: 12px; color: var(--muted); }
+
+/* Money */
+.money-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.money-stat { background: var(--bg-elev-2); border-radius: 14px; padding: 12px 6px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.money-num { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.money-lbl { font-size: 11px; color: var(--muted); }
+.money-save { font-size: 13px; text-align: center; margin: 12px 0 0; }
+
+/* Reason tags breakdown */
+.tag-break { display: flex; flex-direction: column; gap: 9px; }
+.tag-row { display: flex; align-items: center; gap: 10px; }
+.tag-name { font-size: 13px; width: 92px; flex: none; text-transform: capitalize; }
+.tag-track { flex: 1; height: 12px; background: var(--bg-elev-2); border-radius: 999px; overflow: hidden; }
+.tag-fill { height: 100%; background: linear-gradient(90deg, var(--both), var(--gozde)); border-radius: 999px; min-width: 2px; transition: width 0.4s; }
+.tag-val { font-size: 13px; font-weight: 700; width: 24px; text-align: right; flex: none; }
+
+/* Settings */
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+.set-row + .set-row { border-top: 1px solid var(--border); }
+.set-row label { font-size: 13px; color: var(--muted); }
+.set-row input {
+  width: 110px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  text-align: right;
+}
 
 /* Footer */
 .footer { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0 8px; }

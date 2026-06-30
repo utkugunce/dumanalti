@@ -48,8 +48,11 @@
 
     <!-- Undo bar -->
     <div id="undoBar" class="undo-bar hidden">
-      <span id="undoText">Eklendi</span>
-      <button id="undoBtn" class="undo-btn">Geri al</button>
+      <div class="undo-top">
+        <span id="undoText">Eklendi</span>
+        <button id="undoBtn" class="undo-btn">Geri al</button>
+      </div>
+      <div class="undo-tags" id="undoTags"></div>
     </div>
 
     <!-- Today summary -->
@@ -78,6 +81,21 @@
       </div>
     </section>
 
+    <!-- Daily limit progress ring -->
+    <section class="card limit-card hidden" id="limitCard">
+      <div class="card-head"><h2>Günlük limit</h2></div>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 100 100">
+          <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
+          <circle class="ring-fg" id="limitRing" cx="50" cy="50" r="42"></circle>
+        </svg>
+        <div class="ring-center">
+          <span class="ring-num" id="limitText">0 / 0</span>
+          <span class="ring-sub" id="limitSub">bugün</span>
+        </div>
+      </div>
+    </section>
+
     <!-- Live since-last timer -->
     <section class="card since-card">
       <div class="card-head"><h2>Son sigaradan beri</h2></div>
@@ -92,6 +110,20 @@
         <div class="wc-col"><span class="wc-num" id="wcThis">0</span><span class="wc-lbl">bu hafta</span></div>
         <div class="wc-trend" id="wcTrend">—</div>
         <div class="wc-col"><span class="wc-num" id="wcLast">0</span><span class="wc-lbl">geçen hafta</span></div>
+      </div>
+    </section>
+
+    <!-- Money / savings -->
+    <section class="card" id="moneyCard">
+      <div class="card-head"><h2>💰 Harcama</h2></div>
+      <p class="empty" id="moneyHint">Hesaplamak için aşağıdaki <strong>Ayarlar</strong>'dan paket fiyatını gir.</p>
+      <div id="moneyBody" class="hidden">
+        <div class="money-grid">
+          <div class="money-stat"><span class="money-num" id="moneyToday">0 ₺</span><span class="money-lbl">bugün</span></div>
+          <div class="money-stat"><span class="money-num" id="moneyMonth">0 ₺</span><span class="money-lbl">bu ay</span></div>
+          <div class="money-stat"><span class="money-num" id="moneyAll">0 ₺</span><span class="money-lbl">tüm zamanlar</span></div>
+        </div>
+        <p class="money-save" id="moneySave"></p>
       </div>
     </section>
 
@@ -157,6 +189,12 @@
       <div class="duel" id="duel"></div>
     </section>
 
+    <!-- Reason tags breakdown -->
+    <section class="card">
+      <div class="card-head"><h2>🏷️ Sebepler</h2></div>
+      <div class="tag-break" id="tagBreak"></div>
+    </section>
+
     <!-- Badges -->
     <section class="card">
       <div class="card-head">
@@ -180,6 +218,23 @@
       </div>
       <ul id="historyList" class="history-list"></ul>
       <p id="historyEmpty" class="empty">Henüz kayıt yok. Yukarıdaki butonlardan birine bas 👆</p>
+    </section>
+
+    <!-- Settings -->
+    <section class="card settings-card">
+      <div class="card-head"><h2>⚙️ Ayarlar</h2></div>
+      <div class="set-row">
+        <label for="setPrice">Paket fiyatı (₺)</label>
+        <input type="number" inputmode="decimal" id="setPrice" min="0" step="1" placeholder="örn. 75" />
+      </div>
+      <div class="set-row">
+        <label for="setPerPack">Pakette adet</label>
+        <input type="number" inputmode="numeric" id="setPerPack" min="1" step="1" placeholder="20" />
+      </div>
+      <div class="set-row">
+        <label for="setLimit">Günlük limit (0 = kapalı)</label>
+        <input type="number" inputmode="numeric" id="setLimit" min="0" step="1" placeholder="örn. 10" />
+      </div>
     </section>
 
     <!-- Data tools -->
