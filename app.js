@@ -932,7 +932,7 @@
 
   var TAB_KEY = "dumanalti.tab";
   function showTab(name) {
-    ["home", "history", "settings"].forEach(function (n) {
+    ["home", "stats", "history", "settings"].forEach(function (n) {
       var v = el("view-" + n);
       if (v) v.classList.toggle("hidden", n !== name);
     });

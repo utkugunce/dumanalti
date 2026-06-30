@@ -80,8 +80,8 @@ body {
   padding: 9px 0 8px;
   transition: color 0.15s;
 }
-.tab-ico { font-size: 20px; line-height: 1; opacity: 0.65; transition: opacity 0.15s, transform 0.15s; }
-.tab-lbl { font-size: 11px; }
+.tab-ico { font-size: 19px; line-height: 1; opacity: 0.65; transition: opacity 0.15s, transform 0.15s; }
+.tab-lbl { font-size: 10px; }
 .tab.active { color: var(--text); }
 .tab.active .tab-ico { opacity: 1; transform: translateY(-1px); }
 .tab.active .tab-lbl { font-weight: 700; }
