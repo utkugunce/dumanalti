@@ -457,11 +457,11 @@
       document.body.appendChild(node);
 
       var angle = Math.random() * Math.PI * 2;
-      var speed = 10 + Math.random() * (22 + combo * 3);
+      var speed = 6 + Math.random() * (13 + combo * 2);
       flyParticle(
         node,
         Math.cos(angle) * speed,
-        Math.sin(angle) * speed - (11 + Math.random() * 9) // yukarı doğru güçlü başlangıç ivmesi
+        Math.sin(angle) * speed - (7 + Math.random() * 6) // yukarı doğru başlangıç ivmesi
       );
     }
   }
@@ -500,9 +500,9 @@
 
   function flyParticle(node, vx, vy) {
     var px = 0, py = 0, rot = 0;
-    var vr = (Math.random() - 0.5) * 40;
-    var gravity = 0.38;
-    var start = null, max = 1700 + Math.random() * 900;
+    var vr = (Math.random() - 0.5) * 26;
+    var gravity = 0.2;
+    var start = null, max = 2600 + Math.random() * 1400;
 
     function frame(t) {
       if (start == null) start = t;
