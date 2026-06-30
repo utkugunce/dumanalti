@@ -297,6 +297,13 @@
     });
   }
 
+  function isPending(id) {
+    for (var i = 0; i < outbox.length; i++) {
+      if (outbox[i].type === "insert" && outbox[i].row && outbox[i].row.id === id) return true;
+    }
+    return false;
+  }
+
   function renderHistory() {
     var list = el("historyList");
     var empty = el("historyEmpty");
@@ -312,8 +319,9 @@
 
     var recent = entries.slice(-30).reverse();
     recent.forEach(function (e) {
+      var pending = isPending(e.id);
       var li = document.createElement("li");
-      li.className = "history-item";
+      li.className = "history-item who-" + e.who + (pending ? " is-pending" : "");
 
       var em = document.createElement("span");
       em.className = "h-emoji";
@@ -327,7 +335,7 @@
       var time = document.createElement("span");
       time.className = "h-time";
       var d = new Date(e.ts);
-      time.textContent = formatTime(e.ts) + " · " + ("0" + d.getDate()).slice(-2) + "." + ("0" + (d.getMonth() + 1)).slice(-2) + " · " + relativeTime(e.ts);
+      time.textContent = formatTime(e.ts) + " · " + ("0" + d.getDate()).slice(-2) + "." + ("0" + (d.getMonth() + 1)).slice(-2) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
       main.appendChild(who);
       main.appendChild(time);
 
@@ -345,16 +353,19 @@
   }
 
   // ---------- Status ----------
-  function setStatus(text) {
+  function setStatus(text, state) {
     var node = el("cloudStatus");
-    if (node) node.textContent = text;
+    if (!node) return;
+    var textNode = el("cloudStatusText");
+    if (textNode) textNode.textContent = text; else node.textContent = text;
+    node.className = "cloud-status status-" + (state || "offline");
   }
   function refreshStatus() {
-    if (!sb) { setStatus("📴 Yerel mod · bulut kapalı"); return; }
-    if (!navigator.onLine) { setStatus("📴 Çevrimdışı · internet gelince senkronlanır"); return; }
-    if (lastCloudError) { setStatus("⚠️ Bulut hatası: " + lastCloudError + " (" + outbox.length + " bekliyor)"); return; }
-    if (outbox.length) { setStatus("🔄 Senkronlanıyor… (" + outbox.length + " bekliyor)"); return; }
-    setStatus(cloudReady ? "☁️ Bulutta senkron · Utku & Gözde ortak görür" : "☁️ Bağlanıyor…");
+    if (!sb) { setStatus("📴 Yerel mod · bulut kapalı", "offline"); return; }
+    if (!navigator.onLine) { setStatus("📴 Çevrimdışı · gelince senkronlanır", "offline"); return; }
+    if (lastCloudError) { setStatus("⚠️ Bulut hatası: " + lastCloudError + " · " + outbox.length + " bekliyor", "error"); return; }
+    if (outbox.length) { setStatus("⏳ " + outbox.length + " kayıt bekliyor…", "syncing"); return; }
+    setStatus(cloudReady ? "☁️ Bulutta senkron · ortak görünüm" : "☁️ Bağlanıyor…", cloudReady ? "online" : "syncing");
   }
 
   // ---------- Actions ----------
@@ -362,14 +373,15 @@
     var entry = { id: uuid(), who: who, ts: Date.now() };
     entries.push(entry);
     sortEntries();
+    // Optimistic UI: önce kuyruğa al, sonra anında çiz (bekliyor işareti doğru görünsün)
+    outbox.push({ type: "insert", row: entry });
     saveCache();
+    saveOutbox();
     render();
     showUndo(who);
     floatEmoji(WHO[who].emoji, x, y);
     if (navigator.vibrate) navigator.vibrate(15);
 
-    outbox.push({ type: "insert", row: entry });
-    saveOutbox();
     flushOutbox();
     refreshStatus();
   }
@@ -475,6 +487,7 @@
     }
 
     return step(0).then(function () {
+      render(); // senkronlananların "bekliyor" işareti kalksın
       if (firstErr) { cloudError(firstErr); }
       else { lastCloudError = null; refreshStatus(); }
     });
@@ -573,10 +586,9 @@
   }
 
   function resetData() {
-    if (!confirm("Tüm kayıtlar (bulut dahil, Utku & Gözde ortak geçmişi) KALICI olarak silinecek. Devam etmek istiyor musun?")) return;
-    var typed = prompt('Bu işlem geri alınamaz. Onaylamak için "SİL" yaz:');
-    if (typed == null || typed.trim().toLocaleUpperCase("tr") !== "SİL") {
-      alert("Sıfırlama iptal edildi.");
+    var typed = prompt("Tüm kayıtlar (bulut dahil, Utku & Gözde ortak geçmişi) KALICI olarak silinecek.\nOnaylamak için büyük harflerle SIFIRLA yaz:");
+    if (typed == null || typed.trim() !== "SIFIRLA") {
+      if (typed != null) alert("Sıfırlama iptal edildi.");
       return;
     }
     entries = [];
@@ -610,6 +622,11 @@
   function bind() {
     document.querySelectorAll(".action-btn").forEach(function (btn) {
       btn.addEventListener("click", function (ev) {
+        // Çift tıklama (ghost click) koruması: kısa süre tekrar tetiklenmesin
+        if (btn.dataset.lock === "1") return;
+        btn.dataset.lock = "1";
+        setTimeout(function () { btn.dataset.lock = "0"; }, 800);
+
         var who = btn.getAttribute("data-who");
         btn.classList.remove("pop");
         void btn.offsetWidth;

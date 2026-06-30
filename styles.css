@@ -323,6 +323,41 @@ body {
 /* Footer */
 .footer { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0 8px; }
 
+/* Cloud sync status indicator */
+.cloud-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+.status-online .status-dot  { background: #36d399; animation: statusPulse 2s infinite; }
+.status-syncing .status-dot { background: var(--accent); animation: statusPulse 1.1s infinite; }
+.status-error .status-dot   { background: var(--danger); animation: statusPulse 0.9s infinite; }
+.status-offline .status-dot { background: var(--muted); }
+.status-online #cloudStatusText { color: #36d399; }
+.status-error #cloudStatusText  { color: var(--danger); }
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.4); }
+}
+
+/* History: who did it (left color stripe) + pending */
+.history-item { border-left: 4px solid transparent; }
+.history-item.who-utku  { border-left-color: var(--utku); }
+.history-item.who-gozde { border-left-color: var(--gozde); }
+.history-item.who-both  { border-left-color: var(--both); }
+.history-item.is-pending { opacity: 0.6; }
+
 @media (max-width: 360px) {
   .action-label { font-size: 12px; }
   .today-num { font-size: 24px; }
