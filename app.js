@@ -430,7 +430,7 @@
     var W = window.innerWidth, H = window.innerHeight;
     var ox = x != null ? x : W / 2;
     var oy = y != null ? y : H / 2;
-    var count = reduce ? 6 : 22;
+    var count = reduce ? 8 : 60;
 
     for (var i = 0; i < count; i++) {
       var node = document.createElement("span");
@@ -438,32 +438,34 @@
       node.textContent = emoji;
       node.style.left = ox + "px";
       node.style.top = oy + "px";
-      node.style.fontSize = (16 + Math.random() * 20) + "px";
+      node.style.fontSize = (18 + Math.random() * 34) + "px";
       document.body.appendChild(node);
 
       var angle = Math.random() * Math.PI * 2;
-      var speed = 7 + Math.random() * 11;
+      var speed = 10 + Math.random() * 22;
       flyParticle(
         node,
         Math.cos(angle) * speed,
-        Math.sin(angle) * speed - (7 + Math.random() * 5) // yukarı doğru başlangıç ivmesi
+        Math.sin(angle) * speed - (11 + Math.random() * 9) // yukarı doğru güçlü başlangıç ivmesi
       );
     }
   }
 
   function flyParticle(node, vx, vy) {
     var px = 0, py = 0, rot = 0;
-    var vr = (Math.random() - 0.5) * 24;
-    var gravity = 0.4;
-    var start = null, max = 1300 + Math.random() * 600;
+    var vr = (Math.random() - 0.5) * 40;
+    var gravity = 0.38;
+    var start = null, max = 1700 + Math.random() * 900;
 
     function frame(t) {
       if (start == null) start = t;
       var life = t - start;
       vy += gravity;
-      vx *= 0.99;
+      vx *= 0.992;
       px += vx; py += vy; rot += vr;
-      node.style.transform = "translate(" + px + "px," + py + "px) rotate(" + rot + "deg)";
+      // çıkışta hızlı bir "pop" büyümesi
+      var pop = life < 140 ? 0.3 + 0.7 * (life / 140) : 1;
+      node.style.transform = "translate(" + px + "px," + py + "px) rotate(" + rot + "deg) scale(" + pop + ")";
       node.style.opacity = String(Math.max(0, 1 - life / max));
       if (life < max) { requestAnimationFrame(frame); }
       else { node.remove(); }
