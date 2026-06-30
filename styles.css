@@ -43,16 +43,16 @@ body {
 .app {
   max-width: 560px;
   margin: 0 auto;
-  padding: 11px 14px calc(56px + env(safe-area-inset-bottom));
+  padding: 10px 14px calc(54px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.view { display: flex; flex-direction: column; gap: 10px; }
+.view { display: flex; flex-direction: column; gap: 8px; }
 
 /* Mini 7-day summary (home) */
-.mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 42px; }
+.mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 34px; }
 .mini-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
 .mini-bar { width: 62%; max-width: 24px; min-height: 4px; background: var(--utku); border-radius: 4px 4px 0 0; transition: height 0.3s ease; }
 .mini-col.is-today .mini-bar { background: var(--accent); }
@@ -232,14 +232,14 @@ body {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 11px 13px;
+  padding: 9px 13px;
   box-shadow: var(--shadow);
 }
 .card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .card-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
 .muted { color: var(--muted); font-size: 12px; }
@@ -261,14 +261,14 @@ body {
 .today-stat {
   background: var(--bg-elev-2);
   border-radius: 14px;
-  padding: 8px 6px;
+  padding: 7px 6px;
   text-align: center;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 .today-stat.total { background: linear-gradient(160deg, rgba(255,181,71,0.18), rgba(255,181,71,0.05)); }
-.today-num { font-size: 22px; font-weight: 800; letter-spacing: -1px; }
+.today-num { font-size: 21px; font-weight: 800; letter-spacing: -1px; }
 .today-name { font-size: 12px; color: var(--muted); }
 .last-row {
   display: flex;
@@ -311,7 +311,7 @@ body {
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
-  height: 104px;
+  height: 88px;
   padding-top: 8px;
 }
 .chart-col {
@@ -448,7 +448,7 @@ body {
 }
 .since-who { font-size: 14px; font-weight: 600; }
 .since-vals { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.since-time { font-size: 19px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
+.since-time { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
 .since-rec { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Weekly comparison */
@@ -473,7 +473,7 @@ body {
   display: flex;
   align-items: flex-end;
   gap: 2px;
-  height: 62px;
+  height: 54px;
   padding-top: 6px;
 }
 .hour-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
@@ -492,8 +492,8 @@ body {
 .cal-weekdays span { text-align: center; font-size: 10px; color: var(--muted); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .cal-cell {
-  height: 23px;
-  border-radius: 6px;
+  height: 19px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -627,19 +627,38 @@ body {
 }
 
 /* Short screens: compact Home to keep it one page */
-@media (max-height: 720px) {
-  .app { gap: 8px; padding-bottom: calc(54px + env(safe-area-inset-bottom)); }
-  .subtitle { display: none; }
-  .brand-logo { font-size: 26px; }
+/* Shorter visible viewport (e.g. Safari with its bottom toolbar): compact
+   so Home and İstatistik each fit one screen without scrolling. */
+@media (max-height: 820px) {
+  .app { gap: 7px; padding-bottom: calc(52px + env(safe-area-inset-bottom)); }
   .header { padding-top: env(safe-area-inset-top); }
+  .subtitle { display: none; }
+  .brand-logo { font-size: 24px; }
+  .header h1 { font-size: 20px; }
+  .icon-btn { width: 40px; height: 40px; }
+  .card { padding: 8px 12px; }
+  .card-head { margin-bottom: 5px; }
   .action-emoji { font-size: 22px; }
-  .action-btn { padding: 9px 8px 8px; }
+  .action-btn { padding: 8px 8px 7px; }
   .action-label { font-size: 12px; }
-  .today-grid { margin-bottom: 8px; }
-  .today-num { font-size: 20px; }
-  .today-stat { padding: 7px 6px; }
-  .since-row { padding: 6px 12px; }
-  .since-time { font-size: 18px; }
-  .mini-chart { height: 36px; }
+  .today-grid { margin-bottom: 7px; }
+  .today-num { font-size: 19px; }
+  .today-stat { padding: 6px 6px; }
+  .since-list { gap: 6px; }
+  .since-row { padding: 5px 12px; }
+  .since-time { font-size: 17px; }
+  .since-rec { font-size: 9px; }
+  .mini-chart { height: 28px; }
+  .insight-list { gap: 5px; }
+  .insight-list li { line-height: 1.25; font-size: 12.5px; }
+  .insight-list .emoji { font-size: 15px; }
+  .chart { height: 86px; }
+  .hour-chart { height: 48px; }
+  .cal-cell { height: 17px; font-size: 9px; }
+  .cal-weekdays { margin-bottom: 3px; }
+  .cal-weekdays span { font-size: 9px; }
+  .stat-mini { padding: 7px 11px; }
+  .stat-value { font-size: 21px; }
   .footer { padding: 1px 0 2px; }
+  .cloud-status { padding: 3px 10px; }
 }
