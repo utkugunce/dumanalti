@@ -27,6 +27,8 @@
   var outbox = [];
   var lastUndo = null;
   var undoTimer = null;
+  var comboCount = 0;
+  var comboTimer = null;
 
   var sb = null;        // Supabase client
   var cloudReady = false;
@@ -379,8 +381,10 @@
     saveOutbox();
     render();
     showUndo(who);
-    emojiConfetti(WHO[who].emoji, x, y);
-    if (navigator.vibrate) navigator.vibrate(15);
+    var combo = bumpCombo();
+    emojiConfetti(WHO[who].emoji, x, y, combo);
+    if (combo >= 3) showCombo(combo);
+    if (navigator.vibrate) navigator.vibrate(combo >= 3 ? [15, 30, 15] : 15);
 
     flushOutbox();
     refreshStatus();
@@ -425,30 +429,72 @@
     clearTimeout(undoTimer);
   }
 
-  function emojiConfetti(emoji, x, y) {
+  var CONFETTI_EXTRAS = ["✨", "🎉", "💨", "🚬"];
+
+  function emojiConfetti(emoji, x, y, combo) {
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var W = window.innerWidth, H = window.innerHeight;
     var ox = x != null ? x : W / 2;
     var oy = y != null ? y : H / 2;
-    var count = reduce ? 8 : 60;
+    combo = combo || 1;
+
+    if (!reduce) {
+      screenShake(combo);
+      flashAt(ox, oy);
+    }
+
+    var count = reduce ? 8 : Math.min(120, 55 + (combo - 1) * 18);
 
     for (var i = 0; i < count; i++) {
       var node = document.createElement("span");
       node.className = "confetti-piece";
-      node.textContent = emoji;
+      // çoğunlukla ilgili emoji, arada kutlama emojileri
+      node.textContent = Math.random() < 0.72 ? emoji : CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0];
       node.style.left = ox + "px";
       node.style.top = oy + "px";
-      node.style.fontSize = (18 + Math.random() * 34) + "px";
+      node.style.fontSize = (18 + Math.random() * 36) + "px";
       document.body.appendChild(node);
 
       var angle = Math.random() * Math.PI * 2;
-      var speed = 10 + Math.random() * 22;
+      var speed = 10 + Math.random() * (22 + combo * 3);
       flyParticle(
         node,
         Math.cos(angle) * speed,
         Math.sin(angle) * speed - (11 + Math.random() * 9) // yukarı doğru güçlü başlangıç ivmesi
       );
     }
+  }
+
+  function screenShake(combo) {
+    var app = document.querySelector(".app") || document.body;
+    app.classList.remove("shake");
+    void app.offsetWidth;
+    app.classList.add(combo >= 3 ? "shake-hard" : "shake");
+    setTimeout(function () { app.classList.remove("shake"); app.classList.remove("shake-hard"); }, 520);
+  }
+
+  function flashAt(x, y) {
+    var f = document.createElement("div");
+    f.className = "tap-flash";
+    f.style.left = x + "px";
+    f.style.top = y + "px";
+    document.body.appendChild(f);
+    setTimeout(function () { f.remove(); }, 520);
+  }
+
+  function bumpCombo() {
+    comboCount++;
+    clearTimeout(comboTimer);
+    comboTimer = setTimeout(function () { comboCount = 0; }, 2500);
+    return comboCount;
+  }
+
+  function showCombo(n) {
+    var node = document.createElement("div");
+    node.className = "combo-pop";
+    node.textContent = "🔥 x" + n;
+    document.body.appendChild(node);
+    setTimeout(function () { node.remove(); }, 850);
   }
 
   function flyParticle(node, vx, vy) {

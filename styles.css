@@ -37,6 +37,7 @@ body {
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
   transition: background 0.3s, color 0.3s;
+  overflow-x: hidden;
 }
 
 .app {
@@ -123,6 +124,59 @@ body {
   z-index: 200;
   will-change: transform, opacity;
   user-select: none;
+}
+
+/* tap flash ring */
+.tap-flash {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 150;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 70%);
+  animation: flashRing 0.5s ease-out forwards;
+}
+@keyframes flashRing {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(16); }
+}
+
+/* combo popup */
+.combo-pop {
+  position: fixed;
+  top: 36%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--accent);
+  z-index: 250;
+  pointer-events: none;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+  animation: comboPop 0.85s ease-out forwards;
+}
+@keyframes comboPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+  100% { opacity: 0; transform: translate(-50%, -52%) scale(1.45) translateY(-34px); }
+}
+
+/* screen shake */
+.shake { animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both; }
+.shake-hard { animation: shakeHard 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake {
+  10%, 90% { transform: translate(-1px, 1px); }
+  20%, 80% { transform: translate(2px, -1px); }
+  30%, 50%, 70% { transform: translate(-3px, 2px); }
+  40%, 60% { transform: translate(3px, -2px); }
+}
+@keyframes shakeHard {
+  10%, 90% { transform: translate(-3px, 2px) rotate(-0.4deg); }
+  20%, 80% { transform: translate(5px, -3px) rotate(0.4deg); }
+  30%, 50%, 70% { transform: translate(-6px, 3px) rotate(-0.6deg); }
+  40%, 60% { transform: translate(6px, -3px) rotate(0.6deg); }
 }
 
 /* Cards */
