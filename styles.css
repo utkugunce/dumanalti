@@ -646,10 +646,10 @@ body {
   .today-grid { margin-bottom: 7px; }
   .today-num { font-size: 19px; }
   .today-stat { padding: 6px 6px; }
-  .since-list { gap: 5px; }
-  .since-row { padding: 4px 12px; }
-  .since-time { font-size: 16px; }
-  .since-rec { display: none; }
+  .since-list { gap: 6px; }
+  .since-row { padding: 6px 12px; }
+  .since-time { font-size: 17px; }
+  .since-rec { font-size: 9px; }
   .last-row { padding-top: 6px; }
   .mini-chart { height: 28px; }
   .insight-list { gap: 5px; }

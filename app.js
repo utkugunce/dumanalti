@@ -143,7 +143,6 @@
   function render() {
     renderToday();
     renderLimit();
-    renderMini();
     renderStatCards();
     renderChart();
     renderSince();
@@ -198,49 +197,6 @@
     var all = countWho(entries);
     el("allTotal").textContent = all.total;
     el("allBreakdown").textContent = all.total ? breakdownText(all) : "—";
-  }
-
-  function renderMini() {
-    var chart = el("miniChart");
-    if (!chart) return;
-    chart.innerHTML = "";
-    var max = 1, days = [];
-    for (var i = 6; i >= 0; i--) {
-      var d = startOfDay(Date.now());
-      d.setDate(d.getDate() - i);
-      var key = dayKey(d);
-      var c = entries.filter(function (e) { return dayKey(e.ts) === key; }).length;
-      if (c > max) max = c;
-      days.push({ c: c, isToday: i === 0, dow: d.getDay() });
-    }
-    days.forEach(function (day) {
-      var col = document.createElement("div");
-      col.className = "mini-col" + (day.isToday ? " is-today" : "");
-      var v = document.createElement("span");
-      v.className = "mini-val";
-      v.textContent = day.c || "";
-      var bar = document.createElement("div");
-      bar.className = "mini-bar";
-      bar.style.height = Math.max(4, Math.round(day.c / max * 100)) + "%";
-      var l = document.createElement("span");
-      l.className = "mini-lab";
-      l.textContent = day.isToday ? "Bugün" : DAY_NAMES[day.dow];
-      col.appendChild(v); col.appendChild(bar); col.appendChild(l);
-      chart.appendChild(col);
-    });
-
-    var sow = startOfWeek(Date.now()).getTime();
-    var thisW = entries.filter(function (e) { return e.ts >= sow; }).length;
-    var lastW = entries.filter(function (e) { return e.ts >= sow - 7 * 86400000 && e.ts < sow; }).length;
-    var t = el("miniTrend");
-    if (lastW === 0) {
-      t.textContent = thisW ? "bu hafta " + thisW : "";
-      t.style.color = "var(--muted)";
-    } else {
-      var pct = Math.round((thisW - lastW) / lastW * 100);
-      t.textContent = pct < 0 ? "↓ %" + Math.abs(pct) + " (geçen haftaya göre)" : pct > 0 ? "↑ %" + pct + " (geçen haftaya göre)" : "→ aynı";
-      t.style.color = pct < 0 ? "#36d399" : pct > 0 ? "var(--danger)" : "var(--muted)";
-    }
   }
 
   function renderChart() {
