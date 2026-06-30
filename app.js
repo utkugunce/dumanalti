@@ -407,7 +407,7 @@
 
   function renderSince() {
     if (!el("sinceUtku")) return;
-    var ids = { utku: "Utku", gozde: "Gozde", both: "Both" };
+    var ids = { utku: "Utku", gozde: "Gozde" };
     Object.keys(ids).forEach(function (who) {
       var t = el("since" + ids[who]);
       var r = el("rec" + ids[who]);
@@ -930,6 +930,19 @@
     applyTheme(current);
   }
 
+  var TAB_KEY = "dumanalti.tab";
+  function showTab(name) {
+    ["home", "history", "settings"].forEach(function (n) {
+      var v = el("view-" + n);
+      if (v) v.classList.toggle("hidden", n !== name);
+    });
+    document.querySelectorAll(".tab").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-tab") === name);
+    });
+    try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+
   // ---------- Init ----------
   function bind() {
     document.querySelectorAll(".action-btn").forEach(function (btn) {
@@ -956,6 +969,12 @@
       e.target.value = "";
     });
     el("resetBtn").addEventListener("click", resetData);
+
+    // Sekmeler
+    document.querySelectorAll(".tab").forEach(function (btn) {
+      btn.addEventListener("click", function () { showTab(btn.getAttribute("data-tab")); });
+    });
+    showTab(localStorage.getItem(TAB_KEY) || "home");
 
     // Ayarlar
     if (el("setLimit")) {

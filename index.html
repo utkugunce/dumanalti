@@ -27,6 +27,7 @@
       <button id="themeToggle" class="icon-btn" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
     </header>
 
+    <main id="view-home" class="view">
     <!-- Action buttons -->
     <section class="actions" aria-label="Sigara ekle">
       <button class="action-btn utku" data-who="utku">
@@ -106,10 +107,6 @@
         <div class="since-row">
           <span class="since-who">👩 Gözde</span>
           <div class="since-vals"><span class="since-time" id="sinceGozde">—</span><span class="since-rec" id="recGozde"></span></div>
-        </div>
-        <div class="since-row">
-          <span class="since-who">👩‍❤️‍👨 Ortak</span>
-          <div class="since-vals"><span class="since-time" id="sinceBoth">—</span><span class="since-rec" id="recBoth"></span></div>
         </div>
       </div>
     </section>
@@ -191,7 +188,9 @@
       <div class="card-head"><h2>Bilgiler</h2></div>
       <ul id="insightList" class="insight-list"></ul>
     </section>
+    </main>
 
+    <main id="view-history" class="view hidden">
     <!-- History -->
     <section class="card">
       <div class="card-head">
@@ -199,9 +198,11 @@
         <span class="muted" id="historyCount"></span>
       </div>
       <ul id="historyList" class="history-list"></ul>
-      <p id="historyEmpty" class="empty">Henüz kayıt yok. Yukarıdaki butonlardan birine bas 👆</p>
+      <p id="historyEmpty" class="empty">Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆</p>
     </section>
+    </main>
 
+    <main id="view-settings" class="view hidden">
     <!-- Settings -->
     <section class="card settings-card">
       <div class="card-head"><h2>⚙️ Ayarlar</h2></div>
@@ -221,6 +222,7 @@
       </div>
       <input type="file" id="importFile" accept="application/json" hidden />
     </section>
+    </main>
 
     <footer class="footer">
       <span id="cloudStatus" class="cloud-status status-syncing">
@@ -229,6 +231,12 @@
       </span>
     </footer>
   </div>
+
+  <nav class="tabbar" role="tablist">
+    <button class="tab active" data-tab="home"><span class="tab-ico">🏠</span><span class="tab-lbl">Anasayfa</span></button>
+    <button class="tab" data-tab="history"><span class="tab-ico">🕑</span><span class="tab-lbl">Geçmiş</span></button>
+    <button class="tab" data-tab="settings"><span class="tab-ico">⚙️</span><span class="tab-lbl">Ayarlar</span></button>
+  </nav>
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
