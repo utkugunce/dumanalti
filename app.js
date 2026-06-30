@@ -147,7 +147,6 @@
     renderStatCards();
     renderChart();
     renderSince();
-    renderWeekCompare();
     renderHourly();
     renderCalendar();
     renderDuel();
@@ -460,26 +459,6 @@
       t.textContent = fmtDuration(d.since);
       if (r) r.textContent = "🏆 " + fmtDuration(d.record);
     });
-  }
-
-  function renderWeekCompare() {
-    if (!el("wcThis")) return;
-    var sow = startOfWeek(Date.now()).getTime();
-    var sowLast = sow - 7 * 86400000;
-    var thisW = entries.filter(function (e) { return e.ts >= sow; }).length;
-    var lastW = entries.filter(function (e) { return e.ts >= sowLast && e.ts < sow; }).length;
-    el("wcThis").textContent = thisW;
-    el("wcLast").textContent = lastW;
-    var trend = el("wcTrend");
-    if (lastW === 0) {
-      trend.textContent = thisW === 0 ? "—" : "yeni";
-      trend.className = "wc-trend";
-    } else {
-      var pct = Math.round((thisW - lastW) / lastW * 100);
-      if (pct < 0) { trend.textContent = "↓ %" + Math.abs(pct); trend.className = "wc-trend down"; }
-      else if (pct > 0) { trend.textContent = "↑ %" + pct; trend.className = "wc-trend up"; }
-      else { trend.textContent = "→ aynı"; trend.className = "wc-trend"; }
-    }
   }
 
   function renderHourly() {
