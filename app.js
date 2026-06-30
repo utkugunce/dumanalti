@@ -1,11 +1,17 @@
 /* Dumanaltı — Utku & Gözde sigara takip PWA
-   Veriler localStorage'da saklanır, hiçbir sunucuya gönderilmez. */
+   Veriler Supabase'de bulutta tutulur ve cihazlar arasında gerçek zamanlı
+   senkronlanır. Çevrimdışıyken yerel önbellekten okunur, internet gelince
+   bekleyen kayıtlar otomatik gönderilir. */
 
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "dumanalti.entries.v1";
+  var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
+  var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
   var THEME_KEY = "dumanalti.theme";
+
+  var CFG = window.DUMANALTI_CONFIG || {};
+  var TABLE = CFG.table || "dumanalti_entries";
 
   var WHO = {
     utku:  { label: "Utku", emoji: "🧔", cls: "utku-bg" },
@@ -17,53 +23,69 @@
 
   /** @type {{id:string, who:string, ts:number}[]} */
   var entries = [];
+  /** @type {{type:string, row?:object, id?:string}[]} */
+  var outbox = [];
   var lastUndo = null;
   var undoTimer = null;
 
-  // ---------- Persistence ----------
-  function load() {
+  var sb = null;        // Supabase client
+  var cloudReady = false;
+
+  // ---------- Local cache ----------
+  function loadCache() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
+      var raw = localStorage.getItem(CACHE_KEY);
       entries = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(entries)) entries = [];
-    } catch (e) {
-      entries = [];
-    }
+    } catch (e) { entries = []; }
+    try {
+      var ob = localStorage.getItem(OUTBOX_KEY);
+      outbox = ob ? JSON.parse(ob) : [];
+      if (!Array.isArray(outbox)) outbox = [];
+    } catch (e) { outbox = []; }
   }
 
-  function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    } catch (e) {
-      console.warn("Kayıt başarısız", e);
-    }
+  function saveCache() {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(entries)); } catch (e) {}
+  }
+  function saveOutbox() {
+    try { localStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox)); } catch (e) {}
+  }
+
+  function sortEntries() {
+    entries.sort(function (a, b) { return a.ts - b.ts; });
+  }
+  function findIndexById(id) {
+    for (var i = 0; i < entries.length; i++) { if (entries[i].id === id) return i; }
+    return -1;
+  }
+
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = (Math.random() * 16) | 0;
+      var v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 
   // ---------- Date helpers ----------
-  function startOfDay(d) {
-    var x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    return x;
-  }
+  function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
   function dayKey(d) {
     var x = startOfDay(d);
     return x.getFullYear() + "-" + (x.getMonth() + 1) + "-" + x.getDate();
   }
   function isSameDay(a, b) { return dayKey(a) === dayKey(b); }
-
   function startOfWeek(d) {
-    // Hafta Pazartesi başlar
     var x = startOfDay(d);
     var day = (x.getDay() + 6) % 7; // Pzt=0
     x.setDate(x.getDate() - day);
     return x;
   }
-
   function formatTime(ts) {
     var d = new Date(ts);
     return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
   }
-
   function relativeTime(ts) {
     var diff = Date.now() - ts;
     var min = Math.floor(diff / 60000);
@@ -87,14 +109,8 @@
     }
     return c;
   }
-
-  function entriesSince(ts) {
-    return entries.filter(function (e) { return e.ts >= ts; });
-  }
-
-  function todayEntries() {
-    return entries.filter(function (e) { return isSameDay(e.ts, Date.now()); });
-  }
+  function entriesSince(ts) { return entries.filter(function (e) { return e.ts >= ts; }); }
+  function todayEntries() { return entries.filter(function (e) { return isSameDay(e.ts, Date.now()); }); }
 
   // ---------- Rendering ----------
   function el(id) { return document.getElementById(id); }
@@ -145,7 +161,6 @@
     el("monthTotal").textContent = month.total;
     el("monthBreakdown").textContent = month.total ? breakdownText(month) : "—";
 
-    // son 7 gün ortalaması
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
     var last7 = entriesSince(sevenAgo);
     el("dailyAvg").textContent = (last7.length / 7).toFixed(1);
@@ -216,13 +231,11 @@
     var list = el("insightList");
     list.innerHTML = "";
     var items = [];
-
     var all = countWho(entries);
 
     if (all.total === 0) {
       items.push({ e: "✨", t: "Henüz veri yok. İlk sigarayı eklediğinde burada istatistikler çıkacak." });
     } else {
-      // En çok içen
       var utkuTotal = all.utku + all.both;
       var gozdeTotal = all.gozde + all.both;
       if (utkuTotal > gozdeTotal) {
@@ -233,29 +246,19 @@
         items.push({ e: "🤝", t: "Tam berabere! İkiniz de " + utkuTotal + " sigara." });
       }
 
-      // Ortak oranı
-      if (all.total > 0) {
-        var pct = Math.round(all.both / all.total * 100);
-        items.push({ e: "👩‍❤️‍👨", t: "Sigaraların %" + pct + "'ini birlikte içtiniz." });
-      }
+      var pct = Math.round(all.both / all.total * 100);
+      items.push({ e: "👩‍❤️‍👨", t: "Sigaraların %" + pct + "'ini birlikte içtiniz." });
 
-      // En yoğun gün (son 30 gün)
       var byDay = {};
-      entries.forEach(function (e) {
-        var k = dayKey(e.ts);
-        byDay[k] = (byDay[k] || 0) + 1;
-      });
+      entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
       var maxDay = null, maxCount = 0;
-      Object.keys(byDay).forEach(function (k) {
-        if (byDay[k] > maxCount) { maxCount = byDay[k]; maxDay = k; }
-      });
+      Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxCount) { maxCount = byDay[k]; maxDay = k; } });
       if (maxDay) {
         var parts = maxDay.split("-");
         var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2);
         items.push({ e: "📈", t: "En yoğun gün: " + dd + " (" + maxCount + " sigara)." });
       }
 
-      // Bugün vs ortalama
       var todayCount = todayEntries().length;
       var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
       var avg = entriesSince(sevenAgo).length / 7;
@@ -267,7 +270,6 @@
         }
       }
 
-      // Sigarasız süre
       if (entries.length) {
         var last = entries[entries.length - 1];
         items.push({ e: "⏱️", t: "Son sigaradan bu yana " + relativeTime(last.ts).replace(" önce", "") + " geçti." });
@@ -300,7 +302,6 @@
     empty.classList.add("hidden");
     el("historyCount").textContent = entries.length + " kayıt";
 
-    // Son 30 kayıt, en yeni üstte
     var recent = entries.slice(-30).reverse();
     recent.forEach(function (e) {
       var li = document.createElement("li");
@@ -335,23 +336,55 @@
     });
   }
 
+  // ---------- Status ----------
+  function setStatus(text) {
+    var node = el("cloudStatus");
+    if (node) node.textContent = text;
+  }
+  function refreshStatus() {
+    if (!sb) { setStatus("📴 Yerel mod · bulut kapalı"); return; }
+    if (!navigator.onLine) { setStatus("📴 Çevrimdışı · internet gelince senkronlanır"); return; }
+    if (outbox.length) { setStatus("🔄 Senkronlanıyor… (" + outbox.length + " bekliyor)"); return; }
+    setStatus(cloudReady ? "☁️ Bulutta senkron · Utku & Gözde ortak görür" : "☁️ Bağlanıyor…");
+  }
+
   // ---------- Actions ----------
   function addEntry(who, x, y) {
-    var entry = { id: String(Date.now()) + Math.random().toString(36).slice(2, 6), who: who, ts: Date.now() };
+    var entry = { id: uuid(), who: who, ts: Date.now() };
     entries.push(entry);
-    save();
+    sortEntries();
+    saveCache();
     render();
     showUndo(who);
     floatEmoji(WHO[who].emoji, x, y);
     if (navigator.vibrate) navigator.vibrate(15);
+
+    outbox.push({ type: "insert", row: entry });
+    saveOutbox();
+    flushOutbox();
+    refreshStatus();
   }
 
   function deleteEntry(id) {
-    var idx = entries.findIndex(function (e) { return e.id === id; });
+    var idx = findIndexById(id);
     if (idx === -1) return;
     entries.splice(idx, 1);
-    save();
+    saveCache();
     render();
+
+    // Henüz gönderilmemiş bir ekleme ise, kuyruktan iptal et; aksi halde silme kuyruğa gir
+    var pendingInsert = false;
+    for (var i = 0; i < outbox.length; i++) {
+      if (outbox[i].type === "insert" && outbox[i].row && outbox[i].row.id === id) {
+        outbox.splice(i, 1);
+        pendingInsert = true;
+        break;
+      }
+    }
+    if (!pendingInsert) outbox.push({ type: "delete", id: id });
+    saveOutbox();
+    flushOutbox();
+    refreshStatus();
   }
 
   function showUndo(who) {
@@ -382,6 +415,104 @@
     setTimeout(function () { node.remove(); }, 900);
   }
 
+  // ---------- Cloud sync ----------
+  function initCloud() {
+    if (!CFG.supabaseUrl || !CFG.supabaseKey || !window.supabase) {
+      refreshStatus();
+      return;
+    }
+    try {
+      sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, {
+        realtime: { params: { eventsPerSecond: 5 } }
+      });
+    } catch (e) {
+      sb = null;
+      refreshStatus();
+      return;
+    }
+
+    flushOutbox().then(syncFromRemote).then(subscribeRealtime);
+
+    window.addEventListener("online", function () {
+      flushOutbox().then(syncFromRemote);
+      refreshStatus();
+    });
+    window.addEventListener("offline", refreshStatus);
+  }
+
+  function flushOutbox() {
+    if (!sb || !navigator.onLine || outbox.length === 0) return Promise.resolve();
+    var queue = outbox.slice();
+
+    function step(i) {
+      if (i >= queue.length) return Promise.resolve();
+      var op = queue[i];
+      var p;
+      if (op.type === "insert") {
+        p = sb.from(TABLE).upsert(op.row, { onConflict: "id", ignoreDuplicates: true });
+      } else {
+        p = sb.from(TABLE).delete().eq("id", op.id);
+      }
+      return p.then(function (res) {
+        if (res && res.error) throw res.error;
+        // başarılı: gerçek kuyruktan bu işlemi çıkar
+        var idx = outbox.indexOf(op);
+        if (idx !== -1) outbox.splice(idx, 1);
+        saveOutbox();
+        return step(i + 1);
+      });
+    }
+
+    return step(0).then(function () { refreshStatus(); }).catch(function () {
+      // ağ hatası: kalanlar kuyrukta kalsın, sonra tekrar denenecek
+      refreshStatus();
+    });
+  }
+
+  function syncFromRemote() {
+    if (!sb || !navigator.onLine) return Promise.resolve();
+    return sb.from(TABLE).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
+      if (res.error || !res.data) return;
+      var map = {};
+      res.data.forEach(function (r) { map[r.id] = { id: r.id, who: r.who, ts: Number(r.ts) }; });
+      // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
+      outbox.forEach(function (op) {
+        if (op.type === "insert" && op.row) map[op.row.id] = op.row;
+        else if (op.type === "delete") delete map[op.id];
+      });
+      entries = Object.keys(map).map(function (k) { return map[k]; });
+      sortEntries();
+      saveCache();
+      cloudReady = true;
+      render();
+      refreshStatus();
+    });
+  }
+
+  function subscribeRealtime() {
+    if (!sb) return;
+    sb.channel("dumanalti-" + TABLE)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: TABLE }, function (payload) {
+        var r = payload.new;
+        if (!r || findIndexById(r.id) !== -1) return;
+        entries.push({ id: r.id, who: r.who, ts: Number(r.ts) });
+        sortEntries();
+        saveCache();
+        render();
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: TABLE }, function (payload) {
+        var id = payload.old && payload.old.id;
+        var idx = id ? findIndexById(id) : -1;
+        if (idx === -1) return;
+        entries.splice(idx, 1);
+        saveCache();
+        render();
+      })
+      .subscribe(function (status) {
+        if (status === "SUBSCRIBED") { cloudReady = true; refreshStatus(); }
+      });
+  }
+
   // ---------- Data tools ----------
   function exportData() {
     var blob = new Blob([JSON.stringify({ app: "dumanalti", version: 1, exportedAt: new Date().toISOString(), entries: entries }, null, 2)], { type: "application/json" });
@@ -400,17 +531,23 @@
         var data = JSON.parse(reader.result);
         var incoming = Array.isArray(data) ? data : data.entries;
         if (!Array.isArray(incoming)) throw new Error("Geçersiz dosya");
-        // birleştir, id'ye göre tekilleştir
         var map = {};
-        entries.concat(incoming).forEach(function (e) {
+        entries.forEach(function (e) { map[e.id] = e; });
+        var added = [];
+        incoming.forEach(function (e) {
           if (e && e.who && e.ts) {
-            var id = e.id || (String(e.ts) + e.who);
-            map[id] = { id: id, who: e.who, ts: e.ts };
+            var id = e.id || uuid();
+            if (!map[id]) { var row = { id: id, who: e.who, ts: Number(e.ts) }; map[id] = row; added.push(row); }
           }
         });
-        entries = Object.keys(map).map(function (k) { return map[k]; }).sort(function (a, b) { return a.ts - b.ts; });
-        save();
+        entries = Object.keys(map).map(function (k) { return map[k]; });
+        sortEntries();
+        saveCache();
         render();
+        // yeni kayıtları buluta gönder
+        added.forEach(function (row) { outbox.push({ type: "insert", row: row }); });
+        saveOutbox();
+        flushOutbox();
         alert("İçe aktarıldı. Toplam " + entries.length + " kayıt.");
       } catch (e) {
         alert("Dosya okunamadı: " + e.message);
@@ -420,10 +557,16 @@
   }
 
   function resetData() {
-    if (!confirm("Tüm kayıtlar silinecek. Emin misin?")) return;
+    if (!confirm("Tüm kayıtlar (bulut dahil) silinecek. Emin misin?")) return;
     entries = [];
-    save();
+    outbox = [];
+    saveCache();
+    saveOutbox();
     render();
+    if (sb && navigator.onLine) {
+      sb.from(TABLE).delete().neq("id", "00000000-0000-0000-0000-000000000000").then(function () {});
+    }
+    refreshStatus();
   }
 
   // ---------- Theme ----------
@@ -436,7 +579,6 @@
       el("themeToggle").textContent = "🌙";
     }
   }
-
   function toggleTheme() {
     var current = localStorage.getItem(THEME_KEY) === "light" ? "dark" : "light";
     localStorage.setItem(THEME_KEY, current);
@@ -465,16 +607,16 @@
     });
     el("resetBtn").addEventListener("click", resetData);
 
-    // her dakika "x dk önce" güncellensin
     setInterval(function () { renderToday(); }, 60000);
   }
 
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
-  load();
+  loadCache();
   bind();
   render();
+  refreshStatus();
+  initCloud();
 
-  // Service worker
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
       navigator.serviceWorker.register("service-worker.js").catch(function (e) {

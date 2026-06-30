@@ -1,9 +1,10 @@
 /* Dumanaltı service worker — offline destek */
-var CACHE = "dumanalti-v1";
+var CACHE = "dumanalti-v2";
 var ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
+  "./config.js",
   "./app.js",
   "./manifest.json",
   "./icons/icon.svg",
@@ -28,15 +29,20 @@ self.addEventListener("activate", function (event) {
 });
 
 self.addEventListener("fetch", function (event) {
-  if (event.request.method !== "GET") return;
+  var req = event.request;
+  if (req.method !== "GET") return;
+
+  var url = new URL(req.url);
+  // Farklı origin'leri (Supabase API, CDN) service worker'a takmadan geçir.
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then(function (cached) {
+    caches.match(req).then(function (cached) {
       if (cached) return cached;
-      return fetch(event.request).then(function (resp) {
-        // aynı originden gelen kaynakları cache'le
-        if (resp && resp.status === 200 && event.request.url.startsWith(self.location.origin)) {
+      return fetch(req).then(function (resp) {
+        if (resp && resp.status === 200) {
           var clone = resp.clone();
-          caches.open(CACHE).then(function (cache) { cache.put(event.request, clone); });
+          caches.open(CACHE).then(function (cache) { cache.put(req, clone); });
         }
         return resp;
       }).catch(function () {

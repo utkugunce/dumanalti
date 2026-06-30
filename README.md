@@ -13,7 +13,8 @@ Utku & Gözde için basit bir sigara takip uygulaması (PWA).
 - **Veri:** JSON olarak dışa/içe aktarma ve sıfırlama
 - **Açık/koyu tema**
 - **PWA:** telefona kurulabilir, çevrimdışı çalışır
-- **Gizlilik:** tüm veriler yalnızca cihazda (`localStorage`) saklanır, hiçbir sunucuya gönderilmez
+- **Bulut senkron:** veriler Supabase'de tutulur; Utku ve Gözde aynı URL'de **ortak** veriyi görür, eklemeler **gerçek zamanlı** yansır
+- **Çevrimdışı dayanıklılık:** internet yokken kayıtlar yerel kuyruğa alınır, bağlantı gelince otomatik gönderilir
 
 ## Teknoloji
 
