@@ -372,6 +372,118 @@ body {
 .ghost-btn:active { transform: scale(0.96); }
 .ghost-btn.danger { color: var(--danger); }
 
+/* Since-last live timer */
+.since-card { text-align: center; }
+.since-timer {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 10px;
+}
+.since-record {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.since-record strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Weekly comparison */
+.wc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.wc-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.wc-num { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+.wc-lbl { font-size: 11px; color: var(--muted); }
+.wc-trend {
+  flex: 0 0 auto;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-elev-2);
+  color: var(--muted);
+}
+.wc-trend.down { color: #36d399; }
+.wc-trend.up { color: var(--danger); }
+
+/* Hourly distribution */
+.hour-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 110px;
+  padding-top: 6px;
+}
+.hour-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.hour-bar { width: 70%; min-height: 2px; background: var(--utku); border-radius: 3px 3px 0 0; transition: height 0.3s; }
+.hour-bar.peak { background: var(--accent); }
+.hour-lab { font-size: 9px; color: var(--muted); }
+
+/* Calendar heatmap */
+.cal-legend { display: inline-flex; align-items: center; gap: 3px; }
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.cal-weekdays span { text-align: center; font-size: 10px; color: var(--muted); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cal-legend .cal-cell { width: 13px; height: 13px; aspect-ratio: auto; border-radius: 3px; }
+.cal-cell.blank { background: transparent; }
+.cal-cell.l0 { background: var(--bg-elev-2); }
+.cal-cell.l1 { background: rgba(79, 157, 255, 0.30); color: var(--text); }
+.cal-cell.l2 { background: rgba(79, 157, 255, 0.50); color: var(--text); }
+.cal-cell.l3 { background: rgba(79, 157, 255, 0.72); color: #fff; }
+.cal-cell.l4 { background: rgba(79, 157, 255, 0.95); color: #fff; }
+.cal-cell.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Weekly duel */
+.duel { display: flex; flex-direction: column; gap: 10px; }
+.duel-row { display: flex; align-items: center; gap: 10px; }
+.duel-name { font-size: 13px; width: 80px; flex: none; }
+.duel-track { flex: 1; height: 14px; background: var(--bg-elev-2); border-radius: 999px; overflow: hidden; }
+.duel-fill { height: 100%; border-radius: 999px; transition: width 0.4s; min-width: 2px; }
+.duel-val { font-size: 14px; font-weight: 700; width: 26px; text-align: right; flex: none; }
+.duel-verdict { font-size: 13px; color: var(--muted); text-align: center; padding-top: 6px; border-top: 1px solid var(--border); }
+
+/* Badges */
+.badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 6px;
+  background: var(--bg-elev-2);
+  border-radius: 14px;
+  text-align: center;
+  opacity: 0.45;
+  filter: grayscale(1);
+  transition: transform 0.15s;
+}
+.badge.got {
+  opacity: 1;
+  filter: none;
+  background: linear-gradient(160deg, rgba(255, 181, 71, 0.18), rgba(255, 181, 71, 0.05));
+  border: 1px solid rgba(255, 181, 71, 0.3);
+}
+.badge-emoji { font-size: 26px; }
+.badge-name { font-size: 10px; color: var(--muted); line-height: 1.2; }
+.badge.got .badge-name { color: var(--text); }
+
 /* Footer */
 .footer { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0 8px; }
 

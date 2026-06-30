@@ -78,6 +78,23 @@
       </div>
     </section>
 
+    <!-- Live since-last timer -->
+    <section class="card since-card">
+      <div class="card-head"><h2>Son sigaradan beri</h2></div>
+      <div class="since-timer" id="sinceTimer">—</div>
+      <div class="since-record"><span>🏆 En uzun aran</span><strong id="sinceRecord">—</strong></div>
+    </section>
+
+    <!-- Weekly comparison -->
+    <section class="card week-compare">
+      <div class="card-head"><h2>Haftalık karşılaştırma</h2></div>
+      <div class="wc-row">
+        <div class="wc-col"><span class="wc-num" id="wcThis">0</span><span class="wc-lbl">bu hafta</span></div>
+        <div class="wc-trend" id="wcTrend">—</div>
+        <div class="wc-col"><span class="wc-num" id="wcLast">0</span><span class="wc-lbl">geçen hafta</span></div>
+      </div>
+    </section>
+
     <!-- Stat cards -->
     <section class="stats-grid">
       <div class="card stat-mini">
@@ -113,6 +130,40 @@
         </span>
       </div>
       <div class="chart" id="chart" aria-label="Son 7 günün grafiği"></div>
+    </section>
+
+    <!-- Hourly distribution -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Saat dağılımı</h2>
+        <span class="muted" id="hourPeak"></span>
+      </div>
+      <div class="hour-chart" id="hourChart" aria-label="Saatlik dağılım"></div>
+    </section>
+
+    <!-- Calendar heatmap -->
+    <section class="card">
+      <div class="card-head">
+        <h2 id="calTitle">Takvim</h2>
+        <span class="legend cal-legend">az<i class="cal-cell l0"></i><i class="cal-cell l1"></i><i class="cal-cell l2"></i><i class="cal-cell l3"></i><i class="cal-cell l4"></i>çok</span>
+      </div>
+      <div class="cal-weekdays"><span>Pt</span><span>Sa</span><span>Ça</span><span>Pe</span><span>Cu</span><span>Ct</span><span>Pz</span></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </section>
+
+    <!-- Weekly duel -->
+    <section class="card">
+      <div class="card-head"><h2>Bu hafta düello</h2></div>
+      <div class="duel" id="duel"></div>
+    </section>
+
+    <!-- Badges -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Rozetler</h2>
+        <span class="muted" id="badgeCount"></span>
+      </div>
+      <div class="badge-grid" id="badgeGrid"></div>
     </section>
 
     <!-- Insights -->

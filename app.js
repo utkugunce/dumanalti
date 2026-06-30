@@ -129,6 +129,12 @@
     renderToday();
     renderStatCards();
     renderChart();
+    renderSince();
+    renderWeekCompare();
+    renderHourly();
+    renderCalendar();
+    renderDuel();
+    renderBadges();
     renderInsights();
     renderHistory();
   }
@@ -352,6 +358,219 @@
       li.appendChild(del);
       list.appendChild(li);
     });
+  }
+
+  // ---------- Extra analytics ----------
+  var MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+  function pad2(n) { return ("0" + n).slice(-2); }
+
+  function fmtDuration(ms) {
+    if (ms < 0 || isNaN(ms)) ms = 0;
+    var s = Math.floor(ms / 1000);
+    var d = Math.floor(s / 86400); s -= d * 86400;
+    var h = Math.floor(s / 3600); s -= h * 3600;
+    var m = Math.floor(s / 60); s -= m * 60;
+    var hms = pad2(h) + ":" + pad2(m) + ":" + pad2(s);
+    return d > 0 ? (d + "g " + hms) : hms;
+  }
+
+  function longestGap() {
+    if (entries.length < 2) return 0;
+    var max = 0;
+    for (var i = 1; i < entries.length; i++) {
+      var g = entries[i].ts - entries[i - 1].ts;
+      if (g > max) max = g;
+    }
+    return max;
+  }
+
+  function renderSince() {
+    var t = el("sinceTimer");
+    if (!t) return;
+    if (!entries.length) { t.textContent = "—"; el("sinceRecord").textContent = "—"; return; }
+    var last = entries[entries.length - 1];
+    var since = Date.now() - last.ts;
+    t.textContent = fmtDuration(since);
+    el("sinceRecord").textContent = fmtDuration(Math.max(longestGap(), since));
+  }
+
+  function renderWeekCompare() {
+    if (!el("wcThis")) return;
+    var sow = startOfWeek(Date.now()).getTime();
+    var sowLast = sow - 7 * 86400000;
+    var thisW = entries.filter(function (e) { return e.ts >= sow; }).length;
+    var lastW = entries.filter(function (e) { return e.ts >= sowLast && e.ts < sow; }).length;
+    el("wcThis").textContent = thisW;
+    el("wcLast").textContent = lastW;
+    var trend = el("wcTrend");
+    if (lastW === 0) {
+      trend.textContent = thisW === 0 ? "—" : "yeni";
+      trend.className = "wc-trend";
+    } else {
+      var pct = Math.round((thisW - lastW) / lastW * 100);
+      if (pct < 0) { trend.textContent = "↓ %" + Math.abs(pct); trend.className = "wc-trend down"; }
+      else if (pct > 0) { trend.textContent = "↑ %" + pct; trend.className = "wc-trend up"; }
+      else { trend.textContent = "→ aynı"; trend.className = "wc-trend"; }
+    }
+  }
+
+  function renderHourly() {
+    var chart = el("hourChart");
+    if (!chart) return;
+    chart.innerHTML = "";
+    var counts = [];
+    for (var h = 0; h < 24; h++) counts[h] = 0;
+    entries.forEach(function (e) { counts[new Date(e.ts).getHours()]++; });
+    var max = 1, peakH = 0;
+    for (h = 0; h < 24; h++) {
+      if (counts[h] > max) max = counts[h];
+      if (counts[h] > counts[peakH]) peakH = h;
+    }
+    for (h = 0; h < 24; h++) {
+      var col = document.createElement("div");
+      col.className = "hour-col";
+      var bar = document.createElement("div");
+      bar.className = "hour-bar" + (h === peakH && counts[peakH] > 0 ? " peak" : "");
+      bar.style.height = (counts[h] === 0 ? 2 : Math.max(4, Math.round(counts[h] / max * 100))) + "%";
+      bar.title = pad2(h) + ":00 · " + counts[h];
+      col.appendChild(bar);
+      if (h % 6 === 0) {
+        var lab = document.createElement("span");
+        lab.className = "hour-lab";
+        lab.textContent = h;
+        col.appendChild(lab);
+      }
+      chart.appendChild(col);
+    }
+    el("hourPeak").textContent = entries.length ? "en yoğun " + pad2(peakH) + ":00" : "";
+  }
+
+  function renderCalendar() {
+    var grid = el("calGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    var now = new Date();
+    var year = now.getFullYear(), month = now.getMonth();
+    el("calTitle").textContent = MONTHS[month] + " " + year;
+
+    var perDay = {};
+    entries.forEach(function (e) {
+      var d = new Date(e.ts);
+      if (d.getFullYear() === year && d.getMonth() === month) perDay[d.getDate()] = (perDay[d.getDate()] || 0) + 1;
+    });
+
+    var offset = (new Date(year, month, 1).getDay() + 6) % 7; // Pzt=0
+    var daysIn = new Date(year, month + 1, 0).getDate();
+    for (var i = 0; i < offset; i++) {
+      var blank = document.createElement("span");
+      blank.className = "cal-cell blank";
+      grid.appendChild(blank);
+    }
+    for (var day = 1; day <= daysIn; day++) {
+      var c = perDay[day] || 0;
+      var lvl = c === 0 ? 0 : c <= 2 ? 1 : c <= 4 ? 2 : c <= 6 ? 3 : 4;
+      var cell = document.createElement("span");
+      cell.className = "cal-cell l" + lvl + (day === now.getDate() ? " today" : "");
+      cell.title = day + " " + MONTHS[month] + " · " + c + " sigara";
+      cell.textContent = day;
+      grid.appendChild(cell);
+    }
+  }
+
+  function renderDuel() {
+    var node = el("duel");
+    if (!node) return;
+    node.innerHTML = "";
+    var sow = startOfWeek(Date.now()).getTime();
+    var c = countWho(entries.filter(function (e) { return e.ts >= sow; }));
+    var u = c.utku + c.both, g = c.gozde + c.both;
+    var maxv = Math.max(u, g, 1);
+
+    function row(who, label, val) {
+      var r = document.createElement("div");
+      r.className = "duel-row";
+      var name = document.createElement("span");
+      name.className = "duel-name";
+      name.textContent = label;
+      var track = document.createElement("div");
+      track.className = "duel-track";
+      var fill = document.createElement("div");
+      fill.className = "duel-fill " + WHO[who].cls;
+      fill.style.width = Math.round(val / maxv * 100) + "%";
+      track.appendChild(fill);
+      var v = document.createElement("span");
+      v.className = "duel-val";
+      v.textContent = val;
+      r.appendChild(name); r.appendChild(track); r.appendChild(v);
+      return r;
+    }
+    node.appendChild(row("utku", "🧔 Utku", u));
+    node.appendChild(row("gozde", "👩 Gözde", g));
+
+    var verdict = document.createElement("div");
+    verdict.className = "duel-verdict";
+    if (u === 0 && g === 0) verdict.textContent = "Bu hafta henüz kayıt yok.";
+    else if (u < g) verdict.textContent = "🥇 Utku bu hafta daha az içti (" + u + " - " + g + ")";
+    else if (g < u) verdict.textContent = "🥇 Gözde bu hafta daha az içti (" + g + " - " + u + ")";
+    else verdict.textContent = "🤝 Berabere (" + u + " - " + g + ")";
+    node.appendChild(verdict);
+  }
+
+  function badgeList() {
+    var all = countWho(entries);
+    var total = all.total;
+    var anyNight = false, anyMorning = false, heavyDay = false, cleanDay = false, spanDays = 0;
+    entries.forEach(function (e) {
+      var h = new Date(e.ts).getHours();
+      if (h < 5) anyNight = true;
+      if (h >= 5 && h < 9) anyMorning = true;
+    });
+    if (entries.length) {
+      var firstDay = startOfDay(entries[0].ts).getTime();
+      var lastDay = startOfDay(entries[entries.length - 1].ts).getTime();
+      spanDays = Math.round((lastDay - firstDay) / 86400000) + 1;
+      var perDay = {};
+      entries.forEach(function (e) { var k = dayKey(e.ts); perDay[k] = (perDay[k] || 0) + 1; });
+      Object.keys(perDay).forEach(function (k) { if (perDay[k] >= 10) heavyDay = true; });
+      for (var t = firstDay; t <= lastDay; t += 86400000) {
+        if (!perDay[dayKey(t)]) { cleanDay = true; break; }
+      }
+    }
+    return [
+      { e: "🎯", name: "İlk Adım", got: total >= 1 },
+      { e: "💯", name: "Yüzler Kulübü", got: total >= 100 },
+      { e: "💑", name: "Beraber", got: all.both > 0 },
+      { e: "🌙", name: "Gece Kuşu", got: anyNight },
+      { e: "☀️", name: "Sabahçı", got: anyMorning },
+      { e: "🧹", name: "Temiz Gün", got: cleanDay },
+      { e: "📅", name: "Bir Hafta", got: spanDays >= 7 },
+      { e: "🔥", name: "Yoğun Gün", got: heavyDay },
+      { e: "🏆", name: "30 Gün", got: spanDays >= 30 }
+    ];
+  }
+
+  function renderBadges() {
+    var grid = el("badgeGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    var list = badgeList();
+    var earned = 0;
+    list.forEach(function (b) {
+      if (b.got) earned++;
+      var d = document.createElement("div");
+      d.className = "badge" + (b.got ? " got" : "");
+      d.title = b.name + (b.got ? " ✓" : " (kilitli)");
+      var em = document.createElement("span");
+      em.className = "badge-emoji";
+      em.textContent = b.e;
+      var n = document.createElement("span");
+      n.className = "badge-name";
+      n.textContent = b.name;
+      d.appendChild(em); d.appendChild(n);
+      grid.appendChild(d);
+    });
+    el("badgeCount").textContent = earned + "/" + list.length;
   }
 
   // ---------- Status ----------
@@ -730,6 +949,7 @@
     el("resetBtn").addEventListener("click", resetData);
 
     setInterval(function () { renderToday(); }, 60000);
+    setInterval(function () { renderSince(); }, 1000);
   }
 
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
