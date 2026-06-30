@@ -452,6 +452,7 @@
   function flushOutbox() {
     if (!sb || !navigator.onLine || outbox.length === 0) return Promise.resolve();
     var queue = outbox.slice();
+    var firstErr = null;
 
     function step(i) {
       if (i >= queue.length) return Promise.resolve();
@@ -466,16 +467,16 @@
         if (res && res.error) throw res.error;
         // başarılı: gerçek kuyruktan bu işlemi çıkar
         var idx = outbox.indexOf(op);
-        if (idx !== -1) outbox.splice(idx, 1);
-        saveOutbox();
-        lastCloudError = null;
-        return step(i + 1);
-      });
+        if (idx !== -1) { outbox.splice(idx, 1); saveOutbox(); }
+      }).catch(function (err) {
+        // bu işlemi kuyrukta bırak ama diğerlerini engelleme
+        if (!firstErr) firstErr = err;
+      }).then(function () { return step(i + 1); });
     }
 
-    return step(0).then(function () { lastCloudError = null; refreshStatus(); }).catch(function (err) {
-      // hata: kalanlar kuyrukta kalsın, sonra tekrar denenecek; sebebi göster
-      cloudError(err);
+    return step(0).then(function () {
+      if (firstErr) { cloudError(firstErr); }
+      else { lastCloudError = null; refreshStatus(); }
     });
   }
 
