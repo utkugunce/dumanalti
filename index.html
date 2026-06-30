@@ -225,24 +225,53 @@
     </main>
 
     <main id="view-settings" class="view hidden">
-    <!-- Settings -->
+
+    <h3 class="group-title">🎯 Hedef</h3>
     <section class="card settings-card">
-      <div class="card-head"><h2>⚙️ Ayarlar</h2></div>
       <div class="set-row">
         <label for="setLimit">Günlük limit (0 = kapalı)</label>
         <input type="number" inputmode="numeric" id="setLimit" min="0" step="1" placeholder="örn. 10" />
       </div>
+      <p class="set-note">Limit girersen Anasayfa'da dolan bir halka çıkar; aşınca kırmızıya döner.</p>
     </section>
 
-    <!-- Data tools -->
+    <h3 class="group-title">🎨 Görünüm</h3>
+    <section class="card settings-card">
+      <div class="set-row">
+        <label>Tema</label>
+        <div class="seg" id="themeSeg">
+          <button class="seg-btn" data-theme="dark">🌙 Koyu</button>
+          <button class="seg-btn" data-theme="light">☀️ Açık</button>
+        </div>
+      </div>
+    </section>
+
+    <h3 class="group-title">☁️ Senkronizasyon</h3>
+    <section class="card settings-card">
+      <div class="set-row">
+        <label>Bulut</label>
+        <button id="syncNowBtn" class="ghost-btn small">🔄 Şimdi senkronla</button>
+      </div>
+      <p class="set-note">Veriler bulutta tutulur; Utku ve Gözde aynı URL'de ortak veriyi gerçek zamanlı görür. Durum aşağıda görünür.</p>
+    </section>
+
+    <h3 class="group-title">💾 Veri</h3>
     <section class="card data-tools">
-      <div class="card-head"><h2>Veri</h2></div>
+      <div class="set-row"><label>Toplam kayıt</label><strong id="setCount">0</strong></div>
       <div class="data-buttons">
         <button id="exportBtn" class="ghost-btn">📤 Dışa aktar</button>
         <button id="importBtn" class="ghost-btn">📥 İçe aktar</button>
         <button id="resetBtn" class="ghost-btn danger">🗑️ Sıfırla</button>
       </div>
       <input type="file" id="importFile" accept="application/json" hidden />
+    </section>
+
+    <h3 class="group-title">ℹ️ Hakkında</h3>
+    <section class="card about-card">
+      <div class="about-logo">🚬</div>
+      <div class="about-name">Dumanaltı</div>
+      <div class="about-sub">Utku &amp; Gözde için 💛</div>
+      <div class="about-meta">Çevrimdışı çalışır · veriler bulutta senkronlanır</div>
     </section>
     </main>
 

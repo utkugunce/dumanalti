@@ -155,6 +155,7 @@
     renderRecords();
     renderInsights();
     renderHistory();
+    if (el("setCount")) el("setCount").textContent = entries.length;
   }
 
   function renderToday() {
@@ -1028,13 +1029,28 @@
 
   // ---------- Theme ----------
   function applyTheme(theme) {
-    if (theme === "light") {
+    var light = theme === "light";
+    if (light) {
       document.documentElement.setAttribute("data-theme", "light");
       el("themeToggle").textContent = "☀️";
     } else {
       document.documentElement.removeAttribute("data-theme");
       el("themeToggle").textContent = "🌙";
     }
+    var seg = document.getElementById("themeSeg");
+    if (seg) {
+      seg.querySelectorAll(".seg-btn").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute("data-theme") === (light ? "light" : "dark"));
+      });
+    }
+  }
+
+  function syncNow() {
+    if (!sb) { alert("Bulut bağlı değil — yerel moddasın."); return; }
+    if (!navigator.onLine) { alert("Çevrimdışısın. İnternet gelince otomatik senkronlanır."); return; }
+    lastCloudError = null;
+    refreshStatus();
+    flushOutbox().then(syncFromRemote).then(function () { refreshStatus(); });
   }
   function toggleTheme() {
     var current = localStorage.getItem(THEME_KEY) === "light" ? "dark" : "light";
@@ -1096,6 +1112,17 @@
         renderHistory();
       });
     });
+
+    // Tema seçici
+    document.querySelectorAll("#themeSeg .seg-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var t = b.getAttribute("data-theme");
+        localStorage.setItem(THEME_KEY, t);
+        applyTheme(t);
+      });
+    });
+
+    if (el("syncNowBtn")) el("syncNowBtn").addEventListener("click", syncNow);
 
     // Ayarlar
     if (el("setLimit")) {

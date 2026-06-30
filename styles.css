@@ -637,6 +637,31 @@ body {
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
 .set-row + .set-row { border-top: 1px solid var(--border); }
 .set-row label { font-size: 13px; color: var(--muted); }
+.set-note { font-size: 12px; color: var(--muted); line-height: 1.45; margin: 8px 2px 0; }
+
+/* Theme segmented control */
+.seg { display: flex; gap: 4px; background: var(--bg-elev-2); border-radius: 11px; padding: 3px; }
+.seg-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.seg-btn.active { background: var(--accent); color: #1a1300; font-weight: 700; }
+
+.ghost-btn.small { flex: none; min-width: 0; padding: 8px 12px; font-size: 12px; }
+
+/* About */
+.about-card { text-align: center; }
+.about-logo { font-size: 38px; }
+.about-name { font-size: 18px; font-weight: 800; margin-top: 2px; }
+.about-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.about-meta { font-size: 11px; color: var(--muted); margin-top: 8px; }
 .set-row input {
   width: 110px;
   background: var(--bg-elev-2);
