@@ -405,24 +405,29 @@
     return d > 0 ? (d + "g " + hms) : hms;
   }
 
-  function longestGap() {
-    if (entries.length < 2) return 0;
-    var max = 0;
-    for (var i = 1; i < entries.length; i++) {
-      var g = entries[i].ts - entries[i - 1].ts;
-      if (g > max) max = g;
+  function sinceData(who) {
+    var sub = entries.filter(function (e) { return e.who === who; });
+    if (!sub.length) return null;
+    var since = Date.now() - sub[sub.length - 1].ts;
+    var maxGap = 0;
+    for (var i = 1; i < sub.length; i++) {
+      var g = sub[i].ts - sub[i - 1].ts;
+      if (g > maxGap) maxGap = g;
     }
-    return max;
+    return { since: since, record: Math.max(maxGap, since) };
   }
 
   function renderSince() {
-    var t = el("sinceTimer");
-    if (!t) return;
-    if (!entries.length) { t.textContent = "—"; el("sinceRecord").textContent = "—"; return; }
-    var last = entries[entries.length - 1];
-    var since = Date.now() - last.ts;
-    t.textContent = fmtDuration(since);
-    el("sinceRecord").textContent = fmtDuration(Math.max(longestGap(), since));
+    if (!el("sinceUtku")) return;
+    var ids = { utku: "Utku", gozde: "Gozde", both: "Both" };
+    Object.keys(ids).forEach(function (who) {
+      var t = el("since" + ids[who]);
+      var r = el("rec" + ids[who]);
+      var d = sinceData(who);
+      if (!d) { t.textContent = "—"; if (r) r.textContent = ""; return; }
+      t.textContent = fmtDuration(d.since);
+      if (r) r.textContent = "🏆 " + fmtDuration(d.record);
+    });
   }
 
   function renderWeekCompare() {
