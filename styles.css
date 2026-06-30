@@ -43,16 +43,16 @@ body {
 .app {
   max-width: 560px;
   margin: 0 auto;
-  padding: 16px 16px calc(86px + env(safe-area-inset-bottom));
+  padding: 12px 14px calc(82px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
-.view { display: flex; flex-direction: column; gap: 16px; }
+.view { display: flex; flex-direction: column; gap: 12px; }
 
 /* Mini 7-day summary (home) */
-.mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 66px; }
+.mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 50px; }
 .mini-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
 .mini-bar { width: 62%; max-width: 24px; min-height: 4px; background: var(--utku); border-radius: 4px 4px 0 0; transition: height 0.3s ease; }
 .mini-col.is-today .mini-bar { background: var(--accent); }
@@ -128,7 +128,7 @@ body {
 .action-btn {
   border: none;
   border-radius: var(--radius);
-  padding: 18px 8px 14px;
+  padding: 13px 8px 11px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -145,7 +145,7 @@ body {
 .action-btn.utku { background: linear-gradient(160deg, #4f9dff, #2c6fd6); }
 .action-btn.gozde { background: linear-gradient(160deg, #ff5fa2, #d63d80); }
 .action-btn.both { background: linear-gradient(160deg, #b07bff, #7d4fd6); }
-.action-emoji { font-size: 30px; }
+.action-emoji { font-size: 26px; }
 .action-label { font-size: 13px; font-weight: 700; }
 .action-today {
   font-size: 11px;
@@ -232,14 +232,14 @@ body {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 13px 14px;
   box-shadow: var(--shadow);
 }
 .card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .card-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
 .muted { color: var(--muted); font-size: 12px; }
@@ -255,27 +255,27 @@ body {
 .today-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 .today-stat {
   background: var(--bg-elev-2);
   border-radius: 14px;
-  padding: 14px 8px;
+  padding: 10px 6px;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .today-stat.total { background: linear-gradient(160deg, rgba(255,181,71,0.18), rgba(255,181,71,0.05)); }
-.today-num { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+.today-num { font-size: 24px; font-weight: 800; letter-spacing: -1px; }
 .today-name { font-size: 12px; color: var(--muted); }
 .last-row {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
   color: var(--muted);
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
 }
 .last-row strong { color: var(--text); }
@@ -434,7 +434,7 @@ body {
 .ghost-btn.danger { color: var(--danger); }
 
 /* Since-last live timers (per person) */
-.since-list { display: flex; flex-direction: column; gap: 10px; }
+.since-list { display: flex; flex-direction: column; gap: 8px; }
 .since-row {
   display: flex;
   align-items: center;
@@ -442,11 +442,11 @@ body {
   gap: 10px;
   background: var(--bg-elev-2);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 8px 12px;
 }
 .since-who { font-size: 14px; font-weight: 600; }
 .since-vals { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.since-time { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
+.since-time { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
 .since-rec { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Weekly comparison */
@@ -622,4 +622,22 @@ body {
 @media (max-width: 360px) {
   .action-label { font-size: 12px; }
   .today-num { font-size: 24px; }
+}
+
+/* Short screens: compact Home to keep it one page */
+@media (max-height: 720px) {
+  .app { gap: 9px; padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+  .subtitle { display: none; }
+  .brand-logo { font-size: 26px; }
+  .header { padding-top: env(safe-area-inset-top); }
+  .action-emoji { font-size: 22px; }
+  .action-btn { padding: 9px 8px 8px; }
+  .action-label { font-size: 12px; }
+  .today-grid { margin-bottom: 8px; }
+  .today-num { font-size: 20px; }
+  .today-stat { padding: 7px 6px; }
+  .since-row { padding: 6px 12px; }
+  .since-time { font-size: 18px; }
+  .mini-chart { height: 36px; }
+  .footer { padding: 1px 0 2px; }
 }
