@@ -429,7 +429,7 @@
     clearTimeout(undoTimer);
   }
 
-  var CONFETTI_EXTRAS = ["✨", "🎉", "💨", "🚬"];
+  var CONFETTI_EXTRAS = ["✨", "🎉", "🎊", "💨", "🚬", "🥳", "⭐️", "💥"];
 
   function emojiConfetti(emoji, x, y, combo) {
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -448,8 +448,9 @@
     for (var i = 0; i < count; i++) {
       var node = document.createElement("span");
       node.className = "confetti-piece";
-      // çoğunlukla ilgili emoji, arada kutlama emojileri
-      node.textContent = Math.random() < 0.72 ? emoji : CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0];
+      // İlk ~yarısı kutlama emojisi (kesin görünür), kalanı ilgili emoji
+      var useExtra = i % 2 === 0; // bir bir kutlama emojisi serpiştir
+      node.textContent = useExtra ? CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0] : emoji;
       node.style.left = ox + "px";
       node.style.top = oy + "px";
       node.style.fontSize = (18 + Math.random() * 36) + "px";
