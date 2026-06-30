@@ -32,6 +32,7 @@
   var undoTimer = null;
   var comboCount = 0;
   var comboTimer = null;
+  var historyFilter = "all";
 
   var sb = null;        // Supabase client
   var cloudReady = false;
@@ -344,51 +345,81 @@
     return false;
   }
 
+  function dayLabel(ts) {
+    var diff = Math.round((startOfDay(Date.now()).getTime() - startOfDay(ts).getTime()) / 86400000);
+    if (diff === 0) return "Bugün";
+    if (diff === 1) return "Dün";
+    var d = new Date(ts);
+    return d.getDate() + " " + MONTHS[d.getMonth()] + " " + ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][d.getDay()];
+  }
+
+  function historyItem(e) {
+    var pending = isPending(e.id);
+    var row = document.createElement("div");
+    row.className = "history-item who-" + e.who + (pending ? " is-pending" : "");
+
+    var em = document.createElement("span");
+    em.className = "h-emoji";
+    em.textContent = WHO[e.who].emoji;
+
+    var main = document.createElement("div");
+    main.className = "h-main";
+    var who = document.createElement("span");
+    who.className = "h-who";
+    who.textContent = WHO[e.who].label + " içti";
+    var time = document.createElement("span");
+    time.className = "h-time";
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
+    main.appendChild(who);
+    main.appendChild(time);
+
+    var del = document.createElement("button");
+    del.className = "h-del";
+    del.textContent = "✕";
+    del.title = "Sil";
+    del.addEventListener("click", function () { deleteEntry(e.id); });
+
+    row.appendChild(em);
+    row.appendChild(main);
+    row.appendChild(del);
+    return row;
+  }
+
   function renderHistory() {
     var list = el("historyList");
     var empty = el("historyEmpty");
     list.innerHTML = "";
+    el("historyCount").textContent = entries.length ? entries.length + " kayıt" : "";
 
-    if (entries.length === 0) {
+    var filtered = entries.filter(function (e) { return historyFilter === "all" || e.who === historyFilter; });
+    if (filtered.length === 0) {
       empty.classList.remove("hidden");
-      el("historyCount").textContent = "";
+      empty.textContent = entries.length ? "Bu filtrede kayıt yok." : "Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆";
       return;
     }
     empty.classList.add("hidden");
-    el("historyCount").textContent = entries.length + " kayıt";
 
-    var recent = entries.slice(-30).reverse();
+    var recent = filtered.slice(-150).reverse();
+    var byKey = {}, groups = [];
     recent.forEach(function (e) {
-      var pending = isPending(e.id);
-      var li = document.createElement("li");
-      li.className = "history-item who-" + e.who + (pending ? " is-pending" : "");
+      var k = dayKey(e.ts);
+      if (!byKey[k]) { byKey[k] = { ts: e.ts, items: [] }; groups.push(byKey[k]); }
+      byKey[k].items.push(e);
+    });
 
-      var em = document.createElement("span");
-      em.className = "h-emoji";
-      em.textContent = WHO[e.who].emoji;
-
-      var main = document.createElement("div");
-      main.className = "h-main";
-      var who = document.createElement("span");
-      who.className = "h-who";
-      who.textContent = WHO[e.who].label + " içti";
-      var time = document.createElement("span");
-      time.className = "h-time";
-      var d = new Date(e.ts);
-      time.textContent = formatTime(e.ts) + " · " + ("0" + d.getDate()).slice(-2) + "." + ("0" + (d.getMonth() + 1)).slice(-2) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
-      main.appendChild(who);
-      main.appendChild(time);
-
-      var del = document.createElement("button");
-      del.className = "h-del";
-      del.textContent = "✕";
-      del.title = "Sil";
-      del.addEventListener("click", function () { deleteEntry(e.id); });
-
-      li.appendChild(em);
-      li.appendChild(main);
-      li.appendChild(del);
-      list.appendChild(li);
+    groups.forEach(function (g) {
+      var head = document.createElement("div");
+      head.className = "hist-day";
+      var lbl = document.createElement("span");
+      lbl.className = "hist-day-label";
+      lbl.textContent = dayLabel(g.ts);
+      var cnt = document.createElement("span");
+      cnt.className = "hist-day-count";
+      cnt.textContent = g.items.length + " 🚬";
+      head.appendChild(lbl);
+      head.appendChild(cnt);
+      list.appendChild(head);
+      g.items.forEach(function (e) { list.appendChild(historyItem(e)); });
     });
   }
 
@@ -1056,6 +1087,15 @@
       btn.addEventListener("click", function () { showTab(btn.getAttribute("data-tab")); });
     });
     showTab(localStorage.getItem(TAB_KEY) || "home");
+
+    // Geçmiş filtreleri
+    document.querySelectorAll(".hist-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        historyFilter = chip.getAttribute("data-f");
+        document.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
+        renderHistory();
+      });
+    });
 
     // Ayarlar
     if (el("setLimit")) {

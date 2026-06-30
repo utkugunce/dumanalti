@@ -368,6 +368,33 @@ body {
 .insight-list .emoji { font-size: 16px; }
 
 /* History */
+.hist-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.hist-chip {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.hist-chip:active { transform: scale(0.95); }
+.hist-chip.active { background: var(--accent); color: #1a1300; border-color: var(--accent); font-weight: 700; }
+
+.hist-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 2px 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.hist-day:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.hist-day-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+.hist-day-count { font-size: 12px; color: var(--muted); }
+
 .history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .history-item {
   display: flex;
