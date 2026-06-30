@@ -638,9 +638,11 @@ body {
   .icon-btn { width: 40px; height: 40px; }
   .card { padding: 8px 12px; }
   .card-head { margin-bottom: 5px; }
-  .action-emoji { font-size: 22px; }
-  .action-btn { padding: 8px 8px 7px; }
+  .actions { gap: 8px; }
+  .action-emoji { font-size: 19px; }
+  .action-btn { padding: 6px 8px 6px; gap: 4px; }
   .action-label { font-size: 12px; }
+  .action-today { font-size: 10px; padding: 1px 7px; }
   .today-grid { margin-bottom: 7px; }
   .today-num { font-size: 19px; }
   .today-stat { padding: 6px 6px; }
@@ -654,8 +656,9 @@ body {
   .insight-list .emoji { font-size: 15px; }
   .chart { height: 86px; }
   .hour-chart { height: 48px; }
-  .cal-cell { height: 17px; font-size: 9px; }
-  .cal-weekdays { margin-bottom: 3px; }
+  .cal-grid { gap: 3px; }
+  .cal-cell { height: 15px; font-size: 9px; }
+  .cal-weekdays { margin-bottom: 2px; gap: 3px; }
   .cal-weekdays span { font-size: 9px; }
   .stat-mini { padding: 7px 11px; }
   .stat-value { font-size: 21px; }
