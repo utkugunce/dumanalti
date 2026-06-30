@@ -51,6 +51,20 @@ body {
 
 .view { display: flex; flex-direction: column; gap: 8px; }
 
+/* İstatistik group headings */
+.group-title {
+  margin: 4px 4px -3px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.group-title:first-child { margin-top: 0; }
+
 /* Mini 7-day summary (home) */
 .mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 34px; }
 .mini-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
@@ -292,10 +306,10 @@ body {
   gap: 1px;
   background: var(--bg-elev-2);
   border-radius: 12px;
-  padding: 9px 12px;
+  padding: 12px 14px;
 }
 .stat-label { font-size: 12px; color: var(--muted); }
-.stat-value { font-size: 23px; font-weight: 800; letter-spacing: -1px; }
+.stat-value { font-size: 25px; font-weight: 800; letter-spacing: -1px; }
 .stat-sub { font-size: 11px; color: var(--muted); }
 
 /* Legend */
@@ -311,7 +325,7 @@ body {
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
-  height: 88px;
+  height: 140px;
   padding-top: 8px;
 }
 .chart-col {
@@ -473,7 +487,7 @@ body {
   display: flex;
   align-items: flex-end;
   gap: 2px;
-  height: 54px;
+  height: 104px;
   padding-top: 6px;
 }
 .hour-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
@@ -486,14 +500,14 @@ body {
 .cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 5px;
   margin-bottom: 4px;
 }
 .cal-weekdays span { text-align: center; font-size: 10px; color: var(--muted); }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .cal-cell {
-  height: 19px;
-  border-radius: 5px;
+  height: 30px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -655,14 +669,6 @@ body {
   .insight-list { gap: 4px; }
   .insight-list li { line-height: 1.2; font-size: 12px; gap: 8px; }
   .insight-list .emoji { font-size: 14px; }
-  .chart { height: 86px; }
-  .hour-chart { height: 48px; }
-  .cal-grid { gap: 3px; }
-  .cal-cell { height: 15px; font-size: 9px; }
-  .cal-weekdays { margin-bottom: 2px; gap: 3px; }
-  .cal-weekdays span { font-size: 9px; }
-  .stat-mini { padding: 7px 11px; }
-  .stat-value { font-size: 21px; }
   .footer { padding: 1px 0 2px; }
   .cloud-status { padding: 3px 10px; }
 }

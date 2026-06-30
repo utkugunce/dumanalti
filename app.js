@@ -232,7 +232,7 @@
 
         var stack = document.createElement("div");
         stack.className = "bar-stack";
-        var maxPx = 70;
+        var maxPx = 110;
         var h = Math.max(6, Math.round((total / maxTotal) * maxPx));
         stack.style.height = h + "px";
 
