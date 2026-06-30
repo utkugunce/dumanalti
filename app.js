@@ -20,17 +20,7 @@
     both:  { label: "Ortak", emoji: "👩‍❤️‍👨", cls: "both-bg" }
   };
 
-  var TAGS = [
-    { k: "kahve", e: "☕" },
-    { k: "stres", e: "😣" },
-    { k: "alkol", e: "🍺" },
-    { k: "yemek", e: "🍽️" },
-    { k: "mola", e: "⏸️" },
-    { k: "sıkıntı", e: "😐" }
-  ];
-  function tagEmoji(k) { for (var i = 0; i < TAGS.length; i++) if (TAGS[i].k === k) return TAGS[i].e; return "🏷️"; }
-
-  var settings = { packPrice: 0, perPack: 20, dailyLimit: 0 };
+  var settings = { dailyLimit: 0 };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -79,8 +69,6 @@
     try {
       var s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
       if (s && typeof s === "object") {
-        settings.packPrice = +s.packPrice || 0;
-        settings.perPack = +s.perPack || 20;
         settings.dailyLimit = +s.dailyLimit || 0;
       }
     } catch (e) {}
@@ -160,11 +148,8 @@
     renderSince();
     renderWeekCompare();
     renderHourly();
-    renderMoney();
     renderCalendar();
     renderDuel();
-    renderTags();
-    renderBadges();
     renderInsights();
     renderHistory();
   }
@@ -369,7 +354,7 @@
       main.className = "h-main";
       var who = document.createElement("span");
       who.className = "h-who";
-      who.textContent = WHO[e.who].label + " içti" + (e.tag ? "  " + tagEmoji(e.tag) + " " + e.tag : "");
+      who.textContent = WHO[e.who].label + " içti";
       var time = document.createElement("span");
       time.className = "h-time";
       var d = new Date(e.ts);
@@ -406,7 +391,10 @@
   }
 
   function sinceData(who) {
-    var sub = entries.filter(function (e) { return e.who === who; });
+    // Ortak içilen sigara, Utku ve Gözde'nin de sayacını sıfırlar.
+    var sub = entries.filter(function (e) {
+      return e.who === who || (who !== "both" && e.who === "both");
+    });
     if (!sub.length) return null;
     var since = Date.now() - sub[sub.length - 1].ts;
     var maxGap = 0;
@@ -552,70 +540,6 @@
     node.appendChild(verdict);
   }
 
-  function badgeList() {
-    var all = countWho(entries);
-    var total = all.total;
-    var anyNight = false, anyMorning = false, heavyDay = false, cleanDay = false, spanDays = 0;
-    entries.forEach(function (e) {
-      var h = new Date(e.ts).getHours();
-      if (h < 5) anyNight = true;
-      if (h >= 5 && h < 9) anyMorning = true;
-    });
-    if (entries.length) {
-      var firstDay = startOfDay(entries[0].ts).getTime();
-      var lastDay = startOfDay(entries[entries.length - 1].ts).getTime();
-      spanDays = Math.round((lastDay - firstDay) / 86400000) + 1;
-      var perDay = {};
-      entries.forEach(function (e) { var k = dayKey(e.ts); perDay[k] = (perDay[k] || 0) + 1; });
-      Object.keys(perDay).forEach(function (k) { if (perDay[k] >= 10) heavyDay = true; });
-      for (var t = firstDay; t <= lastDay; t += 86400000) {
-        if (!perDay[dayKey(t)]) { cleanDay = true; break; }
-      }
-    }
-    return [
-      { e: "🎯", name: "İlk Adım", got: total >= 1 },
-      { e: "💯", name: "Yüzler Kulübü", got: total >= 100 },
-      { e: "💑", name: "Beraber", got: all.both > 0 },
-      { e: "🌙", name: "Gece Kuşu", got: anyNight },
-      { e: "☀️", name: "Sabahçı", got: anyMorning },
-      { e: "🧹", name: "Temiz Gün", got: cleanDay },
-      { e: "📅", name: "Bir Hafta", got: spanDays >= 7 },
-      { e: "🔥", name: "Yoğun Gün", got: heavyDay },
-      { e: "🏆", name: "30 Gün", got: spanDays >= 30 }
-    ];
-  }
-
-  function renderBadges() {
-    var grid = el("badgeGrid");
-    if (!grid) return;
-    grid.innerHTML = "";
-    var list = badgeList();
-    var earned = 0;
-    list.forEach(function (b) {
-      if (b.got) earned++;
-      var d = document.createElement("div");
-      d.className = "badge" + (b.got ? " got" : "");
-      d.title = b.name + (b.got ? " ✓" : " (kilitli)");
-      var em = document.createElement("span");
-      em.className = "badge-emoji";
-      em.textContent = b.e;
-      var n = document.createElement("span");
-      n.className = "badge-name";
-      n.textContent = b.name;
-      d.appendChild(em); d.appendChild(n);
-      grid.appendChild(d);
-    });
-    el("badgeCount").textContent = earned + "/" + list.length;
-  }
-
-  function fmtTL(n) {
-    return Math.round(n).toLocaleString("tr-TR") + " ₺";
-  }
-
-  function perCig() {
-    return (settings.packPrice > 0 && settings.perPack > 0) ? settings.packPrice / settings.perPack : 0;
-  }
-
   var RING_C = 2 * Math.PI * 42; // r=42
 
   function renderLimit() {
@@ -639,63 +563,6 @@
     el("limitText").textContent = today + " / " + lim;
     el("limitSub").textContent = today > lim ? "limit aşıldı!" : (lim - today) + " kaldı";
     el("limitSub").style.color = today > lim ? "var(--danger)" : "var(--muted)";
-  }
-
-  function renderMoney() {
-    var card = el("moneyCard");
-    if (!card) return;
-    var pc = perCig();
-    if (pc <= 0) { el("moneyHint").classList.remove("hidden"); el("moneyBody").classList.add("hidden"); return; }
-    el("moneyHint").classList.add("hidden");
-    el("moneyBody").classList.remove("hidden");
-
-    var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-    el("moneyToday").textContent = fmtTL(todayEntries().length * pc);
-    el("moneyMonth").textContent = fmtTL(entriesSince(monthStart.getTime()).length * pc);
-    el("moneyAll").textContent = fmtTL(entries.length * pc);
-
-    // bu hafta vs geçen hafta tasarruf çerçevesi
-    var sow = startOfWeek(Date.now()).getTime();
-    var thisW = entries.filter(function (e) { return e.ts >= sow; }).length;
-    var lastW = entries.filter(function (e) { return e.ts >= sow - 7 * 86400000 && e.ts < sow; }).length;
-    var diff = (lastW - thisW) * pc;
-    var save = el("moneySave");
-    if (lastW === 0) { save.textContent = ""; }
-    else if (diff > 0) { save.textContent = "👏 Bu hafta geçen haftaya göre " + fmtTL(diff) + " az harcadın"; save.style.color = "#36d399"; }
-    else if (diff < 0) { save.textContent = "⚠️ Bu hafta " + fmtTL(-diff) + " fazla harcadın"; save.style.color = "var(--danger)"; }
-    else { save.textContent = "Bu hafta geçen haftayla aynı."; save.style.color = "var(--muted)"; }
-  }
-
-  function renderTags() {
-    var node = el("tagBreak");
-    if (!node) return;
-    node.innerHTML = "";
-    var counts = {}, tagged = 0;
-    entries.forEach(function (e) { if (e.tag) { counts[e.tag] = (counts[e.tag] || 0) + 1; tagged++; } });
-    if (tagged === 0) {
-      node.innerHTML = '<p class="empty">Henüz sebep yok. Bir sigara ekleyince çıkan çubuktan sebep seç (☕ 😣 🍺 …).</p>';
-      return;
-    }
-    var keys = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
-    var max = counts[keys[0]];
-    keys.forEach(function (k) {
-      var row = document.createElement("div");
-      row.className = "tag-row";
-      var name = document.createElement("span");
-      name.className = "tag-name";
-      name.textContent = tagEmoji(k) + " " + k;
-      var track = document.createElement("div");
-      track.className = "tag-track";
-      var fill = document.createElement("div");
-      fill.className = "tag-fill";
-      fill.style.width = Math.round(counts[k] / max * 100) + "%";
-      track.appendChild(fill);
-      var val = document.createElement("span");
-      val.className = "tag-val";
-      val.textContent = counts[k];
-      row.appendChild(name); row.appendChild(track); row.appendChild(val);
-      node.appendChild(row);
-    });
   }
 
   // ---------- Status ----------
@@ -760,51 +627,9 @@
     lastUndo = entries[entries.length - 1];
     var bar = el("undoBar");
     el("undoText").textContent = WHO[who].emoji + " " + WHO[who].label + " eklendi";
-
-    // Sebep çipleri
-    var tagWrap = el("undoTags");
-    if (tagWrap) {
-      tagWrap.innerHTML = "";
-      var target = lastUndo;
-      TAGS.forEach(function (tg) {
-        var chip = document.createElement("button");
-        chip.className = "tag-chip";
-        chip.textContent = tg.e + " " + tg.k;
-        chip.addEventListener("click", function () {
-          setTag(target.id, target.tag === tg.k ? null : tg.k);
-          var chips = tagWrap.querySelectorAll(".tag-chip");
-          for (var j = 0; j < chips.length; j++) chips[j].classList.remove("on");
-          if (target.tag === tg.k) chip.classList.add("on");
-          clearTimeout(undoTimer);
-          undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 4000);
-        });
-        tagWrap.appendChild(chip);
-      });
-    }
-
     bar.classList.remove("hidden");
     clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 5000);
-  }
-
-  function setTag(id, tag) {
-    var idx = findIndexById(id);
-    if (idx === -1) return;
-    entries[idx].tag = tag || undefined;
-    saveCache();
-    render();
-
-    if (isPending(id)) {
-      // Insert henüz gönderilmedi: kuyruktaki satıra tag'i göm
-      for (var i = 0; i < outbox.length; i++) {
-        if (outbox[i].type === "insert" && outbox[i].row && outbox[i].row.id === id) outbox[i].row.tag = tag || null;
-      }
-    } else {
-      outbox.push({ type: "update", id: id, tag: tag || null });
-    }
-    saveOutbox();
-    flushOutbox();
-    refreshStatus();
+    undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 4000);
   }
 
   function undoLast() {
@@ -1133,12 +958,8 @@
     el("resetBtn").addEventListener("click", resetData);
 
     // Ayarlar
-    if (el("setPrice")) {
-      el("setPrice").value = settings.packPrice || "";
-      el("setPerPack").value = settings.perPack || "";
+    if (el("setLimit")) {
       el("setLimit").value = settings.dailyLimit || "";
-      el("setPrice").addEventListener("input", function () { settings.packPrice = +this.value || 0; saveSettings(); renderMoney(); });
-      el("setPerPack").addEventListener("input", function () { settings.perPack = +this.value || 0; saveSettings(); renderMoney(); });
       el("setLimit").addEventListener("input", function () { settings.dailyLimit = +this.value || 0; saveSettings(); renderLimit(); });
     }
 

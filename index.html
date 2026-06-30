@@ -52,7 +52,6 @@
         <span id="undoText">Eklendi</span>
         <button id="undoBtn" class="undo-btn">Geri al</button>
       </div>
-      <div class="undo-tags" id="undoTags"></div>
     </div>
 
     <!-- Today summary -->
@@ -125,20 +124,6 @@
       </div>
     </section>
 
-    <!-- Money / savings -->
-    <section class="card" id="moneyCard">
-      <div class="card-head"><h2>💰 Harcama</h2></div>
-      <p class="empty" id="moneyHint">Hesaplamak için aşağıdaki <strong>Ayarlar</strong>'dan paket fiyatını gir.</p>
-      <div id="moneyBody" class="hidden">
-        <div class="money-grid">
-          <div class="money-stat"><span class="money-num" id="moneyToday">0 ₺</span><span class="money-lbl">bugün</span></div>
-          <div class="money-stat"><span class="money-num" id="moneyMonth">0 ₺</span><span class="money-lbl">bu ay</span></div>
-          <div class="money-stat"><span class="money-num" id="moneyAll">0 ₺</span><span class="money-lbl">tüm zamanlar</span></div>
-        </div>
-        <p class="money-save" id="moneySave"></p>
-      </div>
-    </section>
-
     <!-- Stat cards -->
     <section class="stats-grid">
       <div class="card stat-mini">
@@ -201,21 +186,6 @@
       <div class="duel" id="duel"></div>
     </section>
 
-    <!-- Reason tags breakdown -->
-    <section class="card">
-      <div class="card-head"><h2>🏷️ Sebepler</h2></div>
-      <div class="tag-break" id="tagBreak"></div>
-    </section>
-
-    <!-- Badges -->
-    <section class="card">
-      <div class="card-head">
-        <h2>Rozetler</h2>
-        <span class="muted" id="badgeCount"></span>
-      </div>
-      <div class="badge-grid" id="badgeGrid"></div>
-    </section>
-
     <!-- Insights -->
     <section class="card insights" id="insights">
       <div class="card-head"><h2>Bilgiler</h2></div>
@@ -235,14 +205,6 @@
     <!-- Settings -->
     <section class="card settings-card">
       <div class="card-head"><h2>⚙️ Ayarlar</h2></div>
-      <div class="set-row">
-        <label for="setPrice">Paket fiyatı (₺)</label>
-        <input type="number" inputmode="decimal" id="setPrice" min="0" step="1" placeholder="örn. 75" />
-      </div>
-      <div class="set-row">
-        <label for="setPerPack">Pakette adet</label>
-        <input type="number" inputmode="numeric" id="setPerPack" min="1" step="1" placeholder="20" />
-      </div>
       <div class="set-row">
         <label for="setLimit">Günlük limit (0 = kapalı)</label>
         <input type="number" inputmode="numeric" id="setLimit" min="0" step="1" placeholder="örn. 10" />
