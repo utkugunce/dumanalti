@@ -308,7 +308,7 @@
       }
     }
 
-    items.slice(0, 4).forEach(function (it) {
+    items.slice(0, 5).forEach(function (it) {
       var li = document.createElement("li");
       var span = document.createElement("span");
       span.className = "emoji";
