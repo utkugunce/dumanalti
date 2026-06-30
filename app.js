@@ -572,7 +572,12 @@
   }
 
   function resetData() {
-    if (!confirm("Tüm kayıtlar (bulut dahil) silinecek. Emin misin?")) return;
+    if (!confirm("Tüm kayıtlar (bulut dahil, Utku & Gözde ortak geçmişi) KALICI olarak silinecek. Devam etmek istiyor musun?")) return;
+    var typed = prompt('Bu işlem geri alınamaz. Onaylamak için "SİL" yaz:');
+    if (typed == null || typed.trim().toLocaleUpperCase("tr") !== "SİL") {
+      alert("Sıfırlama iptal edildi.");
+      return;
+    }
     entries = [];
     outbox = [];
     saveCache();
