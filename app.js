@@ -276,7 +276,7 @@
 
         var stack = document.createElement("div");
         stack.className = "bar-stack";
-        var maxPx = 110;
+        var maxPx = 86;
         var h = Math.max(6, Math.round((total / maxTotal) * maxPx));
         stack.style.height = h + "px";
 
@@ -352,7 +352,7 @@
       }
     }
 
-    items.slice(0, 5).forEach(function (it) {
+    items.slice(0, 4).forEach(function (it) {
       var li = document.createElement("li");
       var span = document.createElement("span");
       span.className = "emoji";
