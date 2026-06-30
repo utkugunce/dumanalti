@@ -114,17 +114,15 @@ body {
   100% { transform: scale(1); }
 }
 
-/* floating emoji on tap */
-.float-emoji {
+/* emoji confetti burst on tap */
+.confetti-piece {
   position: fixed;
+  top: 0;
+  left: 0;
   pointer-events: none;
-  font-size: 28px;
-  z-index: 100;
-  animation: floatUp 0.9s ease-out forwards;
-}
-@keyframes floatUp {
-  0% { transform: translateY(0) scale(1); opacity: 1; }
-  100% { transform: translateY(-90px) scale(1.6); opacity: 0; }
+  z-index: 200;
+  will-change: transform, opacity;
+  user-select: none;
 }
 
 /* Cards */

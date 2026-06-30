@@ -379,7 +379,7 @@
     saveOutbox();
     render();
     showUndo(who);
-    floatEmoji(WHO[who].emoji, x, y);
+    emojiConfetti(WHO[who].emoji, x, y);
     if (navigator.vibrate) navigator.vibrate(15);
 
     flushOutbox();
@@ -425,15 +425,50 @@
     clearTimeout(undoTimer);
   }
 
-  function floatEmoji(emoji, x, y) {
-    if (x == null) return;
-    var node = document.createElement("span");
-    node.className = "float-emoji";
-    node.textContent = emoji;
-    node.style.left = x + "px";
-    node.style.top = y + "px";
-    document.body.appendChild(node);
-    setTimeout(function () { node.remove(); }, 900);
+  function emojiConfetti(emoji, x, y) {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var W = window.innerWidth, H = window.innerHeight;
+    var ox = x != null ? x : W / 2;
+    var oy = y != null ? y : H / 2;
+    var count = reduce ? 6 : 22;
+
+    for (var i = 0; i < count; i++) {
+      var node = document.createElement("span");
+      node.className = "confetti-piece";
+      node.textContent = emoji;
+      node.style.left = ox + "px";
+      node.style.top = oy + "px";
+      node.style.fontSize = (16 + Math.random() * 20) + "px";
+      document.body.appendChild(node);
+
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 7 + Math.random() * 11;
+      flyParticle(
+        node,
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed - (7 + Math.random() * 5) // yukarı doğru başlangıç ivmesi
+      );
+    }
+  }
+
+  function flyParticle(node, vx, vy) {
+    var px = 0, py = 0, rot = 0;
+    var vr = (Math.random() - 0.5) * 24;
+    var gravity = 0.4;
+    var start = null, max = 1300 + Math.random() * 600;
+
+    function frame(t) {
+      if (start == null) start = t;
+      var life = t - start;
+      vy += gravity;
+      vx *= 0.99;
+      px += vx; py += vy; rot += vr;
+      node.style.transform = "translate(" + px + "px," + py + "px) rotate(" + rot + "deg)";
+      node.style.opacity = String(Math.max(0, 1 - life / max));
+      if (life < max) { requestAnimationFrame(frame); }
+      else { node.remove(); }
+    }
+    requestAnimationFrame(frame);
   }
 
   // ---------- Cloud sync ----------
