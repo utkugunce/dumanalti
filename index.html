@@ -120,26 +120,28 @@
 
     <main id="view-stats" class="view hidden">
     <!-- Stat cards -->
-    <section class="stats-grid">
-      <div class="card stat-mini">
-        <span class="stat-label">Bu hafta</span>
-        <span class="stat-value" id="weekTotal">0</span>
-        <span class="stat-sub" id="weekBreakdown">—</span>
-      </div>
-      <div class="card stat-mini">
-        <span class="stat-label">Bu ay</span>
-        <span class="stat-value" id="monthTotal">0</span>
-        <span class="stat-sub" id="monthBreakdown">—</span>
-      </div>
-      <div class="card stat-mini">
-        <span class="stat-label">Günlük ortalama</span>
-        <span class="stat-value" id="dailyAvg">0</span>
-        <span class="stat-sub">son 7 gün</span>
-      </div>
-      <div class="card stat-mini">
-        <span class="stat-label">Tüm zamanlar</span>
-        <span class="stat-value" id="allTotal">0</span>
-        <span class="stat-sub" id="allBreakdown">—</span>
+    <section class="card">
+      <div class="stats-grid">
+        <div class="stat-mini">
+          <span class="stat-label">Bu hafta</span>
+          <span class="stat-value" id="weekTotal">0</span>
+          <span class="stat-sub" id="weekBreakdown">—</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-label">Bu ay</span>
+          <span class="stat-value" id="monthTotal">0</span>
+          <span class="stat-sub" id="monthBreakdown">—</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-label">Günlük ortalama</span>
+          <span class="stat-value" id="dailyAvg">0</span>
+          <span class="stat-sub">son 7 gün</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-label">Tüm zamanlar</span>
+          <span class="stat-value" id="allTotal">0</span>
+          <span class="stat-sub" id="allBreakdown">—</span>
+        </div>
       </div>
     </section>
 
@@ -173,12 +175,6 @@
       </div>
       <div class="cal-weekdays"><span>Pt</span><span>Sa</span><span>Ça</span><span>Pe</span><span>Cu</span><span>Ct</span><span>Pz</span></div>
       <div class="cal-grid" id="calGrid"></div>
-    </section>
-
-    <!-- Weekly duel -->
-    <section class="card">
-      <div class="card-head"><h2>Bu hafta düello</h2></div>
-      <div class="duel" id="duel"></div>
     </section>
 
     <!-- Insights -->

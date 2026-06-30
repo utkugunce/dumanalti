@@ -149,7 +149,6 @@
     renderSince();
     renderHourly();
     renderCalendar();
-    renderDuel();
     renderInsights();
     renderHistory();
   }
@@ -310,6 +309,9 @@
     if (all.total === 0) {
       items.push({ e: "✨", t: "Henüz veri yok. İlk sigarayı eklediğinde burada istatistikler çıkacak." });
     } else {
+      var duel = weeklyDuelText();
+      if (duel) items.push({ e: "🥇", t: duel });
+
       var utkuTotal = all.utku + all.both;
       var gozdeTotal = all.gozde + all.both;
       if (utkuTotal > gozdeTotal) {
@@ -350,7 +352,7 @@
       }
     }
 
-    items.forEach(function (it) {
+    items.slice(0, 5).forEach(function (it) {
       var li = document.createElement("li");
       var span = document.createElement("span");
       span.className = "emoji";
@@ -524,43 +526,14 @@
     }
   }
 
-  function renderDuel() {
-    var node = el("duel");
-    if (!node) return;
-    node.innerHTML = "";
+  function weeklyDuelText() {
     var sow = startOfWeek(Date.now()).getTime();
     var c = countWho(entries.filter(function (e) { return e.ts >= sow; }));
     var u = c.utku + c.both, g = c.gozde + c.both;
-    var maxv = Math.max(u, g, 1);
-
-    function row(who, label, val) {
-      var r = document.createElement("div");
-      r.className = "duel-row";
-      var name = document.createElement("span");
-      name.className = "duel-name";
-      name.textContent = label;
-      var track = document.createElement("div");
-      track.className = "duel-track";
-      var fill = document.createElement("div");
-      fill.className = "duel-fill " + WHO[who].cls;
-      fill.style.width = Math.round(val / maxv * 100) + "%";
-      track.appendChild(fill);
-      var v = document.createElement("span");
-      v.className = "duel-val";
-      v.textContent = val;
-      r.appendChild(name); r.appendChild(track); r.appendChild(v);
-      return r;
-    }
-    node.appendChild(row("utku", "🧔 Utku", u));
-    node.appendChild(row("gozde", "👩 Gözde", g));
-
-    var verdict = document.createElement("div");
-    verdict.className = "duel-verdict";
-    if (u === 0 && g === 0) verdict.textContent = "Bu hafta henüz kayıt yok.";
-    else if (u < g) verdict.textContent = "🥇 Utku bu hafta daha az içti (" + u + " - " + g + ")";
-    else if (g < u) verdict.textContent = "🥇 Gözde bu hafta daha az içti (" + g + " - " + u + ")";
-    else verdict.textContent = "🤝 Berabere (" + u + " - " + g + ")";
-    node.appendChild(verdict);
+    if (u === 0 && g === 0) return null;
+    if (u < g) return "Bu hafta düello: Utku daha az içti (" + u + " - " + g + ").";
+    if (g < u) return "Bu hafta düello: Gözde daha az içti (" + g + " - " + u + ").";
+    return "Bu hafta düello: berabere (" + u + " - " + g + ").";
   }
 
   var RING_C = 2 * Math.PI * 42; // r=42
