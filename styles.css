@@ -652,9 +652,9 @@ body {
   .since-rec { font-size: 9px; }
   .last-row { padding-top: 6px; }
   .mini-chart { height: 28px; }
-  .insight-list { gap: 5px; }
-  .insight-list li { line-height: 1.25; font-size: 12.5px; }
-  .insight-list .emoji { font-size: 15px; }
+  .insight-list { gap: 4px; }
+  .insight-list li { line-height: 1.2; font-size: 12px; gap: 8px; }
+  .insight-list .emoji { font-size: 14px; }
   .chart { height: 86px; }
   .hour-chart { height: 48px; }
   .cal-grid { gap: 3px; }

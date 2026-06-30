@@ -302,13 +302,25 @@
         }
       }
 
+      var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(monthStart.getTime()).length + " sigara." });
+
+      items.push({ e: "📊", t: "Son 7 günde günde ortalama " + avg.toFixed(1) + " sigara." });
+
+      var byDow = [0, 0, 0, 0, 0, 0, 0];
+      entries.forEach(function (e) { byDow[new Date(e.ts).getDay()]++; });
+      var maxDow = 0;
+      for (var w = 1; w < 7; w++) if (byDow[w] > byDow[maxDow]) maxDow = w;
+      var DOW_FULL = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+      items.push({ e: "🗓️", t: "En çok " + DOW_FULL[maxDow] + " içiyorsunuz." });
+
       if (entries.length) {
         var last = entries[entries.length - 1];
         items.push({ e: "⏱️", t: "Son sigaradan bu yana " + relativeTime(last.ts).replace(" önce", "") + " geçti." });
       }
     }
 
-    items.slice(0, 5).forEach(function (it) {
+    items.slice(0, 7).forEach(function (it) {
       var li = document.createElement("li");
       var span = document.createElement("span");
       span.className = "emoji";
