@@ -171,6 +171,22 @@
       <div class="hour-chart" id="hourChart" aria-label="Saatlik dağılım"></div>
     </section>
 
+    <!-- Person share -->
+    <section class="card">
+      <div class="card-head"><h2>Kişi dağılımı</h2></div>
+      <div class="share-bar" id="shareBar"></div>
+      <div class="share-legend" id="shareLegend"></div>
+    </section>
+
+    <!-- Weekday distribution -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Haftanın günleri</h2>
+        <span class="muted" id="dowPeak"></span>
+      </div>
+      <div class="dow-chart" id="dowChart" aria-label="Haftanın günleri dağılımı"></div>
+    </section>
+
     <!-- Takvim -->
     <h3 class="group-title">🗓️ Takvim</h3>
     <!-- Calendar heatmap -->
@@ -181,6 +197,12 @@
       </div>
       <div class="cal-weekdays"><span>Pt</span><span>Sa</span><span>Ça</span><span>Pe</span><span>Cu</span><span>Ct</span><span>Pz</span></div>
       <div class="cal-grid" id="calGrid"></div>
+    </section>
+
+    <!-- Rekorlar -->
+    <h3 class="group-title">🏅 Rekorlar</h3>
+    <section class="card">
+      <div class="record-list" id="recordList"></div>
     </section>
     </main>
 

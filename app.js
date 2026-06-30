@@ -50,6 +50,7 @@
       var raw = localStorage.getItem(CACHE_KEY);
       entries = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(entries)) entries = [];
+      sortEntries();
     } catch (e) { entries = []; }
     try {
       var ob = localStorage.getItem(OUTBOX_KEY);
@@ -147,7 +148,10 @@
     renderChart();
     renderSince();
     renderHourly();
+    renderShare();
+    renderDow();
     renderCalendar();
+    renderRecords();
     renderInsights();
     renderHistory();
   }
@@ -460,6 +464,119 @@
       chart.appendChild(col);
     }
     el("hourPeak").textContent = entries.length ? "en yoğun " + pad2(peakH) + ":00" : "";
+  }
+
+  function renderShare() {
+    var bar = el("shareBar");
+    if (!bar) return;
+    var c = countWho(entries);
+    var total = c.total || 1;
+    bar.innerHTML = "";
+    ["utku", "gozde", "both"].forEach(function (w) {
+      if (c[w] > 0) {
+        var seg = document.createElement("div");
+        seg.className = "share-seg " + WHO[w].cls;
+        seg.style.width = (c[w] / total * 100) + "%";
+        seg.title = WHO[w].label + " " + c[w];
+        bar.appendChild(seg);
+      }
+    });
+    var leg = el("shareLegend");
+    leg.innerHTML = "";
+    ["utku", "gozde", "both"].forEach(function (w) {
+      var pct = c.total ? Math.round(c[w] / c.total * 100) : 0;
+      var item = document.createElement("span");
+      item.className = "share-leg-item";
+      var dot = document.createElement("i");
+      dot.className = "dot " + WHO[w].cls;
+      var txt = document.createElement("span");
+      txt.textContent = WHO[w].emoji + " " + WHO[w].label + " %" + pct;
+      item.appendChild(dot);
+      item.appendChild(txt);
+      leg.appendChild(item);
+    });
+  }
+
+  function renderDow() {
+    var chart = el("dowChart");
+    if (!chart) return;
+    chart.innerHTML = "";
+    var counts = [0, 0, 0, 0, 0, 0, 0]; // Pzt=0 .. Paz=6
+    entries.forEach(function (e) { counts[(new Date(e.ts).getDay() + 6) % 7]++; });
+    var max = 1, peak = 0;
+    for (var i = 0; i < 7; i++) { if (counts[i] > max) max = counts[i]; if (counts[i] > counts[peak]) peak = i; }
+    var labels = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+    for (i = 0; i < 7; i++) {
+      var col = document.createElement("div");
+      col.className = "dow-col";
+      var v = document.createElement("span");
+      v.className = "dow-val";
+      v.textContent = counts[i] || "";
+      var bar = document.createElement("div");
+      bar.className = "dow-bar" + (i === peak && counts[peak] > 0 ? " peak" : "");
+      bar.style.height = (counts[i] === 0 ? 3 : Math.max(6, Math.round(counts[i] / max * 100))) + "%";
+      var l = document.createElement("span");
+      l.className = "dow-lab";
+      l.textContent = labels[i];
+      col.appendChild(v); col.appendChild(bar); col.appendChild(l);
+      chart.appendChild(col);
+    }
+    var DOW_FULL = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+    el("dowPeak").textContent = entries.length ? "en çok " + DOW_FULL[peak] : "";
+  }
+
+  function fmtCoarse(ms) {
+    var s = Math.floor(ms / 1000);
+    var d = Math.floor(s / 86400); s -= d * 86400;
+    var h = Math.floor(s / 3600); s -= h * 3600;
+    var m = Math.floor(s / 60);
+    if (d > 0) return d + "g " + h + "sa";
+    if (h > 0) return h + "sa " + m + "dk";
+    return m + "dk";
+  }
+
+  function renderRecords() {
+    var node = el("recordList");
+    if (!node) return;
+    node.innerHTML = "";
+    if (!entries.length) {
+      node.innerHTML = '<p class="empty">Henüz kayıt yok.</p>';
+      return;
+    }
+    var byDay = {};
+    entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
+    var maxDay = null, maxC = 0;
+    Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxC) { maxC = byDay[k]; maxDay = k; } });
+    var parts = maxDay.split("-");
+    var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2) + "." + parts[0];
+
+    var maxGap = 0;
+    for (var i = 1; i < entries.length; i++) { var g = entries[i].ts - entries[i - 1].ts; if (g > maxGap) maxGap = g; }
+    maxGap = Math.max(maxGap, Date.now() - entries[entries.length - 1].ts);
+
+    var firstDay = startOfDay(entries[0].ts).getTime();
+    var lastDay = startOfDay(entries[entries.length - 1].ts).getTime();
+    var free = 0;
+    for (var t = firstDay; t <= lastDay; t += 86400000) { if (!byDay[dayKey(t)]) free++; }
+    var span = Math.round((lastDay - firstDay) / 86400000) + 1;
+
+    var items = [
+      { e: "🔥", t: "Tek günde rekor: " + maxC + " sigara (" + dd + ")" },
+      { e: "⏱️", t: "En uzun ara: " + fmtCoarse(maxGap) },
+      { e: "🧹", t: "Sigarasız gün: " + free },
+      { e: "📆", t: "Takip süresi: " + span + " gün" }
+    ];
+    items.forEach(function (it) {
+      var row = document.createElement("div");
+      row.className = "record-row";
+      var em = document.createElement("span");
+      em.className = "record-emoji";
+      em.textContent = it.e;
+      var tx = document.createElement("span");
+      tx.textContent = it.t;
+      row.appendChild(em); row.appendChild(tx);
+      node.appendChild(row);
+    });
   }
 
   function renderCalendar() {

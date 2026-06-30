@@ -495,6 +495,31 @@ body {
 .hour-bar.peak { background: var(--accent); }
 .hour-lab { font-size: 9px; color: var(--muted); }
 
+/* Person share bar */
+.share-bar {
+  display: flex;
+  height: 20px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-elev-2);
+}
+.share-seg { height: 100%; transition: width 0.4s ease; }
+.share-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.share-leg-item { display: flex; align-items: center; gap: 5px; }
+
+/* Weekday distribution */
+.dow-chart { display: flex; align-items: flex-end; gap: 7px; height: 120px; padding-top: 6px; }
+.dow-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.dow-bar { width: 64%; max-width: 28px; min-height: 3px; background: var(--both); border-radius: 5px 5px 0 0; transition: height 0.3s; }
+.dow-bar.peak { background: var(--accent); }
+.dow-val { font-size: 11px; font-weight: 700; color: var(--muted); }
+.dow-lab { font-size: 10px; color: var(--muted); }
+
+/* Records */
+.record-list { display: flex; flex-direction: column; gap: 11px; }
+.record-row { display: flex; align-items: center; gap: 11px; font-size: 14px; }
+.record-emoji { font-size: 18px; flex: none; }
+
 /* Calendar heatmap */
 .cal-legend { display: inline-flex; align-items: center; gap: 3px; }
 .cal-weekdays {
