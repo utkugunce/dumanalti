@@ -368,6 +368,32 @@ body {
 .insight-list .emoji { font-size: 16px; }
 
 /* History */
+/* İstatistik person scope bar */
+.scope-bar {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: var(--shadow);
+}
+.scope-chip {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+.scope-chip:active { transform: scale(0.96); }
+.scope-chip.active { background: var(--accent); color: #1a1300; }
+
 .hist-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .hist-chip {
   background: var(--bg-elev-2);

@@ -33,6 +33,14 @@
   var comboCount = 0;
   var comboTimer = null;
   var historyFilter = "all";
+  var statsScope = "all"; // İstatistik kişi filtresi: all | both | gozde | utku
+
+  function scopedEntries() {
+    if (statsScope === "both") return entries.filter(function (e) { return e.who === "both"; });
+    if (statsScope === "gozde") return entries.filter(function (e) { return e.who === "gozde" || e.who === "both"; });
+    if (statsScope === "utku") return entries.filter(function (e) { return e.who === "utku" || e.who === "both"; });
+    return entries;
+  }
 
   var sb = null;        // Supabase client
   var cloudReady = false;
@@ -185,24 +193,27 @@
   }
 
   function renderStatCards() {
-    var week = countWho(entriesSince(startOfWeek(Date.now()).getTime()));
+    var list = scopedEntries();
+    var showBreakdown = statsScope === "all";
+
+    var week = countWho(list.filter(function (e) { return e.ts >= startOfWeek(Date.now()).getTime(); }));
     el("weekTotal").textContent = week.total;
-    el("weekBreakdown").textContent = week.total ? breakdownText(week) : "—";
+    el("weekBreakdown").textContent = showBreakdown ? (week.total ? breakdownText(week) : "—") : "";
 
     var monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
-    var month = countWho(entriesSince(monthStart.getTime()));
+    var month = countWho(list.filter(function (e) { return e.ts >= monthStart.getTime(); }));
     el("monthTotal").textContent = month.total;
-    el("monthBreakdown").textContent = month.total ? breakdownText(month) : "—";
+    el("monthBreakdown").textContent = showBreakdown ? (month.total ? breakdownText(month) : "—") : "";
 
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-    var last7 = entriesSince(sevenAgo);
+    var last7 = list.filter(function (e) { return e.ts >= sevenAgo; });
     el("dailyAvg").textContent = (last7.length / 7).toFixed(1);
 
-    var all = countWho(entries);
+    var all = countWho(list);
     el("allTotal").textContent = all.total;
-    el("allBreakdown").textContent = all.total ? breakdownText(all) : "—";
+    el("allBreakdown").textContent = showBreakdown ? (all.total ? breakdownText(all) : "—") : "";
   }
 
   function renderChart() {
@@ -210,12 +221,13 @@
     chart.innerHTML = "";
     var days = [];
     var maxTotal = 1;
+    var scoped = scopedEntries();
 
     for (var i = 6; i >= 0; i--) {
       var d = startOfDay(Date.now());
       d.setDate(d.getDate() - i);
       var key = dayKey(d);
-      var dayList = entries.filter(function (e) { return dayKey(e.ts) === key; });
+      var dayList = scoped.filter(function (e) { return dayKey(e.ts) === key; });
       var c = countWho(dayList);
       if (c.total > maxTotal) maxTotal = c.total;
       days.push({ date: d, counts: c, isToday: i === 0 });
@@ -471,9 +483,10 @@
     var chart = el("hourChart");
     if (!chart) return;
     chart.innerHTML = "";
+    var list = scopedEntries();
     var counts = [];
     for (var h = 0; h < 24; h++) counts[h] = 0;
-    entries.forEach(function (e) { counts[new Date(e.ts).getHours()]++; });
+    list.forEach(function (e) { counts[new Date(e.ts).getHours()]++; });
     var max = 1, peakH = 0;
     for (h = 0; h < 24; h++) {
       if (counts[h] > max) max = counts[h];
@@ -495,12 +508,15 @@
       }
       chart.appendChild(col);
     }
-    el("hourPeak").textContent = entries.length ? "en yoğun " + pad2(peakH) + ":00" : "";
+    el("hourPeak").textContent = list.length ? "en yoğun " + pad2(peakH) + ":00" : "";
   }
 
   function renderShare() {
     var bar = el("shareBar");
     if (!bar) return;
+    var card = el("shareCard");
+    if (card) card.classList.toggle("hidden", statsScope !== "all");
+    if (statsScope !== "all") return;
     var c = countWho(entries);
     var total = c.total || 1;
     bar.innerHTML = "";
@@ -533,8 +549,9 @@
     var chart = el("dowChart");
     if (!chart) return;
     chart.innerHTML = "";
+    var list = scopedEntries();
     var counts = [0, 0, 0, 0, 0, 0, 0]; // Pzt=0 .. Paz=6
-    entries.forEach(function (e) { counts[(new Date(e.ts).getDay() + 6) % 7]++; });
+    list.forEach(function (e) { counts[(new Date(e.ts).getDay() + 6) % 7]++; });
     var max = 1, peak = 0;
     for (var i = 0; i < 7; i++) { if (counts[i] > max) max = counts[i]; if (counts[i] > counts[peak]) peak = i; }
     var labels = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
@@ -554,7 +571,7 @@
       chart.appendChild(col);
     }
     var DOW_FULL = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-    el("dowPeak").textContent = entries.length ? "en çok " + DOW_FULL[peak] : "";
+    el("dowPeak").textContent = list.length ? "en çok " + DOW_FULL[peak] : "";
   }
 
   function fmtCoarse(ms) {
@@ -571,23 +588,24 @@
     var node = el("recordList");
     if (!node) return;
     node.innerHTML = "";
-    if (!entries.length) {
-      node.innerHTML = '<p class="empty">Henüz kayıt yok.</p>';
+    var list = scopedEntries();
+    if (!list.length) {
+      node.innerHTML = '<p class="empty">' + (statsScope === "all" ? "Henüz kayıt yok." : "Bu kişi için henüz kayıt yok.") + '</p>';
       return;
     }
     var byDay = {};
-    entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
+    list.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
     var maxDay = null, maxC = 0;
     Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxC) { maxC = byDay[k]; maxDay = k; } });
     var parts = maxDay.split("-");
     var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2) + "." + parts[0];
 
     var maxGap = 0;
-    for (var i = 1; i < entries.length; i++) { var g = entries[i].ts - entries[i - 1].ts; if (g > maxGap) maxGap = g; }
-    maxGap = Math.max(maxGap, Date.now() - entries[entries.length - 1].ts);
+    for (var i = 1; i < list.length; i++) { var g = list[i].ts - list[i - 1].ts; if (g > maxGap) maxGap = g; }
+    maxGap = Math.max(maxGap, Date.now() - list[list.length - 1].ts);
 
-    var firstDay = startOfDay(entries[0].ts).getTime();
-    var lastDay = startOfDay(entries[entries.length - 1].ts).getTime();
+    var firstDay = startOfDay(list[0].ts).getTime();
+    var lastDay = startOfDay(list[list.length - 1].ts).getTime();
     var free = 0;
     for (var t = firstDay; t <= lastDay; t += 86400000) { if (!byDay[dayKey(t)]) free++; }
     var span = Math.round((lastDay - firstDay) / 86400000) + 1;
@@ -620,7 +638,7 @@
     el("calTitle").textContent = MONTHS[month] + " " + year;
 
     var perDay = {};
-    entries.forEach(function (e) {
+    scopedEntries().forEach(function (e) {
       var d = new Date(e.ts);
       if (d.getFullYear() === year && d.getMonth() === month) perDay[d.getDate()] = (perDay[d.getDate()] || 0) + 1;
     });
@@ -1110,6 +1128,15 @@
         historyFilter = chip.getAttribute("data-f");
         document.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
         renderHistory();
+      });
+    });
+
+    // İstatistik kişi filtreleri
+    document.querySelectorAll(".scope-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        statsScope = chip.getAttribute("data-scope");
+        document.querySelectorAll(".scope-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
+        render();
       });
     });
 

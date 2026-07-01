@@ -119,6 +119,14 @@
     </main>
 
     <main id="view-stats" class="view hidden">
+    <!-- Kişi seçici -->
+    <div class="scope-bar" id="scopeBar">
+      <button class="scope-chip active" data-scope="all">Tümü</button>
+      <button class="scope-chip" data-scope="both">👩‍❤️‍👨 Ortak</button>
+      <button class="scope-chip" data-scope="gozde">👩 Gözde</button>
+      <button class="scope-chip" data-scope="utku">🧔 Utku</button>
+    </div>
+
     <!-- Özet -->
     <h3 class="group-title">📋 Özet</h3>
     <!-- Stat cards -->
@@ -171,8 +179,8 @@
       <div class="hour-chart" id="hourChart" aria-label="Saatlik dağılım"></div>
     </section>
 
-    <!-- Person share -->
-    <section class="card">
+    <!-- Person share (yalnızca "Tümü" görünümünde anlamlı) -->
+    <section class="card" id="shareCard">
       <div class="card-head"><h2>Kişi dağılımı</h2></div>
       <div class="share-bar" id="shareBar"></div>
       <div class="share-legend" id="shareLegend"></div>
