@@ -159,7 +159,12 @@ body {
 .action-btn.utku { background: linear-gradient(160deg, #4f9dff, #2c6fd6); }
 .action-btn.gozde { background: linear-gradient(160deg, #ff5fa2, #d63d80); }
 .action-btn.both { background: linear-gradient(160deg, #b07bff, #7d4fd6); }
-.action-emoji { font-size: 26px; }
+.action-avatar {
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
 .action-label { font-size: 13px; font-weight: 700; }
 .action-today {
   font-size: 11px;
@@ -186,6 +191,12 @@ body {
   z-index: 200;
   will-change: transform, opacity;
   user-select: none;
+}
+.confetti-piece.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* tap flash ring */
@@ -283,7 +294,19 @@ body {
 }
 .today-stat.total { background: linear-gradient(160deg, rgba(255,181,71,0.18), rgba(255,181,71,0.05)); }
 .today-num { font-size: 21px; font-weight: 800; letter-spacing: -1px; }
-.today-name { font-size: 12px; color: var(--muted); }
+.today-name { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+
+/* Kişi avatarları (fotoğraf), emoji yerine kullanılır */
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+  background: var(--bg-elev-2);
+}
+.avatar-sm { width: 20px; height: 20px; }
+.avatar-tiny { width: 15px; height: 15px; }
 .last-row {
   display: flex;
   justify-content: space-between;
@@ -433,6 +456,7 @@ body {
   padding: 10px 12px;
 }
 .history-item .h-emoji { font-size: 20px; }
+.history-item .h-emoji.avatar { width: 30px; height: 30px; }
 .history-item .h-main { flex: 1; display: flex; flex-direction: column; }
 .history-item .h-who { font-size: 13px; font-weight: 600; }
 .history-item .h-time { font-size: 11px; color: var(--muted); }
@@ -515,7 +539,7 @@ body {
   border-radius: 12px;
   padding: 6px 12px;
 }
-.since-who { font-size: 14px; font-weight: 600; }
+.since-who { font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
 .since-vals { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .since-time { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
 .since-rec { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -758,7 +782,7 @@ body {
   .card { padding: 8px 12px; }
   .card-head { margin-bottom: 5px; }
   .actions { gap: 8px; }
-  .action-emoji { font-size: 19px; }
+  .action-avatar { width: 36px; height: 36px; }
   .action-btn { padding: 6px 8px 6px; gap: 4px; }
   .action-label { font-size: 12px; }
   .action-today { font-size: 10px; padding: 1px 7px; }

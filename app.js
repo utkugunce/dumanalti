@@ -15,10 +15,18 @@
   var TABLE = CFG.table || "dumanalti_entries";
 
   var WHO = {
-    utku:  { label: "Utku", emoji: "🧔", cls: "utku-bg" },
-    gozde: { label: "Gözde", emoji: "👩", cls: "gozde-bg" },
-    both:  { label: "Ortak", emoji: "👩‍❤️‍👨", cls: "both-bg" }
+    utku:  { label: "Utku", emoji: "🧔", avatar: "icons/avatar-utku.png", cls: "utku-bg" },
+    gozde: { label: "Gözde", emoji: "👩", avatar: "icons/avatar-gozde.png", cls: "gozde-bg" },
+    both:  { label: "Ortak", emoji: "👩‍❤️‍👨", avatar: "icons/avatar-both.png", cls: "both-bg" }
   };
+
+  function makeAvatar(who, cls) {
+    var img = document.createElement("img");
+    img.className = "avatar" + (cls ? " " + cls : "");
+    img.src = WHO[who].avatar;
+    img.alt = WHO[who].label;
+    return img;
+  }
 
   var settings = { dailyLimit: 0 };
 
@@ -181,11 +189,14 @@
     el("todayDate").textContent =
       ("0" + now.getDate()).slice(-2) + "." + ("0" + (now.getMonth() + 1)).slice(-2) + "." + now.getFullYear();
 
+    var lastSmoke = el("lastSmoke");
+    lastSmoke.innerHTML = "";
     if (entries.length) {
       var last = entries[entries.length - 1];
-      el("lastSmoke").textContent = WHO[last.who].emoji + " " + WHO[last.who].label + " · " + relativeTime(last.ts);
+      lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
+      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " · " + relativeTime(last.ts)));
     } else {
-      el("lastSmoke").textContent = "—";
+      lastSmoke.textContent = "—";
     }
   }
 
@@ -298,7 +309,7 @@
       }
 
       var pct = Math.round(all.both / all.total * 100);
-      items.push({ e: "👩‍❤️‍👨", t: "Sigaraların %" + pct + "'ini birlikte içtiniz." });
+      items.push({ av: "both", t: "Sigaraların %" + pct + "'ini birlikte içtiniz." });
 
       var byDay = {};
       entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
@@ -341,9 +352,8 @@
 
     items.slice(0, 7).forEach(function (it) {
       var li = document.createElement("li");
-      var span = document.createElement("span");
-      span.className = "emoji";
-      span.textContent = it.e;
+      var span = it.av ? makeAvatar(it.av, "avatar-tiny") : document.createElement("span");
+      if (!it.av) { span.className = "emoji"; span.textContent = it.e; }
       var txt = document.createElement("span");
       txt.textContent = it.t;
       li.appendChild(span);
@@ -372,9 +382,7 @@
     var row = document.createElement("div");
     row.className = "history-item who-" + e.who + (pending ? " is-pending" : "");
 
-    var em = document.createElement("span");
-    em.className = "h-emoji";
-    em.textContent = WHO[e.who].emoji;
+    var em = makeAvatar(e.who, "h-emoji");
 
     var main = document.createElement("div");
     main.className = "h-main";
@@ -539,8 +547,9 @@
       var dot = document.createElement("i");
       dot.className = "dot " + WHO[w].cls;
       var txt = document.createElement("span");
-      txt.textContent = WHO[w].emoji + " " + WHO[w].label + " %" + pct;
+      txt.textContent = WHO[w].label + " %" + pct;
       item.appendChild(dot);
+      item.appendChild(makeAvatar(w, "avatar-tiny"));
       item.appendChild(txt);
       leg.appendChild(item);
     });
@@ -725,7 +734,7 @@
     render();
     showUndo(who);
     var combo = bumpCombo();
-    emojiConfetti(WHO[who].emoji, x, y, combo);
+    emojiConfetti(who, x, y, combo);
     if (combo >= 3) showCombo(combo);
     if (navigator.vibrate) navigator.vibrate(combo >= 3 ? [15, 30, 15] : 15);
 
@@ -774,7 +783,7 @@
 
   var CONFETTI_EXTRAS = ["✨", "🎉", "🎊", "💨", "🚬", "🥳", "⭐️", "💥"];
 
-  function emojiConfetti(emoji, x, y, combo) {
+  function emojiConfetti(who, x, y, combo) {
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var W = window.innerWidth, H = window.innerHeight;
     var ox = x != null ? x : W / 2;
@@ -789,14 +798,22 @@
     var count = reduce ? 8 : Math.min(120, 55 + (combo - 1) * 18);
 
     for (var i = 0; i < count; i++) {
-      var node = document.createElement("span");
-      node.className = "confetti-piece";
-      // İlk ~yarısı kutlama emojisi (kesin görünür), kalanı ilgili emoji
+      // İlk ~yarısı kutlama emojisi (kesin görünür), kalanı kişinin fotoğrafı
       var useExtra = i % 2 === 0; // bir bir kutlama emojisi serpiştir
-      node.textContent = useExtra ? CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0] : emoji;
+      var node;
+      if (useExtra) {
+        node = document.createElement("span");
+        node.className = "confetti-piece";
+        node.textContent = CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0];
+        node.style.fontSize = (18 + Math.random() * 36) + "px";
+      } else {
+        node = makeAvatar(who, "confetti-piece");
+        var s = (20 + Math.random() * 30) + "px";
+        node.style.width = s;
+        node.style.height = s;
+      }
       node.style.left = ox + "px";
       node.style.top = oy + "px";
-      node.style.fontSize = (18 + Math.random() * 36) + "px";
       document.body.appendChild(node);
 
       var angle = Math.random() * Math.PI * 2;

@@ -31,17 +31,17 @@
     <!-- Action buttons -->
     <section class="actions" aria-label="Sigara ekle">
       <button class="action-btn utku" data-who="utku">
-        <span class="action-emoji">🧔</span>
+        <img class="action-avatar avatar" src="icons/avatar-utku.png" alt="Utku" />
         <span class="action-label">Utku içti</span>
         <span class="action-today" id="btnTodayUtku">bugün 0</span>
       </button>
       <button class="action-btn gozde" data-who="gozde">
-        <span class="action-emoji">👩</span>
+        <img class="action-avatar avatar" src="icons/avatar-gozde.png" alt="Gözde" />
         <span class="action-label">Gözde içti</span>
         <span class="action-today" id="btnTodayGozde">bugün 0</span>
       </button>
       <button class="action-btn both" data-who="both">
-        <span class="action-emoji">👩‍❤️‍👨</span>
+        <img class="action-avatar avatar" src="icons/avatar-both.png" alt="Ortak" />
         <span class="action-label">Ortak içtik</span>
         <span class="action-today" id="btnTodayBoth">bugün 0</span>
       </button>
@@ -64,11 +64,11 @@
       <div class="today-grid">
         <div class="today-stat">
           <span class="today-num" id="todayUtku">0</span>
-          <span class="today-name">🧔 Utku</span>
+          <span class="today-name"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</span>
         </div>
         <div class="today-stat">
           <span class="today-num" id="todayGozde">0</span>
-          <span class="today-name">👩 Gözde</span>
+          <span class="today-name"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</span>
         </div>
         <div class="today-stat total">
           <span class="today-num" id="todayTotal">0</span>
@@ -101,11 +101,11 @@
       <div class="card-head"><h2>Son sigaradan beri</h2></div>
       <div class="since-list">
         <div class="since-row">
-          <span class="since-who">🧔 Utku</span>
+          <span class="since-who"><img class="avatar avatar-sm" src="icons/avatar-utku.png" alt="" /> Utku</span>
           <div class="since-vals"><span class="since-time" id="sinceUtku">—</span><span class="since-rec" id="recUtku"></span></div>
         </div>
         <div class="since-row">
-          <span class="since-who">👩 Gözde</span>
+          <span class="since-who"><img class="avatar avatar-sm" src="icons/avatar-gozde.png" alt="" /> Gözde</span>
           <div class="since-vals"><span class="since-time" id="sinceGozde">—</span><span class="since-rec" id="recGozde"></span></div>
         </div>
       </div>
@@ -122,15 +122,15 @@
     <!-- Kişi seçici -->
     <div class="scope-bar" id="scopeBar">
       <button class="scope-chip active" data-scope="all">Tümü</button>
-      <button class="scope-chip" data-scope="both">👩‍❤️‍👨 Ortak</button>
-      <button class="scope-chip" data-scope="gozde">👩 Gözde</button>
-      <button class="scope-chip" data-scope="utku">🧔 Utku</button>
+      <button class="scope-chip" data-scope="both"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</button>
+      <button class="scope-chip" data-scope="gozde"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</button>
+      <button class="scope-chip" data-scope="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
     </div>
 
     <!-- Kişi seçiliyken: ortak sigarayı dahil et / etme -->
     <div class="scope-toggle hidden" id="scopeToggle">
       <div class="seg">
-        <button class="seg-btn active" data-include="yes">👩‍❤️‍👨 Ortak dahil</button>
+        <button class="seg-btn active" data-include="yes"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak dahil</button>
         <button class="seg-btn" data-include="no">🙋 Sadece kendisi</button>
       </div>
     </div>
@@ -231,9 +231,9 @@
       </div>
       <div class="hist-filters" id="histFilters">
         <button class="hist-chip active" data-f="all">Tümü</button>
-        <button class="hist-chip" data-f="utku">🧔 Utku</button>
-        <button class="hist-chip" data-f="gozde">👩 Gözde</button>
-        <button class="hist-chip" data-f="both">👩‍❤️‍👨 Ortak</button>
+        <button class="hist-chip" data-f="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
+        <button class="hist-chip" data-f="gozde"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</button>
+        <button class="hist-chip" data-f="both"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</button>
       </div>
       <div id="historyList" class="history-list"></div>
       <p id="historyEmpty" class="empty">Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆</p>
