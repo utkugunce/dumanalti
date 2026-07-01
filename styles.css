@@ -393,6 +393,8 @@ body {
 }
 .scope-chip:active { transform: scale(0.96); }
 .scope-chip.active { background: var(--accent); color: #1a1300; }
+.scope-toggle .seg { width: 100%; }
+.scope-toggle .seg-btn { flex: 1; text-align: center; }
 
 .hist-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .hist-chip {

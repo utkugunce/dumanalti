@@ -34,11 +34,12 @@
   var comboTimer = null;
   var historyFilter = "all";
   var statsScope = "all"; // İstatistik kişi filtresi: all | both | gozde | utku
+  var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak içilenler dahil mi
 
   function scopedEntries() {
     if (statsScope === "both") return entries.filter(function (e) { return e.who === "both"; });
-    if (statsScope === "gozde") return entries.filter(function (e) { return e.who === "gozde" || e.who === "both"; });
-    if (statsScope === "utku") return entries.filter(function (e) { return e.who === "utku" || e.who === "both"; });
+    if (statsScope === "gozde") return entries.filter(function (e) { return e.who === "gozde" || (scopeIncludeBoth && e.who === "both"); });
+    if (statsScope === "utku") return entries.filter(function (e) { return e.who === "utku" || (scopeIncludeBoth && e.who === "both"); });
     return entries;
   }
 
@@ -1136,6 +1137,17 @@
       chip.addEventListener("click", function () {
         statsScope = chip.getAttribute("data-scope");
         document.querySelectorAll(".scope-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
+        var toggle = el("scopeToggle");
+        if (toggle) toggle.classList.toggle("hidden", statsScope !== "gozde" && statsScope !== "utku");
+        render();
+      });
+    });
+
+    // Gözde/Utku seçiliyken: ortak sigarayı dahil et/etme
+    document.querySelectorAll("#scopeToggle .seg-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        scopeIncludeBoth = b.getAttribute("data-include") === "yes";
+        document.querySelectorAll("#scopeToggle .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
         render();
       });
     });
