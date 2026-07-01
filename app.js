@@ -1134,11 +1134,21 @@
     setInterval(function () { renderSince(); }, 1000);
   }
 
+  function handleQuickAction() {
+    // Ana ekran kısayolu / Siri Kısayolları'ndan ?add=utku|gozde|both ile açılırsa
+    // uygulamayı açar açmaz o kaydı ekler (manifest.json "shortcuts").
+    var who = new URLSearchParams(window.location.search).get("add");
+    if (who !== "utku" && who !== "gozde" && who !== "both") return;
+    history.replaceState(null, "", window.location.pathname);
+    addEntry(who);
+  }
+
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
   loadSettings();
   loadCache();
   bind();
   render();
+  handleQuickAction();
   refreshStatus();
   initCloud();
 

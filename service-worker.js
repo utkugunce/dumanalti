@@ -1,5 +1,5 @@
 /* Dumanaltı service worker — önce ağ (network-first), offline yedek */
-var CACHE = "dumanalti-v33";
+var CACHE = "dumanalti-v34";
 var ASSETS = [
   "./",
   "./index.html",
@@ -9,7 +9,10 @@ var ASSETS = [
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./icons/shortcut-utku.png",
+  "./icons/shortcut-gozde.png",
+  "./icons/shortcut-both.png"
 ];
 
 self.addEventListener("install", function (event) {
