@@ -767,7 +767,10 @@
   function showUndo(who) {
     lastUndo = entries[entries.length - 1];
     var bar = el("undoBar");
-    el("undoText").textContent = WHO[who].emoji + " " + WHO[who].label + " eklendi";
+    var ut = el("undoText");
+    ut.innerHTML = "";
+    ut.appendChild(makeAvatar(who, "avatar-sm"));
+    ut.appendChild(document.createTextNode(" " + WHO[who].label + " eklendi"));
     bar.classList.remove("hidden");
     clearTimeout(undoTimer);
     undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 4000);
@@ -781,7 +784,151 @@
     clearTimeout(undoTimer);
   }
 
-  var CONFETTI_EXTRAS = ["✨", "🎉", "🎊", "💨", "🚬", "🥳", "⭐️", "💥"];
+  // ---------- Konfeti (canvas-confetti fizik modeli) ----------
+  // Tek tam-ekran canvas + yukarı koni fırlatma + decay/gravity/wobble/tilt.
+  var CONFETTI_EXTRAS = ["✨", "🎉", "🎊", "🥳", "⭐️", "💥"];
+  var CONFETTI_COLORS = {
+    utku:  ["#4f9dff", "#2c6fd6", "#9cc6ff", "#ffffff", "#ffd166"],
+    gozde: ["#ff5fa2", "#d63d80", "#ffb3d1", "#ffffff", "#ffd166"],
+    both:  ["#b07bff", "#7d4fd6", "#4f9dff", "#ff5fa2", "#ffffff", "#ffd166"]
+  };
+
+  var confettiCanvas = null, confettiCtx = null, confettiParticles = [], confettiRunning = false;
+  var confettiAvatarImgs = {};
+
+  function confettiAvatarImg(who) {
+    if (!confettiAvatarImgs[who]) {
+      var img = new Image();
+      img.src = WHO[who].avatar;
+      confettiAvatarImgs[who] = img;
+    }
+    return confettiAvatarImgs[who];
+  }
+
+  function ensureConfettiCanvas() {
+    if (!confettiCanvas) {
+      confettiCanvas = document.createElement("canvas");
+      confettiCanvas.className = "confetti-canvas";
+      document.body.appendChild(confettiCanvas);
+      confettiCtx = confettiCanvas.getContext("2d");
+    }
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = window.innerWidth, h = window.innerHeight;
+    if (confettiCanvas.width !== (w * dpr | 0) || confettiCanvas.height !== (h * dpr | 0)) {
+      confettiCanvas.width = w * dpr | 0;
+      confettiCanvas.height = h * dpr | 0;
+      confettiCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+  }
+
+  function fireConfetti(who, ox, oy, count, opts) {
+    var radSpread = (opts.spread || 60) * Math.PI / 180;
+    var sv = opts.velocity || 30;
+    var colors = CONFETTI_COLORS[who] || CONFETTI_COLORS.both;
+    for (var i = 0; i < count; i++) {
+      // ~%8 fotoğraf, ~%8 emoji, kalanı renkli kağıt parçası (kağıt baskın = doğal)
+      var roll = Math.random();
+      var shape = roll < 0.08 ? "avatar" : roll < 0.16 ? "emoji" : "paper";
+      confettiParticles.push({
+        who: who,
+        shape: shape,
+        x: ox,
+        y: oy,
+        // yukarı (-90°) merkezli koni içinde rastgele açı
+        angle2D: -Math.PI / 2 + (0.5 * radSpread - Math.random() * radSpread),
+        velocity: sv * 0.5 + Math.random() * sv,
+        decay: opts.decay || 0.9,
+        gravity: 2.7,
+        drift: (Math.random() - 0.5) * 0.6,
+        wobble: Math.random() * 10,
+        wobbleSpeed: 0.05 + Math.random() * 0.06,
+        tiltAngle: (0.25 + Math.random() * 0.5) * Math.PI,
+        tiltSpeed: 0.08 + Math.random() * 0.1,
+        rand: Math.random() + 2,
+        scalar: opts.scalar || 1,
+        color: colors[(Math.random() * colors.length) | 0],
+        emoji: CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0],
+        size: shape === "avatar" ? 22 + Math.random() * 12 : 15 + Math.random() * 8,
+        tick: 0,
+        totalTicks: opts.ticks || 180
+      });
+    }
+  }
+
+  function confettiFrame() {
+    ensureConfettiCanvas();
+    var ctx = confettiCtx;
+    var W = window.innerWidth, H = window.innerHeight;
+    ctx.clearRect(0, 0, W, H);
+
+    var alive = [];
+    for (var i = 0; i < confettiParticles.length; i++) {
+      var p = confettiParticles[i];
+      p.x += Math.cos(p.angle2D) * p.velocity + p.drift;
+      p.y += Math.sin(p.angle2D) * p.velocity + p.gravity;
+      p.velocity *= p.decay;          // hız sönümlenir, sonra sabit süzülme kalır
+      p.wobble += p.wobbleSpeed;      // yana doğru salınım
+      p.tiltAngle += p.tiltSpeed;     // 3B takla dönüşü
+      p.tick++;
+
+      var progress = p.tick / p.totalTicks;
+      if (progress >= 1 || p.y > H + 40) continue;
+      alive.push(p);
+
+      var alpha = progress > 0.75 ? 1 - (progress - 0.75) / 0.25 : 1; // sona doğru sol
+      ctx.globalAlpha = alpha;
+      var tiltSin = Math.sin(p.tiltAngle), tiltCos = Math.cos(p.tiltAngle);
+      var wobX = Math.cos(p.wobble), wobY = Math.sin(p.wobble);
+
+      if (p.shape === "paper") {
+        // canvas-confetti dörtgeni: wobble bir köşeyi, tilt diğerini kaydırır → uçuşan kağıt
+        var wobbleX = p.x + 10 * p.scalar * wobX;
+        var wobbleY = p.y + 10 * p.scalar * wobY;
+        var x1 = p.x + p.rand * tiltCos;
+        var y1 = p.y + p.rand * tiltSin;
+        var x2 = wobbleX + p.rand * tiltCos;
+        var y2 = wobbleY + p.rand * tiltSin;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(wobbleX, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x1, wobbleY);
+        ctx.closePath();
+        ctx.fill();
+      } else if (p.shape === "avatar") {
+        var img = confettiAvatarImg(p.who);
+        if (img.complete && img.naturalWidth) {
+          var s = p.size * p.scalar;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(0.35 * wobX);
+          // takla: dikey eksende daralıp genişleme (madeni para dönüşü)
+          ctx.scale(1, 0.45 + 0.55 * Math.abs(tiltCos));
+          ctx.drawImage(img, -s / 2, -s / 2, s, s);
+          ctx.restore();
+        }
+      } else {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(0.5 * wobX);
+        ctx.font = (p.size * p.scalar) + "px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(p.emoji, 0, 0);
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
+    confettiParticles = alive;
+
+    if (confettiParticles.length) {
+      requestAnimationFrame(confettiFrame);
+    } else {
+      confettiRunning = false;
+      ctx.clearRect(0, 0, W, H);
+    }
+  }
 
   function emojiConfetti(who, x, y, combo) {
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -795,34 +942,22 @@
       flashAt(ox, oy);
     }
 
-    var count = reduce ? 8 : Math.min(120, 55 + (combo - 1) * 18);
+    ensureConfettiCanvas();
+    var total = reduce ? 14 : Math.min(240, 110 + (combo - 1) * 30);
+    // Fırlatma hızını üstteki boşluğa göre ölçekle: buton tepedeyse parçalar
+    // ekrandan taşmasın, patlama görünür kalsın.
+    var vk = Math.max(0.35, Math.min(1, oy / 600));
 
-    for (var i = 0; i < count; i++) {
-      // İlk ~yarısı kutlama emojisi (kesin görünür), kalanı kişinin fotoğrafı
-      var useExtra = i % 2 === 0; // bir bir kutlama emojisi serpiştir
-      var node;
-      if (useExtra) {
-        node = document.createElement("span");
-        node.className = "confetti-piece";
-        node.textContent = CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0];
-        node.style.fontSize = (18 + Math.random() * 36) + "px";
-      } else {
-        node = makeAvatar(who, "confetti-piece");
-        var s = (20 + Math.random() * 30) + "px";
-        node.style.width = s;
-        node.style.height = s;
-      }
-      node.style.left = ox + "px";
-      node.style.top = oy + "px";
-      document.body.appendChild(node);
+    // canvas-confetti "realistic look" reçetesi: farklı hız/açı/boyutta 5 dalga
+    fireConfetti(who, ox, oy, Math.round(total * 0.25), { spread: 26, velocity: 34 * vk });
+    fireConfetti(who, ox, oy, Math.round(total * 0.20), { spread: 60, velocity: 28 * vk });
+    fireConfetti(who, ox, oy, Math.round(total * 0.35), { spread: 100, velocity: 28 * vk, decay: 0.91, scalar: 0.8 });
+    fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 120, velocity: 16 * vk, decay: 0.92, scalar: 1.2 });
+    fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 120, velocity: 28 * vk });
 
-      var angle = Math.random() * Math.PI * 2;
-      var speed = 6 + Math.random() * (13 + combo * 2);
-      flyParticle(
-        node,
-        Math.cos(angle) * speed,
-        Math.sin(angle) * speed - (7 + Math.random() * 6) // yukarı doğru başlangıç ivmesi
-      );
+    if (!confettiRunning) {
+      confettiRunning = true;
+      requestAnimationFrame(confettiFrame);
     }
   }
 
@@ -856,28 +991,6 @@
     node.textContent = "🔥 x" + n;
     document.body.appendChild(node);
     setTimeout(function () { node.remove(); }, 850);
-  }
-
-  function flyParticle(node, vx, vy) {
-    var px = 0, py = 0, rot = 0;
-    var vr = (Math.random() - 0.5) * 26;
-    var gravity = 0.2;
-    var start = null, max = 2600 + Math.random() * 1400;
-
-    function frame(t) {
-      if (start == null) start = t;
-      var life = t - start;
-      vy += gravity;
-      vx *= 0.992;
-      px += vx; py += vy; rot += vr;
-      // çıkışta hızlı bir "pop" büyümesi
-      var pop = life < 140 ? 0.3 + 0.7 * (life / 140) : 1;
-      node.style.transform = "translate(" + px + "px," + py + "px) rotate(" + rot + "deg) scale(" + pop + ")";
-      node.style.opacity = String(Math.max(0, 1 - life / max));
-      if (life < max) { requestAnimationFrame(frame); }
-      else { node.remove(); }
-    }
-    requestAnimationFrame(frame);
   }
 
   // ---------- Cloud sync ----------
