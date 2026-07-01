@@ -838,8 +838,8 @@
         angle2D: -Math.PI / 2 + (0.5 * radSpread - Math.random() * radSpread),
         velocity: sv * 0.5 + Math.random() * sv,
         decay: opts.decay || 0.9,
-        gravity: 2.7,
-        drift: (Math.random() - 0.5) * 0.6,
+        gravity: 2.1,
+        drift: (Math.random() - 0.5) * 2.2,
         wobble: Math.random() * 10,
         wobbleSpeed: 0.05 + Math.random() * 0.06,
         tiltAngle: (0.25 + Math.random() * 0.5) * Math.PI,
@@ -850,7 +850,7 @@
         emoji: CONFETTI_EXTRAS[(Math.random() * CONFETTI_EXTRAS.length) | 0],
         size: shape === "avatar" ? 22 + Math.random() * 12 : 15 + Math.random() * 8,
         tick: 0,
-        totalTicks: opts.ticks || 180
+        totalTicks: opts.ticks || 260
       });
     }
   }
@@ -946,14 +946,15 @@
     var total = reduce ? 14 : Math.min(240, 110 + (combo - 1) * 30);
     // Fırlatma hızını üstteki boşluğa göre ölçekle: buton tepedeyse parçalar
     // ekrandan taşmasın, patlama görünür kalsın.
-    var vk = Math.max(0.35, Math.min(1, oy / 600));
+    var vk = Math.max(0.5, Math.min(1, oy / 500));
 
-    // canvas-confetti "realistic look" reçetesi: farklı hız/açı/boyutta 5 dalga
-    fireConfetti(who, ox, oy, Math.round(total * 0.25), { spread: 26, velocity: 34 * vk });
-    fireConfetti(who, ox, oy, Math.round(total * 0.20), { spread: 60, velocity: 28 * vk });
-    fireConfetti(who, ox, oy, Math.round(total * 0.35), { spread: 100, velocity: 28 * vk, decay: 0.91, scalar: 0.8 });
-    fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 120, velocity: 16 * vk, decay: 0.92, scalar: 1.2 });
-    fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 120, velocity: 28 * vk });
+    // canvas-confetti "realistic look" reçetesi: farklı hız/açı/boyutta 5 dalga.
+    // Geniş açılar + yüksek yanal hız = ekranın genelini kaplayan yağmur.
+    fireConfetti(who, ox, oy, Math.round(total * 0.25), { spread: 50, velocity: 42 * vk });
+    fireConfetti(who, ox, oy, Math.round(total * 0.20), { spread: 90, velocity: 38 * vk });
+    fireConfetti(who, ox, oy, Math.round(total * 0.35), { spread: 130, velocity: 38 * vk, decay: 0.91, scalar: 0.8 });
+    fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 160, velocity: 22 * vk, decay: 0.92, scalar: 1.2 });
+    fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 160, velocity: 38 * vk });
 
     if (!confettiRunning) {
       confettiRunning = true;
