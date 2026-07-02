@@ -6,6 +6,11 @@
 (function () {
   "use strict";
 
+  // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
+  // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
+  var APP_VERSION = "2.9.0";
+  var APP_BUILD = 42;
+
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
   var THEME_KEY = "dumanalti.theme";
@@ -1314,6 +1319,7 @@
   }
 
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+  el("appVersion").textContent = "v" + APP_VERSION + " · derleme " + APP_BUILD;
   loadSettings();
   loadCache();
   bind();

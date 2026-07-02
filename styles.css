@@ -708,6 +708,13 @@ body {
 .about-name { font-size: 18px; font-weight: 800; margin-top: 2px; }
 .about-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .about-meta { font-size: 11px; color: var(--muted); margin-top: 8px; }
+.about-version {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
 .set-row input {
   width: 110px;
   background: var(--bg-elev-2);
