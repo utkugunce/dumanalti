@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "2.9.0";
-  var APP_BUILD = 42;
+  var APP_VERSION = "2.10.0";
+  var APP_BUILD = 43;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -509,6 +509,8 @@
     for (h = 0; h < 24; h++) {
       var col = document.createElement("div");
       col.className = "hour-col";
+      col.setAttribute("data-h", h);
+      col.setAttribute("data-count", counts[h]);
       var bar = document.createElement("div");
       bar.className = "hour-bar" + (h === peakH && counts[peakH] > 0 ? " peak" : "");
       bar.style.height = (counts[h] === 0 ? 2 : Math.max(4, Math.round(counts[h] / max * 100))) + "%";
@@ -523,6 +525,38 @@
       chart.appendChild(col);
     }
     el("hourPeak").textContent = list.length ? "en yoğun " + pad2(peakH) + ":00" : "";
+
+    // Bara dokununca o saatte kaç sigara içildiğini balonda göster
+    if (!chart.hourTipBound) {
+      chart.hourTipBound = true;
+      chart.addEventListener("click", function (ev) {
+        var c = ev.target.closest ? ev.target.closest(".hour-col") : null;
+        showHourTip(chart, c);
+      });
+    }
+  }
+
+  function showHourTip(chart, col) {
+    var old = chart.querySelector(".hour-tip");
+    var prevSel = chart.querySelector(".hour-bar.sel");
+    if (prevSel) prevSel.classList.remove("sel");
+    var oldH = old ? old.getAttribute("data-h") : null;
+    if (old) old.remove();
+    if (!col || oldH === col.getAttribute("data-h")) return; // aynı bara ikinci dokunuş kapatır
+
+    var h = parseInt(col.getAttribute("data-h"), 10);
+    var count = col.getAttribute("data-count");
+    col.querySelector(".hour-bar").classList.add("sel");
+
+    var tip = document.createElement("div");
+    tip.className = "hour-tip";
+    tip.setAttribute("data-h", String(h));
+    tip.textContent = pad2(h) + ":00–" + pad2(h) + ":59 · " + count + " sigara";
+    chart.appendChild(tip);
+    // kolonun ortasına hizala, kenarlardan taşmasın
+    var x = col.offsetLeft + col.offsetWidth / 2 - tip.offsetWidth / 2;
+    x = Math.max(0, Math.min(chart.clientWidth - tip.offsetWidth, x));
+    tip.style.left = x + "px";
   }
 
   function renderShare() {

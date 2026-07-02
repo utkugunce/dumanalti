@@ -557,15 +557,32 @@ body {
 
 /* Hourly distribution */
 .hour-chart {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 2px;
   height: 104px;
   padding-top: 6px;
 }
-.hour-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.hour-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; cursor: pointer; }
 .hour-bar { width: 70%; min-height: 2px; background: var(--utku); border-radius: 3px 3px 0 0; transition: height 0.3s; }
 .hour-bar.peak { background: var(--accent); }
+.hour-bar.sel { box-shadow: 0 0 0 2px var(--text); }
+.hour-tip {
+  position: absolute;
+  top: -24px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
 .hour-lab { font-size: 9px; color: var(--muted); }
 
 /* Person share bar */
