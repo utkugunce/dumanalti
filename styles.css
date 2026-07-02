@@ -146,7 +146,7 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 .brand { display: flex; align-items: center; gap: 12px; }
-.brand-logo { font-size: 34px; }
+.brand-logo { width: 42px; height: 42px; border-radius: 12px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); }
 .header h1 { margin: 0; font-size: 22px; letter-spacing: -0.5px; }
 .subtitle { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
 .icon-btn {
@@ -811,7 +811,7 @@ body {
 
 /* About */
 .about-card { text-align: center; }
-.about-logo { font-size: 38px; }
+.about-logo { width: 58px; height: 58px; border-radius: 15px; display: block; margin: 2px auto 4px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
 .about-name { font-size: 18px; font-weight: 800; margin-top: 2px; }
 .about-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .about-meta { font-size: 11px; color: var(--muted); margin-top: 8px; }
@@ -884,7 +884,7 @@ body {
   .app { gap: 6px; padding-bottom: calc(52px + env(safe-area-inset-bottom)); }
   .header { padding-top: env(safe-area-inset-top); }
   .subtitle { display: none; }
-  .brand-logo { font-size: 24px; }
+  .brand-logo { width: 34px; height: 34px; border-radius: 10px; }
   .header h1 { font-size: 20px; }
   .icon-btn { width: 40px; height: 40px; }
   .card { padding: 7px 12px; }
