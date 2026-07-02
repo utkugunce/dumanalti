@@ -141,45 +141,96 @@ body {
 }
 .action-btn {
   border: none;
-  border-radius: var(--radius);
-  padding: 13px 8px 11px;
+  border-radius: 20px;
+  padding: 14px 8px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   cursor: pointer;
   color: #fff;
   font-family: inherit;
   position: relative;
   overflow: hidden;
-  transition: transform 0.12s ease;
-  box-shadow: var(--shadow);
+  isolation: isolate;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.action-btn:active { transform: scale(0.94); }
-.action-btn.utku { background: linear-gradient(160deg, #4f9dff, #2c6fd6); }
-.action-btn.gozde { background: linear-gradient(160deg, #ff5fa2, #d63d80); }
-.action-btn.both { background: linear-gradient(160deg, #b07bff, #7d4fd6); }
+/* üstten süzülen ışık: kartlara hacim verir */
+.action-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 75% at 50% -20%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 60%);
+  pointer-events: none;
+}
+/* basınca soldan sağa geçen parlama şeridi */
+.action-btn::after {
+  content: "";
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+}
+/* bastırma anında hızlı tepki (~80ms), bırakınca yaylı geri dönüş */
+.action-btn:active { transform: scale(0.92); filter: brightness(1.1); transition-duration: 0.08s; }
+.action-btn.utku {
+  background: linear-gradient(165deg, #6fb2ff 0%, #3f8bf2 45%, #1f5fc4 100%);
+  box-shadow: 0 10px 26px -10px rgba(79, 157, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.action-btn.gozde {
+  background: linear-gradient(165deg, #ff8abb 0%, #f24e92 45%, #c22e72 100%);
+  box-shadow: 0 10px 26px -10px rgba(255, 95, 162, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.action-btn.both {
+  background: linear-gradient(165deg, #c79bff 0%, #9a63f0 45%, #6f3fd0 100%);
+  box-shadow: 0 10px 26px -10px rgba(176, 123, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
 .action-avatar {
-  width: 44px;
-  height: 44px;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  width: 46px;
+  height: 46px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22), 0 4px 12px rgba(0, 0, 0, 0.35);
 }
-.action-label { font-size: 13px; font-weight: 700; }
+.action-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
 .action-today {
   font-size: 11px;
-  opacity: 0.85;
-  background: rgba(255, 255, 255, 0.18);
-  padding: 2px 8px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 2px 9px;
   border-radius: 999px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-/* pop animation */
-.action-btn.pop { animation: pop 0.35s ease; }
+/* dokununca yaylı esneme + parlama şeridi */
+.action-btn.pop { animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.action-btn.pop::after { animation: shine 0.65s ease; }
 @keyframes pop {
   0% { transform: scale(1); }
-  40% { transform: scale(1.06); }
+  35% { transform: scale(1.08); }
+  65% { transform: scale(0.97); }
   100% { transform: scale(1); }
+}
+@keyframes shine {
+  0% { left: -60%; opacity: 0; }
+  15% { opacity: 1; }
+  100% { left: 130%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action-btn, .action-btn.pop { transition: none; animation: none; }
+  .action-btn.pop::after { animation: none; }
 }
 
 /* konfeti canvas'ı: tüm ekranı kaplar, tıklamaları engellemez */
