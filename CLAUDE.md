@@ -1,6 +1,6 @@
 # Dumanaltı
 
-Utku & Gözde'nin iki kişilik sigo takip PWA'sı (yeşil liquid glass tema). Vanilla JS/HTML/CSS, build adımı yok. Vercel `main` dalını otomatik olarak dumanalti.vercel.app'e dağıtır; veriler Supabase'de (realtime + offline outbox).
+Utku & Gözde'nin iki kişilik sigo takip web uygulaması, Safari'de kullanılıyor (yeşil liquid glass tema). Vanilla JS/HTML/CSS, build adımı yok. Vercel `main` dalını otomatik olarak dumanalti.vercel.app'e dağıtır; veriler Supabase'de (realtime + offline outbox).
 
 ## Her değişiklikte sürüm güncelle (ZORUNLU)
 
@@ -14,6 +14,16 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
    - **major** (2.x → 3.0.0): büyük yeniden tasarım
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
+
+Güncel sürüm sayacı: **v4.2.0 · derleme 59 · SW cache `dumanalti-v59`** — buradan devam et.
+
+## Düzen ve platform
+
+- Uygulama artık PWA olarak değil **Safari'de** kullanılıyor; `100dvh` önemli.
+- Düzen ayarları her zaman **iPhone 13 (390×844)** ve **iPhone 11 (414×896)** için test edilir, Safari-efektif yükseklikler dahil.
+- Anasayfa **tek tam ekran** olmalı; uzun ekranda kartlar flex ile boşluğu doldurur.
+- Terminoloji: **"sigo"** (sigara/joint değil).
+- Maskot: **Dumancık** (yaprak filizli bulut, `icons/mascot.svg`), asistan paneliyle birlikte.
 
 ## Çalışma düzeni
 

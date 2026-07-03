@@ -78,8 +78,7 @@ body {
 /* Bugün ve Son sigaradan beri kutuları uzun ekranlarda aşağı doğru genişler */
 #view-home .today-card,
 #view-home .since-card { flex-grow: 1; display: flex; flex-direction: column; }
-#view-home .today-card .today-grid { flex: 1; align-items: stretch; }
-#view-home .today-card .today-stat { justify-content: center; }
+#view-home .today-card .today-top { flex: 1; }
 #view-home .since-card .since-list { flex: 1; }
 #view-home .since-card .since-row { flex: 1; }
 
@@ -365,25 +364,83 @@ body {
   border-radius: 999px;
 }
 
-/* Today */
-.today-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.today-stat {
-  background: var(--bg-elev-2);
+/* Today (Bugün kartı): solda büyük toplam + dün kıyası, sağda kişi satırları,
+   altta günün 24 saatlik akış şeridi */
+.today-top { display: flex; gap: 8px; margin-bottom: 5px; }
+.today-hero {
+  flex: 1.15;
+  background: linear-gradient(160deg, rgba(164, 224, 90, 0.2), rgba(164, 224, 90, 0.05));
+  border: 1px solid rgba(164, 224, 90, 0.22);
   border-radius: 14px;
-  padding: 7px 6px;
-  text-align: center;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
 }
-.today-stat.total { background: linear-gradient(160deg, rgba(164,224,90,0.18), rgba(164,224,90,0.05)); }
-.today-num { font-size: 21px; font-weight: 800; letter-spacing: -1px; }
-.today-name { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+.today-hero-num { display: flex; align-items: center; gap: 8px; }
+.today-num { font-size: 34px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+.trend-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-elev-2);
+  color: var(--muted);
+}
+.trend-chip.up { background: rgba(255, 90, 90, 0.16); color: var(--danger); }
+.trend-chip.down { background: rgba(122, 199, 79, 0.2); color: var(--accent); }
+[data-theme="light"] .trend-chip.down { color: #4c8b2b; }
+.today-hero-sub { font-size: 11px; color: var(--muted); }
+.today-duo { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.duo-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elev-2);
+  border-radius: 10px;
+  padding: 2px 10px;
+}
+.duo-who { font-size: 12px; line-height: 1.3; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+.duo-num { font-size: 14px; line-height: 1.3; font-weight: 800; }
+
+/* Günün akışı: her sigo 24 saatlik şeritte kişi renginde bir nokta */
+.today-flow { margin-bottom: 4px; }
+.flow-track {
+  position: relative;
+  height: 12px;
+  background: var(--bg-elev-2);
+  border-radius: 999px;
+}
+.flow-dot {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.flow-now {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateX(-50%);
+  opacity: 0.9;
+}
+.flow-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  line-height: 1.2;
+  color: var(--muted);
+  margin-top: 1px;
+  padding: 0 1px;
+}
 
 /* Kişi avatarları (fotoğraf), emoji yerine kullanılır */
 .avatar {
@@ -401,7 +458,7 @@ body {
   justify-content: space-between;
   font-size: 13px;
   color: var(--muted);
-  padding-top: 8px;
+  padding-top: 6px;
   border-top: 1px solid var(--border);
 }
 .last-row strong { color: var(--text); }
@@ -875,7 +932,7 @@ body {
 .history-item.is-pending { opacity: 0.6; }
 
 @media (max-width: 360px) {
-  .today-num { font-size: 24px; }
+  .today-num { font-size: 28px; }
 }
 
 /* Short screens: compact Home to keep it one page */
@@ -894,9 +951,16 @@ body {
   .action-avatar { width: 44px; height: 44px; }
   .action-btn { padding: 5px 8px 5px; gap: 4px; }
   .action-today { font-size: 10px; padding: 1px 7px; }
-  .today-grid { margin-bottom: 6px; }
-  .today-num { font-size: 18px; }
-  .today-stat { padding: 5px 6px; }
+  .today-top { gap: 6px; margin-bottom: 4px; }
+  .today-hero { padding: 4px 10px; gap: 1px; }
+  .today-num { font-size: 24px; }
+  .duo-row { padding: 1px 8px; }
+  .duo-num { font-size: 13px; }
+  .today-flow { margin-bottom: 2px; }
+  .flow-track { height: 10px; }
+  .flow-dot { width: 7px; height: 7px; }
+  .flow-labels { display: none; } /* kısa ekranda saat etiketleri sığmıyor */
+  .last-row { padding-top: 4px; }
   .since-list { gap: 5px; }
   .since-row { padding: 5px 12px; }
   .since-time { font-size: 16px; }
