@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.0.1";
-  var APP_BUILD = 57;
+  var APP_VERSION = "4.1.0";
+  var APP_BUILD = 58;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
