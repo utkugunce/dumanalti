@@ -15,6 +15,16 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
+Güncel sürüm sayacı: **v4.1.0 · derleme 58 · SW cache `dumanalti-v58`** — buradan devam et.
+
+## Düzen ve platform
+
+- Uygulama artık PWA olarak değil **Safari'de** kullanılıyor; `100dvh` önemli.
+- Düzen ayarları her zaman **iPhone 13 (390×844)** ve **iPhone 11 (414×896)** için test edilir, Safari-efektif yükseklikler dahil.
+- Anasayfa **tek tam ekran** olmalı; uzun ekranda kartlar flex ile boşluğu doldurur.
+- Terminoloji: **"sigo"** (sigara/joint değil).
+- Maskot: **Dumancık** (yaprak filizli bulut, `icons/mascot.svg`), asistan paneliyle birlikte.
+
 ## Çalışma düzeni
 
 - Değişiklik sonrası `node --check app.js`, sonra Playwright ile görsel doğrulama (chromium: `/opt/pw-browsers/chromium`, app'i `npx serve` ile sun — `file://` çalışmaz).
