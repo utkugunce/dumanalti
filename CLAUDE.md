@@ -1,6 +1,6 @@
 # Dumanaltı
 
-Utku & Gözde'nin iki kişilik sigara takip PWA'sı. Vanilla JS/HTML/CSS, build adımı yok. Vercel `main` dalını otomatik olarak dumanalti.vercel.app'e dağıtır; veriler Supabase'de (realtime + offline outbox).
+Utku & Gözde'nin iki kişilik joint takip PWA'sı (yeşil liquid glass tema). Vanilla JS/HTML/CSS, build adımı yok. Vercel `main` dalını otomatik olarak dumanalti.vercel.app'e dağıtır; veriler Supabase'de (realtime + offline outbox).
 
 ## Her değişiklikte sürüm güncelle (ZORUNLU)
 

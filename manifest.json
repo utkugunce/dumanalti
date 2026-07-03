@@ -1,13 +1,13 @@
 {
-  "name": "Dumanaltı — Sigara Takip",
+  "name": "Dumanaltı — Joint Takip",
   "short_name": "Dumanaltı",
-  "description": "Utku & Gözde sigara takip uygulaması",
+  "description": "Utku & Gözde joint takip uygulaması",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0c12",
-  "theme_color": "#0a0c12",
+  "background_color": "#0a120c",
+  "theme_color": "#0a120c",
   "lang": "tr",
   "icons": [
     {

@@ -1,23 +1,23 @@
 /* Liquid glass: yüzeyler yarı saydam, arka plandaki renk lekeleri camdan sızar */
 :root {
-  --bg: #0a0c12;
+  --bg: #0a120c;
   --bg-elev: rgba(255, 255, 255, 0.055);
   --bg-elev-2: rgba(255, 255, 255, 0.085);
   --text: #f3f5f8;
   --muted: #9aa3b2;
   --border: rgba(255, 255, 255, 0.13);
   --glass-hi: rgba(255, 255, 255, 0.18);
-  --utku: #4f9dff;
-  --gozde: #ff5fa2;
-  --both: #b07bff;
-  --accent: #ffb547;
+  --utku: #7ac74f;
+  --gozde: #c9e265;
+  --both: #4fc796;
+  --accent: #a4e05a;
   --danger: #ff5a5a;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   --radius: 18px;
 }
 
 [data-theme="light"] {
-  --bg: #eef1f8;
+  --bg: #eef6ec;
   --bg-elev: rgba(255, 255, 255, 0.6);
   --bg-elev-2: rgba(255, 255, 255, 0.55);
   --text: #161a22;
@@ -36,12 +36,12 @@ html, body {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  /* camın arkasında blur'lanacak renk lekeleri (Utku mavi, Gözde pembe, ortak mor) */
+  /* camın arkasında blur'lanacak renk lekeleri (Utku yeşil, Gözde lime, ortak nane) */
   background:
-    radial-gradient(70% 45% at 85% -5%, rgba(79, 157, 255, 0.42), transparent 65%),
-    radial-gradient(55% 40% at -10% 25%, rgba(255, 95, 162, 0.34), transparent 65%),
-    radial-gradient(65% 50% at 110% 75%, rgba(176, 123, 255, 0.36), transparent 65%),
-    radial-gradient(50% 40% at 30% 110%, rgba(255, 181, 71, 0.2), transparent 65%),
+    radial-gradient(70% 45% at 85% -5%, rgba(122, 199, 79, 0.42), transparent 65%),
+    radial-gradient(55% 40% at -10% 25%, rgba(201, 226, 101, 0.3), transparent 65%),
+    radial-gradient(65% 50% at 110% 75%, rgba(79, 199, 150, 0.34), transparent 65%),
+    radial-gradient(50% 40% at 30% 110%, rgba(255, 200, 87, 0.16), transparent 65%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
@@ -52,10 +52,10 @@ body {
 
 [data-theme="light"] body {
   background:
-    radial-gradient(70% 45% at 85% -5%, rgba(79, 157, 255, 0.22), transparent 65%),
-    radial-gradient(55% 40% at -10% 25%, rgba(255, 95, 162, 0.18), transparent 65%),
-    radial-gradient(65% 50% at 110% 75%, rgba(176, 123, 255, 0.2), transparent 65%),
-    radial-gradient(50% 40% at 30% 110%, rgba(255, 181, 71, 0.14), transparent 65%),
+    radial-gradient(70% 45% at 85% -5%, rgba(122, 199, 79, 0.22), transparent 65%),
+    radial-gradient(55% 40% at -10% 25%, rgba(201, 226, 101, 0.18), transparent 65%),
+    radial-gradient(65% 50% at 110% 75%, rgba(79, 199, 150, 0.2), transparent 65%),
+    radial-gradient(50% 40% at 30% 110%, rgba(255, 200, 87, 0.12), transparent 65%),
     var(--bg);
   background-attachment: fixed;
 }
@@ -219,25 +219,25 @@ body {
 /* bastırma anında hızlı tepki (~80ms), bırakınca yaylı geri dönüş */
 .action-btn:active { transform: scale(0.92); filter: brightness(1.1); transition-duration: 0.08s; }
 .action-btn.utku {
-  background: linear-gradient(165deg, rgba(111, 178, 255, 0.8), rgba(63, 139, 242, 0.55) 45%, rgba(31, 95, 196, 0.65));
+  background: linear-gradient(165deg, rgba(150, 214, 106, 0.8), rgba(96, 168, 60, 0.55) 45%, rgba(56, 118, 32, 0.65));
   backdrop-filter: blur(12px) saturate(1.6);
   -webkit-backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 10px 26px -10px rgba(79, 157, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 26px -10px rgba(122, 199, 79, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .action-btn.gozde {
-  background: linear-gradient(165deg, rgba(255, 138, 187, 0.8), rgba(242, 78, 146, 0.55) 45%, rgba(194, 46, 114, 0.65));
+  background: linear-gradient(165deg, rgba(218, 235, 130, 0.8), rgba(160, 196, 60, 0.55) 45%, rgba(110, 140, 30, 0.65));
   backdrop-filter: blur(12px) saturate(1.6);
   -webkit-backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 10px 26px -10px rgba(255, 95, 162, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 26px -10px rgba(201, 226, 101, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .action-btn.both {
-  background: linear-gradient(165deg, rgba(199, 155, 255, 0.8), rgba(154, 99, 240, 0.55) 45%, rgba(111, 63, 208, 0.65));
+  background: linear-gradient(165deg, rgba(120, 224, 180, 0.8), rgba(56, 168, 122, 0.55) 45%, rgba(30, 118, 82, 0.65));
   backdrop-filter: blur(12px) saturate(1.6);
   -webkit-backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 10px 26px -10px rgba(176, 123, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 26px -10px rgba(79, 199, 150, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .action-avatar {
   width: 64px;
@@ -381,7 +381,7 @@ body {
   flex-direction: column;
   gap: 2px;
 }
-.today-stat.total { background: linear-gradient(160deg, rgba(255,181,71,0.18), rgba(255,181,71,0.05)); }
+.today-stat.total { background: linear-gradient(160deg, rgba(164,224,90,0.18), rgba(164,224,90,0.05)); }
 .today-num { font-size: 21px; font-weight: 800; letter-spacing: -1px; }
 .today-name { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
 
@@ -914,9 +914,9 @@ body {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .card { background: rgba(24, 27, 34, 0.94); }
   .tabbar { background: rgba(12, 14, 20, 0.96); }
-  .action-btn.utku { background: linear-gradient(165deg, #6fb2ff, #3f8bf2 45%, #1f5fc4); }
-  .action-btn.gozde { background: linear-gradient(165deg, #ff8abb, #f24e92 45%, #c22e72); }
-  .action-btn.both { background: linear-gradient(165deg, #c79bff, #9a63f0 45%, #6f3fd0); }
+  .action-btn.utku { background: linear-gradient(165deg, #96d66a, #60a83c 45%, #387620); }
+  .action-btn.gozde { background: linear-gradient(165deg, #daeb82, #a0c43c 45%, #6e8c1e); }
+  .action-btn.both { background: linear-gradient(165deg, #78e0b4, #38a87a 45%, #1e7652); }
   [data-theme="light"] .card { background: rgba(255, 255, 255, 0.95); }
   [data-theme="light"] .tabbar { background: rgba(255, 255, 255, 0.96); }
 }
@@ -928,8 +928,8 @@ body {
   width: 60px; height: 60px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.28);
-  background: linear-gradient(165deg, #8a5cf0, #5a34b0);
-  box-shadow: 0 8px 22px -6px rgba(125, 79, 214, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(165deg, #6bbf4a, #3e7d2a);
+  box-shadow: 0 8px 22px -6px rgba(107, 191, 74, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   padding: 0;
@@ -996,7 +996,7 @@ body {
 }
 .asst-msg.me {
   align-self: flex-end;
-  background: linear-gradient(160deg, #8a5cf0, #6a3fce);
+  background: linear-gradient(160deg, #5fae43, #3e7d2a);
   color: #fff; border: none;
   border-radius: 14px 14px 4px 14px;
 }
