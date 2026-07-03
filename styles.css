@@ -920,3 +920,103 @@ body {
   [data-theme="light"] .card { background: rgba(255, 255, 255, 0.95); }
   [data-theme="light"] .tabbar { background: rgba(255, 255, 255, 0.96); }
 }
+
+/* ===== Dumancık asistan maskot ===== */
+.assistant { position: fixed; right: 14px; z-index: 350; bottom: calc(64px + env(safe-area-inset-bottom)); }
+.asst-fab {
+  position: relative;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(165deg, #8a5cf0, #5a34b0);
+  box-shadow: 0 8px 22px -6px rgba(125, 79, 214, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+  animation: asstFloat 3.5s ease-in-out infinite;
+}
+.asst-fab:active { transform: scale(0.9); }
+.asst-fab-face { width: 46px; height: 46px; display: block; pointer-events: none; }
+@keyframes asstFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.asst-badge {
+  position: absolute; top: -2px; right: -2px;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent); color: #1a1300;
+  font-size: 11px; font-weight: 800; line-height: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.asst-panel {
+  position: absolute;
+  right: 0;
+  bottom: 72px;
+  width: min(84vw, 320px);
+  border-radius: 20px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(18px) saturate(1.7);
+  -webkit-backdrop-filter: blur(18px) saturate(1.7);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 16px 40px rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  transform-origin: bottom right;
+  animation: asstPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes asstPop {
+  0% { opacity: 0; transform: scale(0.7) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.asst-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.asst-face { width: 38px; height: 38px; flex: none; }
+.asst-title { display: flex; flex-direction: column; line-height: 1.2; flex: 1; }
+.asst-title strong { font-size: 14px; }
+.asst-title span { font-size: 11px; color: var(--muted); }
+.asst-close {
+  background: var(--bg-elev-2); border: 1px solid var(--border);
+  color: var(--text); width: 28px; height: 28px; border-radius: 50%;
+  font-size: 13px; cursor: pointer; flex: none;
+}
+.asst-body {
+  max-height: 44vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 2px;
+}
+.asst-msg {
+  align-self: flex-start; max-width: 90%;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 14px 4px;
+  padding: 8px 11px; font-size: 13px; line-height: 1.35;
+  animation: asstMsgIn 0.25s ease;
+}
+.asst-msg.me {
+  align-self: flex-end;
+  background: linear-gradient(160deg, #8a5cf0, #6a3fce);
+  color: #fff; border: none;
+  border-radius: 14px 14px 4px 14px;
+}
+@keyframes asstMsgIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.asst-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.asst-chip {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px; padding: 6px 11px;
+  font-size: 12px; font-family: inherit; cursor: pointer;
+  transition: transform 0.12s, background 0.15s;
+}
+.asst-chip:active { transform: scale(0.94); }
+.asst-chip:hover { background: var(--accent); color: #1a1300; }
+
+@media (prefers-reduced-motion: reduce) {
+  .asst-fab { animation: none; }
+  .asst-panel, .asst-msg { animation: none; }
+}

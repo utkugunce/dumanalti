@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "3.0.2";
-  var APP_BUILD = 47;
+  var APP_VERSION = "3.1.0";
+  var APP_BUILD = 48;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -1333,6 +1333,8 @@
 
     if (el("syncNowBtn")) el("syncNowBtn").addEventListener("click", syncNow);
 
+    bindAssistant();
+
     // Ayarlar
     if (el("setLimit")) {
       el("setLimit").value = settings.dailyLimit || "";
@@ -1341,6 +1343,153 @@
 
     setInterval(function () { renderToday(); }, 60000);
     setInterval(function () { renderSince(); }, 1000);
+  }
+
+  // ---------- Dumancık: yardımcı asistan ----------
+  var asstOpened = false;
+
+  function asstStats() {
+    var all = countWho(entries);
+    var today = todayEntries().length;
+    var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
+    var avg7 = entriesSince(sevenAgo).length / 7;
+    var wStart = startOfWeek(Date.now()).getTime();
+    var thisWeek = entriesSince(wStart).length;
+    var lastWeek = entries.filter(function (e) { return e.ts >= wStart - 7 * 86400000 && e.ts < wStart; }).length;
+    // en yoğun saat
+    var byHour = [];
+    for (var h = 0; h < 24; h++) byHour[h] = 0;
+    entries.forEach(function (e) { byHour[new Date(e.ts).getHours()]++; });
+    var peakH = 0;
+    for (h = 1; h < 24; h++) if (byHour[h] > byHour[peakH]) peakH = h;
+    var last = entries.length ? entries[entries.length - 1] : null;
+    return {
+      all: all, today: today, avg7: avg7, thisWeek: thisWeek, lastWeek: lastWeek,
+      peakH: peakH, peakCount: byHour[peakH], last: last,
+      utku: all.utku + all.both, gozde: all.gozde + all.both
+    };
+  }
+
+  // Bir konuya veriden üretilmiş cevap döndürür (metin dizisi)
+  function asstReply(topic) {
+    var s = asstStats();
+    if (s.all.total === 0 && topic !== "hi") {
+      return ["Henüz hiç kayıt yok 💨 İlk sigarayı eklediğinde sana verilerinizi yorumlarım!"];
+    }
+    var out = [];
+    if (topic === "hi") {
+      var hr = new Date().getHours();
+      var greet = hr < 6 ? "İyi geceler" : hr < 12 ? "Günaydın" : hr < 18 ? "İyi günler" : "İyi akşamlar";
+      out.push(greet + "! Ben Dumancık 💨 Verilerinizi takip ediyorum, merak ettiğini sor.");
+      if (s.all.total > 0) {
+        if (s.today === 0) out.push("Bugün henüz hiç içmemişsiniz — böyle devam! 🌿");
+        else if (s.avg7 > 0 && s.today < s.avg7) out.push("Bugün " + s.today + " sigara; 7 günlük ortalamanızın (" + s.avg7.toFixed(1) + ") altındasınız. Aferin! 👏");
+        else if (s.avg7 > 0 && s.today > s.avg7) out.push("Bugün " + s.today + " sigara — ortalamanızın (" + s.avg7.toFixed(1) + ") biraz üstündesiniz.");
+        else out.push("Bugün şu ana kadar " + s.today + " sigara içildi.");
+      }
+    } else if (topic === "today") {
+      out.push("Bugün toplam " + s.today + " sigara içildi.");
+      if (s.avg7 > 0) {
+        var diff = s.today - s.avg7;
+        if (diff < 0) out.push("7 günlük ortalamanız " + s.avg7.toFixed(1) + " — bugün " + Math.abs(diff).toFixed(1) + " tane altındasınız, harika gidiyorsunuz! 🌿");
+        else if (diff > 0) out.push("7 günlük ortalamanız " + s.avg7.toFixed(1) + " — bugün biraz üstündesiniz, kalanı yavaşlatmayı deneyin 💪");
+        else out.push("Tam ortalamanızdasınız (" + s.avg7.toFixed(1) + ").");
+      }
+    } else if (topic === "who") {
+      if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " sigara, Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
+      else if (s.gozde > s.utku) out.push("Gözde önde: " + s.gozde + " sigara, Utku " + s.utku + ". Fark " + (s.gozde - s.utku) + " 🏆");
+      else out.push("Tam berabere! İkiniz de " + s.utku + " sigara 🤝");
+      var pct = s.all.total ? Math.round(s.all.both / s.all.total * 100) : 0;
+      out.push("Sigaraların %" + pct + "'ini birlikte içtiniz 💜");
+    } else if (topic === "peak") {
+      if (s.peakCount === 0) out.push("Henüz saat örüntüsü çıkaracak kadar veri yok.");
+      else {
+        out.push("En yoğun saatiniz " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " sigara) ⏰");
+        out.push("O saate yaklaşırken kendinizi bir bardak suyla oyalamayı deneyin 💧");
+      }
+    } else if (topic === "week") {
+      out.push("Bu hafta " + s.thisWeek + " sigara içtiniz.");
+      if (s.lastWeek > 0) {
+        if (s.thisWeek < s.lastWeek) out.push("Geçen haftaya göre " + (s.lastWeek - s.thisWeek) + " tane az — düşüşteyiz, süper! 📉");
+        else if (s.thisWeek > s.lastWeek) out.push("Geçen haftaya göre " + (s.thisWeek - s.lastWeek) + " tane fazla. Bu hafta biraz kısmayı deneyelim mi? 💪");
+        else out.push("Geçen haftayla aynı seviyedesiniz.");
+      }
+    } else if (topic === "tip") {
+      // Veriye göre en anlamlı tavsiyeyi seç
+      if (s.last) {
+        var gapMin = Math.floor((Date.now() - s.last.ts) / 60000);
+        if (gapMin >= 120) out.push("Son sigaradan bu yana " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem, harika gidiyorsunuz! 🌿");
+      }
+      if (s.peakCount > 0) out.push("İpucu: En çok " + pad2(s.peakH) + ":00 sularında içiyorsunuz. O saatte kısa bir yürüyüş krizi atlatmaya yardımcı olur 🚶");
+      if (s.avg7 > 0) {
+        var target = Math.max(0, Math.floor(s.avg7) - 1);
+        out.push("Küçük hedef: Bugünü " + target + " sigarada bitirebilirsen ortalamanı düşürürsün. Sen yaparsın! 💪");
+      }
+      if (out.length === 0) out.push("Şimdilik harika gidiyorsunuz, böyle devam! Her eklemediğiniz sigara bir kazanç 💨");
+    }
+    return out;
+  }
+
+  function asstPush(text, isMe) {
+    var body = el("asstBody");
+    var msg = document.createElement("div");
+    msg.className = "asst-msg" + (isMe ? " me" : "");
+    msg.textContent = text;
+    body.appendChild(msg);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  var ASST_CHIPS = [
+    { k: "today", t: "Bugün nasıl?" },
+    { k: "who", t: "Kim önde?" },
+    { k: "week", t: "Bu hafta?" },
+    { k: "peak", t: "En yoğun saatim?" },
+    { k: "tip", t: "Tavsiye ver 💡" }
+  ];
+
+  function asstAsk(topic, label) {
+    if (label) asstPush(label, true);
+    var replies = asstReply(topic);
+    var i = 0;
+    (function next() {
+      if (i >= replies.length) return;
+      setTimeout(function () {
+        asstPush(replies[i], false);
+        i++;
+        next();
+      }, i === 0 ? 250 : 500);
+    })();
+  }
+
+  function asstOpen() {
+    var panel = el("asstPanel");
+    panel.classList.remove("hidden");
+    el("asstBadge").classList.add("hidden");
+    if (!asstOpened) {
+      asstOpened = true;
+      el("asstBody").innerHTML = "";
+      asstAsk("hi");
+    }
+  }
+
+  function bindAssistant() {
+    var chips = el("asstChips");
+    ASST_CHIPS.forEach(function (c) {
+      var b = document.createElement("button");
+      b.className = "asst-chip";
+      b.textContent = c.t;
+      b.addEventListener("click", function () { asstAsk(c.k, c.t); });
+      chips.appendChild(b);
+    });
+    el("asstFab").addEventListener("click", function () {
+      var panel = el("asstPanel");
+      if (panel.classList.contains("hidden")) asstOpen();
+      else panel.classList.add("hidden");
+    });
+    el("asstClose").addEventListener("click", function () { el("asstPanel").classList.add("hidden"); });
+    // İlk açılışta dikkat çeken rozet
+    el("asstBadge").textContent = "?";
+    el("asstBadge").classList.remove("hidden");
   }
 
   function handleQuickAction() {

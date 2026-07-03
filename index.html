@@ -300,6 +300,26 @@
     </footer>
   </div>
 
+  <!-- Dumancık: yardımcı asistan maskot -->
+  <div id="assistant" class="assistant">
+    <div id="asstPanel" class="asst-panel hidden" role="dialog" aria-label="Dumancık asistan">
+      <div class="asst-head">
+        <img class="asst-face" src="icons/mascot.svg" alt="Dumancık" />
+        <div class="asst-title">
+          <strong>Dumancık</strong>
+          <span>yardımcı asistanın</span>
+        </div>
+        <button id="asstClose" class="asst-close" aria-label="Kapat">✕</button>
+      </div>
+      <div id="asstBody" class="asst-body"></div>
+      <div id="asstChips" class="asst-chips"></div>
+    </div>
+    <button id="asstFab" class="asst-fab" aria-label="Dumancık'a sor">
+      <img class="asst-fab-face" src="icons/mascot.svg" alt="Dumancık" />
+      <span id="asstBadge" class="asst-badge hidden"></span>
+    </button>
+  </div>
+
   <nav class="tabbar" role="tablist">
     <button class="tab active" data-tab="home"><span class="tab-ico">🏠</span><span class="tab-lbl">Anasayfa</span></button>
     <button class="tab" data-tab="stats"><span class="tab-ico">📊</span><span class="tab-lbl">İstatistik</span></button>
