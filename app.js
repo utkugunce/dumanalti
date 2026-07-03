@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "3.2.1";
-  var APP_BUILD = 54;
+  var APP_VERSION = "3.2.2";
+  var APP_BUILD = 55;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -1494,8 +1494,8 @@
   }
 
   function handleQuickAction() {
-    // Ana ekran kısayolu / Siri Kısayolları'ndan ?add=utku|gozde|both ile açılırsa
-    // uygulamayı açar açmaz o kaydı ekler (manifest.json "shortcuts").
+    // iOS Kısayollar uygulaması veya bir yer iminden ?add=utku|gozde|both ile
+    // açılırsa uygulamayı açar açmaz o kaydı ekler.
     var who = new URLSearchParams(window.location.search).get("add");
     if (who !== "utku" && who !== "gozde" && who !== "both") return;
     history.replaceState(null, "", window.location.pathname);

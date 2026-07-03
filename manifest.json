@@ -28,28 +28,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "shortcuts": [
-    {
-      "name": "Utku içti",
-      "short_name": "Utku",
-      "description": "Utku'nun sigara içtiğini tek dokunuşla kaydet",
-      "url": "./?add=utku",
-      "icons": [{ "src": "icons/shortcut-utku.png", "sizes": "192x192", "type": "image/png" }]
-    },
-    {
-      "name": "Gözde içti",
-      "short_name": "Gözde",
-      "description": "Gözde'nin sigara içtiğini tek dokunuşla kaydet",
-      "url": "./?add=gozde",
-      "icons": [{ "src": "icons/shortcut-gozde.png", "sizes": "192x192", "type": "image/png" }]
-    },
-    {
-      "name": "Ortak içtik",
-      "short_name": "Ortak",
-      "description": "Ortak içilen sigarayı tek dokunuşla kaydet",
-      "url": "./?add=both",
-      "icons": [{ "src": "icons/shortcut-both.png", "sizes": "192x192", "type": "image/png" }]
-    }
   ]
 }
