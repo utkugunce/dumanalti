@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "3.1.1";
-  var APP_BUILD = 49;
+  var APP_VERSION = "3.1.2";
+  var APP_BUILD = 50;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -749,8 +749,9 @@
   function setStatus(text, state) {
     var node = el("cloudStatus");
     if (!node) return;
-    var textNode = el("cloudStatusText");
-    if (textNode) textNode.textContent = text; else node.textContent = text;
+    // Metin gizli; açıklama dokununca/hover'da title olarak görünür
+    node.title = text;
+    node.setAttribute("aria-label", text);
     node.className = "cloud-status status-" + (state || "offline");
   }
   function refreshStatus() {
