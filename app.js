@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.1.0";
-  var APP_BUILD = 58;
+  var APP_VERSION = "4.2.0";
+  var APP_BUILD = 59;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -184,6 +184,7 @@
     var t = countWho(todayEntries());
     el("todayUtku").textContent = t.utku + t.both;
     el("todayGozde").textContent = t.gozde + t.both;
+    el("todayBoth").textContent = t.both;
     el("todayTotal").textContent = t.total;
 
     el("btnTodayUtku").textContent = "bugün " + (t.utku + t.both);
@@ -194,15 +195,50 @@
     el("todayDate").textContent =
       ("0" + now.getDate()).slice(-2) + "." + ("0" + (now.getMonth() + 1)).slice(-2) + "." + now.getFullYear();
 
+    // Dün bu saate kadar içilenle kıyasla: azsa yeşil, fazlaysa kırmızı rozet
+    var yStart = startOfDay(now).getTime() - 86400000;
+    var yCut = now.getTime() - 86400000;
+    var ySame = entries.filter(function (e) { return e.ts >= yStart && e.ts <= yCut; }).length;
+    var trend = el("todayTrend");
+    var diff = t.total - ySame;
+    trend.classList.remove("up", "down");
+    if (diff > 0) { trend.classList.add("up"); trend.textContent = "▲ " + diff; }
+    else if (diff < 0) { trend.classList.add("down"); trend.textContent = "▼ " + (-diff); }
+    else { trend.textContent = "＝"; }
+    el("todayHeroSub").textContent = "toplam · dün bu saatte " + ySame;
+
+    renderTodayFlow();
+
     var lastSmoke = el("lastSmoke");
     lastSmoke.innerHTML = "";
     if (entries.length) {
       var last = entries[entries.length - 1];
       lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
-      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " · " + relativeTime(last.ts)));
+      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
     } else {
       lastSmoke.textContent = "—";
     }
+  }
+
+  // Günün akışı: bugünkü her sigo 24 saatlik şeritte kişi renginde bir nokta,
+  // ince çizgi şu anki saati gösterir (renderToday dakikada bir çalışır)
+  function renderTodayFlow() {
+    var track = el("todayFlow");
+    if (!track) return;
+    track.innerHTML = "";
+    todayEntries().forEach(function (e) {
+      var d = new Date(e.ts);
+      var dot = document.createElement("span");
+      dot.className = "flow-dot " + WHO[e.who].cls;
+      dot.style.left = ((d.getHours() * 60 + d.getMinutes()) / 1440 * 100) + "%";
+      dot.title = WHO[e.who].label + " · " + formatTime(e.ts);
+      track.appendChild(dot);
+    });
+    var now = new Date();
+    var tick = document.createElement("span");
+    tick.className = "flow-now";
+    tick.style.left = ((now.getHours() * 60 + now.getMinutes()) / 1440 * 100) + "%";
+    track.appendChild(tick);
   }
 
   function breakdownText(c) {

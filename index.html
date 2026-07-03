@@ -58,19 +58,32 @@
         <h2>Bugün</h2>
         <span class="date-chip" id="todayDate"></span>
       </div>
-      <div class="today-grid">
-        <div class="today-stat">
-          <span class="today-num" id="todayUtku">0</span>
-          <span class="today-name"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</span>
+      <div class="today-top">
+        <div class="today-hero">
+          <div class="today-hero-num">
+            <span class="today-num" id="todayTotal">0</span>
+            <span class="trend-chip" id="todayTrend">＝</span>
+          </div>
+          <span class="today-hero-sub" id="todayHeroSub">toplam sigo</span>
         </div>
-        <div class="today-stat">
-          <span class="today-num" id="todayGozde">0</span>
-          <span class="today-name"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</span>
+        <div class="today-duo">
+          <div class="duo-row">
+            <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</span>
+            <strong class="duo-num" id="todayUtku">0</strong>
+          </div>
+          <div class="duo-row">
+            <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</span>
+            <strong class="duo-num" id="todayGozde">0</strong>
+          </div>
+          <div class="duo-row">
+            <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</span>
+            <strong class="duo-num" id="todayBoth">0</strong>
+          </div>
         </div>
-        <div class="today-stat total">
-          <span class="today-num" id="todayTotal">0</span>
-          <span class="today-name">🔥 Toplam</span>
-        </div>
+      </div>
+      <div class="today-flow" aria-label="Günün akışı">
+        <div class="flow-track" id="todayFlow"></div>
+        <div class="flow-labels"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
       </div>
       <div class="last-row">
         <span>Son sigo:</span>
