@@ -228,16 +228,10 @@ body {
   box-shadow: 0 10px 26px -10px rgba(176, 123, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .action-avatar {
-  width: 46px;
-  height: 46px;
+  width: 64px;
+  height: 64px;
   border: 2px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22), 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-.action-label {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .action-today {
   font-size: 11px;
@@ -869,7 +863,6 @@ body {
 .history-item.is-pending { opacity: 0.6; }
 
 @media (max-width: 360px) {
-  .action-label { font-size: 12px; }
   .today-num { font-size: 24px; }
 }
 
@@ -886,9 +879,8 @@ body {
   .card { padding: 7px 12px; }
   .card-head { margin-bottom: 4px; }
   .actions { gap: 8px; }
-  .action-avatar { width: 32px; height: 32px; }
-  .action-btn { padding: 5px 8px 5px; gap: 3px; }
-  .action-label { font-size: 12px; }
+  .action-avatar { width: 54px; height: 54px; }
+  .action-btn { padding: 8px 8px 7px; gap: 5px; }
   .action-today { font-size: 10px; padding: 1px 7px; }
   .today-grid { margin-bottom: 6px; }
   .today-num { font-size: 18px; }
