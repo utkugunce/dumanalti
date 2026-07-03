@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "3.1.0";
-  var APP_BUILD = 48;
+  var APP_VERSION = "3.1.1";
+  var APP_BUILD = 49;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -754,11 +754,11 @@
     node.className = "cloud-status status-" + (state || "offline");
   }
   function refreshStatus() {
-    if (!sb) { setStatus("📴 Yerel mod · bulut kapalı", "offline"); return; }
-    if (!navigator.onLine) { setStatus("📴 Çevrimdışı · gelince senkronlanır", "offline"); return; }
-    if (lastCloudError) { setStatus("⚠️ Bulut hatası: " + lastCloudError + " · " + outbox.length + " bekliyor", "error"); return; }
-    if (outbox.length) { setStatus("⏳ " + outbox.length + " kayıt bekliyor…", "syncing"); return; }
-    setStatus(cloudReady ? "☁️ Bulutta senkron · ortak görünüm" : "☁️ Bağlanıyor…", cloudReady ? "online" : "syncing");
+    if (!sb) { setStatus("📴 Yerel mod", "offline"); return; }
+    if (!navigator.onLine) { setStatus("📴 Çevrimdışı", "offline"); return; }
+    if (lastCloudError) { setStatus("⚠️ Bulut hatası · " + outbox.length + " bekliyor", "error"); return; }
+    if (outbox.length) { setStatus("⏳ " + outbox.length + " bekliyor…", "syncing"); return; }
+    setStatus(cloudReady ? "☁️ Senkron" : "☁️ Bağlanıyor…", cloudReady ? "online" : "syncing");
   }
 
   // ---------- Actions ----------
