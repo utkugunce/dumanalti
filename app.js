@@ -1,4 +1,4 @@
-/* Dumanaltı — Utku & Gözde joint takip PWA
+/* Dumanaltı — Utku & Gözde sigo takip PWA
    Veriler Supabase'de bulutta tutulur ve cihazlar arasında gerçek zamanlı
    senkronlanır. Çevrimdışıyken yerel önbellekten okunur, internet gelince
    bekleyen kayıtlar otomatik gönderilir. */
@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.0.0";
-  var APP_BUILD = 56;
+  var APP_VERSION = "4.0.1";
+  var APP_BUILD = 57;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -298,7 +298,7 @@
     var all = countWho(entries);
 
     if (all.total === 0) {
-      items.push({ e: "✨", t: "Henüz veri yok. İlk jointi eklediğinde burada istatistikler çıkacak." });
+      items.push({ e: "✨", t: "Henüz veri yok. İlk sigoyu eklediğinde burada istatistikler çıkacak." });
     } else {
       var duel = weeklyDuelText();
       if (duel) items.push({ e: "🥇", t: duel });
@@ -306,15 +306,15 @@
       var utkuTotal = all.utku + all.both;
       var gozdeTotal = all.gozde + all.both;
       if (utkuTotal > gozdeTotal) {
-        items.push({ e: "🏆", t: "Utku toplamda " + (utkuTotal - gozdeTotal) + " joint önde (" + utkuTotal + " - " + gozdeTotal + ")." });
+        items.push({ e: "🏆", t: "Utku toplamda " + (utkuTotal - gozdeTotal) + " sigo önde (" + utkuTotal + " - " + gozdeTotal + ")." });
       } else if (gozdeTotal > utkuTotal) {
-        items.push({ e: "🏆", t: "Gözde toplamda " + (gozdeTotal - utkuTotal) + " joint önde (" + gozdeTotal + " - " + utkuTotal + ")." });
+        items.push({ e: "🏆", t: "Gözde toplamda " + (gozdeTotal - utkuTotal) + " sigo önde (" + gozdeTotal + " - " + utkuTotal + ")." });
       } else {
-        items.push({ e: "🤝", t: "Tam berabere! İkiniz de " + utkuTotal + " joint." });
+        items.push({ e: "🤝", t: "Tam berabere! İkiniz de " + utkuTotal + " sigo." });
       }
 
       var pct = Math.round(all.both / all.total * 100);
-      items.push({ av: "both", t: "Jointlerin %" + pct + "'ini birlikte içtiniz." });
+      items.push({ av: "both", t: "Sigoların %" + pct + "'ini birlikte içtiniz." });
 
       var byDay = {};
       entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
@@ -323,7 +323,7 @@
       if (maxDay) {
         var parts = maxDay.split("-");
         var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2);
-        items.push({ e: "📈", t: "En yoğun gün: " + dd + " (" + maxCount + " joint)." });
+        items.push({ e: "📈", t: "En yoğun gün: " + dd + " (" + maxCount + " sigo)." });
       }
 
       var todayCount = todayEntries().length;
@@ -338,9 +338,9 @@
       }
 
       var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(monthStart.getTime()).length + " joint." });
+      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(monthStart.getTime()).length + " sigo." });
 
-      items.push({ e: "📊", t: "Son 7 günde günde ortalama " + avg.toFixed(1) + " joint." });
+      items.push({ e: "📊", t: "Son 7 günde günde ortalama " + avg.toFixed(1) + " sigo." });
 
       var byDow = [0, 0, 0, 0, 0, 0, 0];
       entries.forEach(function (e) { byDow[new Date(e.ts).getDay()]++; });
@@ -351,7 +351,7 @@
 
       if (entries.length) {
         var last = entries[entries.length - 1];
-        items.push({ e: "⏱️", t: "Son jointten bu yana " + relativeTime(last.ts).replace(" önce", "") + " geçti." });
+        items.push({ e: "⏱️", t: "Son sigodan bu yana " + relativeTime(last.ts).replace(" önce", "") + " geçti." });
       }
     }
 
@@ -466,7 +466,7 @@
   }
 
   function sinceData(who) {
-    // Ortak içilen joint, Utku ve Gözde'nin de sayacını sıfırlar.
+    // Ortak içilen sigo, Utku ve Gözde'nin de sayacını sıfırlar.
     var sub = entries.filter(function (e) {
       return e.who === who || (who !== "both" && e.who === "both");
     });
@@ -526,7 +526,7 @@
     }
     el("hourPeak").textContent = list.length ? "en yoğun " + pad2(peakH) + ":00" : "";
 
-    // Bara dokununca o saatte kaç joint içildiğini balonda göster
+    // Bara dokununca o saatte kaç sigo içildiğini balonda göster
     if (!chart.hourTipBound) {
       chart.hourTipBound = true;
       chart.addEventListener("click", function (ev) {
@@ -551,7 +551,7 @@
     var tip = document.createElement("div");
     tip.className = "hour-tip";
     tip.setAttribute("data-h", String(h));
-    tip.textContent = pad2(h) + ":00–" + pad2(h) + ":59 · " + count + " joint";
+    tip.textContent = pad2(h) + ":00–" + pad2(h) + ":59 · " + count + " sigo";
     chart.appendChild(tip);
     // kolonun ortasına hizala, kenarlardan taşmasın
     var x = col.offsetLeft + col.offsetWidth / 2 - tip.offsetWidth / 2;
@@ -660,9 +660,9 @@
     var span = Math.round((lastDay - firstDay) / 86400000) + 1;
 
     var items = [
-      { e: "🔥", t: "Tek günde rekor: " + maxC + " joint (" + dd + ")" },
+      { e: "🔥", t: "Tek günde rekor: " + maxC + " sigo (" + dd + ")" },
       { e: "⏱️", t: "En uzun ara: " + fmtCoarse(maxGap) },
-      { e: "🧹", t: "Jointsiz gün: " + free },
+      { e: "🧹", t: "Sigosuz gün: " + free },
       { e: "📆", t: "Takip süresi: " + span + " gün" }
     ];
     items.forEach(function (it) {
@@ -704,7 +704,7 @@
       var lvl = c === 0 ? 0 : c <= 2 ? 1 : c <= 4 ? 2 : c <= 6 ? 3 : 4;
       var cell = document.createElement("span");
       cell.className = "cal-cell l" + lvl + (day === now.getDate() ? " today" : "");
-      cell.title = day + " " + MONTHS[month] + " · " + c + " joint";
+      cell.title = day + " " + MONTHS[month] + " · " + c + " sigo";
       cell.textContent = day;
       grid.appendChild(cell);
     }
@@ -1314,7 +1314,7 @@
       });
     });
 
-    // Gözde/Utku seçiliyken: ortak jointi dahil et/etme
+    // Gözde/Utku seçiliyken: ortak sigoyu dahil et/etme
     document.querySelectorAll("#scopeToggle .seg-btn").forEach(function (b) {
       b.addEventListener("click", function () {
         scopeIncludeBoth = b.getAttribute("data-include") === "yes";
@@ -1375,7 +1375,7 @@
   function asstReply(topic) {
     var s = asstStats();
     if (s.all.total === 0 && topic !== "hi") {
-      return ["Henüz hiç kayıt yok 💨 İlk jointi eklediğinde sana verilerinizi yorumlarım!"];
+      return ["Henüz hiç kayıt yok 💨 İlk sigoyu eklediğinde sana verilerinizi yorumlarım!"];
     }
     var out = [];
     if (topic === "hi") {
@@ -1384,12 +1384,12 @@
       out.push(greet + "! Ben Dumancık 💨 Verilerinizi takip ediyorum, merak ettiğini sor.");
       if (s.all.total > 0) {
         if (s.today === 0) out.push("Bugün henüz hiç içmemişsiniz — böyle devam! 🌿");
-        else if (s.avg7 > 0 && s.today < s.avg7) out.push("Bugün " + s.today + " joint; 7 günlük ortalamanızın (" + s.avg7.toFixed(1) + ") altındasınız. Aferin! 👏");
-        else if (s.avg7 > 0 && s.today > s.avg7) out.push("Bugün " + s.today + " joint — ortalamanızın (" + s.avg7.toFixed(1) + ") biraz üstündesiniz.");
-        else out.push("Bugün şu ana kadar " + s.today + " joint içildi.");
+        else if (s.avg7 > 0 && s.today < s.avg7) out.push("Bugün " + s.today + " sigo; 7 günlük ortalamanızın (" + s.avg7.toFixed(1) + ") altındasınız. Aferin! 👏");
+        else if (s.avg7 > 0 && s.today > s.avg7) out.push("Bugün " + s.today + " sigo — ortalamanızın (" + s.avg7.toFixed(1) + ") biraz üstündesiniz.");
+        else out.push("Bugün şu ana kadar " + s.today + " sigo içildi.");
       }
     } else if (topic === "today") {
-      out.push("Bugün toplam " + s.today + " joint içildi.");
+      out.push("Bugün toplam " + s.today + " sigo içildi.");
       if (s.avg7 > 0) {
         var diff = s.today - s.avg7;
         if (diff < 0) out.push("7 günlük ortalamanız " + s.avg7.toFixed(1) + " — bugün " + Math.abs(diff).toFixed(1) + " tane altındasınız, harika gidiyorsunuz! 🌿");
@@ -1397,19 +1397,19 @@
         else out.push("Tam ortalamanızdasınız (" + s.avg7.toFixed(1) + ").");
       }
     } else if (topic === "who") {
-      if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " joint, Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
-      else if (s.gozde > s.utku) out.push("Gözde önde: " + s.gozde + " joint, Utku " + s.utku + ". Fark " + (s.gozde - s.utku) + " 🏆");
-      else out.push("Tam berabere! İkiniz de " + s.utku + " joint 🤝");
+      if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " sigo, Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
+      else if (s.gozde > s.utku) out.push("Gözde önde: " + s.gozde + " sigo, Utku " + s.utku + ". Fark " + (s.gozde - s.utku) + " 🏆");
+      else out.push("Tam berabere! İkiniz de " + s.utku + " sigo 🤝");
       var pct = s.all.total ? Math.round(s.all.both / s.all.total * 100) : 0;
-      out.push("Jointlerin %" + pct + "'ini birlikte içtiniz 💜");
+      out.push("Sigoların %" + pct + "'ini birlikte içtiniz 💜");
     } else if (topic === "peak") {
       if (s.peakCount === 0) out.push("Henüz saat örüntüsü çıkaracak kadar veri yok.");
       else {
-        out.push("En yoğun saatiniz " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " joint) ⏰");
+        out.push("En yoğun saatiniz " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " sigo) ⏰");
         out.push("O saate yaklaşırken kendinizi bir bardak suyla oyalamayı deneyin 💧");
       }
     } else if (topic === "week") {
-      out.push("Bu hafta " + s.thisWeek + " joint içtiniz.");
+      out.push("Bu hafta " + s.thisWeek + " sigo içtiniz.");
       if (s.lastWeek > 0) {
         if (s.thisWeek < s.lastWeek) out.push("Geçen haftaya göre " + (s.lastWeek - s.thisWeek) + " tane az — düşüşteyiz, süper! 📉");
         else if (s.thisWeek > s.lastWeek) out.push("Geçen haftaya göre " + (s.thisWeek - s.lastWeek) + " tane fazla. Bu hafta biraz kısmayı deneyelim mi? 💪");
@@ -1419,14 +1419,14 @@
       // Veriye göre en anlamlı tavsiyeyi seç
       if (s.last) {
         var gapMin = Math.floor((Date.now() - s.last.ts) / 60000);
-        if (gapMin >= 120) out.push("Son jointten bu yana " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem, harika gidiyorsunuz! 🌿");
+        if (gapMin >= 120) out.push("Son sigodan bu yana " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem, harika gidiyorsunuz! 🌿");
       }
       if (s.peakCount > 0) out.push("İpucu: En çok " + pad2(s.peakH) + ":00 sularında içiyorsunuz. O saatte kısa bir yürüyüş krizi atlatmaya yardımcı olur 🚶");
       if (s.avg7 > 0) {
         var target = Math.max(0, Math.floor(s.avg7) - 1);
-        out.push("Küçük hedef: Bugünü " + target + " jointte bitirebilirsen ortalamanı düşürürsün. Sen yaparsın! 💪");
+        out.push("Küçük hedef: Bugünü " + target + " sigoda bitirebilirsen ortalamanı düşürürsün. Sen yaparsın! 💪");
       }
-      if (out.length === 0) out.push("Şimdilik harika gidiyorsunuz, böyle devam! Her eklemediğiniz joint bir kazanç 💨");
+      if (out.length === 0) out.push("Şimdilik harika gidiyorsunuz, böyle devam! Her eklemediğiniz sigo bir kazanç 💨");
     }
     return out;
   }

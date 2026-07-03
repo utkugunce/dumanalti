@@ -1,7 +1,7 @@
 {
-  "name": "Dumanaltı — Joint Takip",
+  "name": "Dumanaltı — Sigo Takip",
   "short_name": "Dumanaltı",
-  "description": "Utku & Gözde joint takip uygulaması",
+  "description": "Utku & Gözde sigo takip uygulaması",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
