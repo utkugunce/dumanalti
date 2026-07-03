@@ -23,6 +23,7 @@ Güncel sürüm sayacı: **v4.3.0 · derleme 60 · SW cache `dumanalti-v60`** �
 - Düzen ayarları her zaman **iPhone 13 (390×844)** ve **iPhone 11 (414×896)** için test edilir, Safari-efektif yükseklikler dahil.
 - Anasayfa **tek tam ekran** olmalı; uzun ekranda kartlar flex ile boşluğu doldurur.
 - Terminoloji: **"sigo"** (sigara/joint değil).
+- Kayıt türleri (sıra sabit): 1. Utku, 2. Gözde, 3. Ortak (`both`), 4. **Hep beraber** (`hepberaber`, misafirlerle içilen; amber renk, ikisinin de kişisel sayacına işlenir). Hep beraber her zaman DÖRDÜNCÜ seçenektir.
 - Maskot: **Dumancık** (yaprak filizli bulut, `icons/mascot.svg`), asistan paneliyle birlikte.
 
 ## Çalışma düzeni
