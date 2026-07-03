@@ -10,6 +10,7 @@
   --utku: #7ac74f;
   --gozde: #c9e265;
   --both: #4fc796;
+  --hepberaber: #ffc857;
   --accent: #a4e05a;
   --danger: #ff5a5a;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -174,17 +175,17 @@ body {
 /* Action buttons */
 .actions {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
 }
 .action-btn {
   border: none;
   border-radius: 20px;
-  padding: 14px 8px 12px;
+  padding: 11px 6px 9px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   cursor: pointer;
   color: #fff;
   font-family: inherit;
@@ -238,9 +239,16 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 10px 26px -10px rgba(79, 199, 150, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
+.action-btn.hepberaber {
+  background: linear-gradient(165deg, rgba(255, 216, 122, 0.8), rgba(214, 164, 60, 0.55) 45%, rgba(150, 108, 30, 0.65));
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 26px -10px rgba(255, 200, 87, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
 .action-avatar {
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   border: 2px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22), 0 4px 12px rgba(0, 0, 0, 0.35);
 }
@@ -366,7 +374,7 @@ body {
 
 /* Today (Bugün kartı): solda büyük toplam + dün kıyası, sağda kişi satırları,
    altta günün 24 saatlik akış şeridi */
-.today-top { display: flex; gap: 8px; margin-bottom: 5px; }
+.today-top { display: flex; gap: 8px; margin-bottom: 4px; }
 .today-hero {
   flex: 1.15;
   background: linear-gradient(160deg, rgba(164, 224, 90, 0.2), rgba(164, 224, 90, 0.05));
@@ -392,7 +400,7 @@ body {
 .trend-chip.down { background: rgba(122, 199, 79, 0.2); color: var(--accent); }
 [data-theme="light"] .trend-chip.down { color: #4c8b2b; }
 .today-hero-sub { font-size: 11px; color: var(--muted); }
-.today-duo { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.today-duo { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .duo-row {
   flex: 1;
   display: flex;
@@ -487,6 +495,7 @@ body {
 .utku-bg { background: var(--utku); }
 .gozde-bg { background: var(--gozde); }
 .both-bg { background: var(--both); }
+.hepberaber-bg { background: var(--hepberaber); }
 
 /* Chart */
 .chart {
@@ -520,6 +529,7 @@ body {
 .bar-seg.utku-bg { background: var(--utku); }
 .bar-seg.gozde-bg { background: var(--gozde); }
 .bar-seg.both-bg { background: var(--both); }
+.bar-seg.hepberaber-bg { background: var(--hepberaber); }
 .bar-empty { background: var(--bg-elev-2); height: 3px; width: 70%; max-width: 30px; border-radius: 3px; }
 .bar-total { font-size: 11px; font-weight: 700; }
 .bar-label { font-size: 10px; color: var(--muted); }
@@ -540,7 +550,7 @@ body {
 /* İstatistik person scope bar */
 .scope-bar {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -549,12 +559,17 @@ body {
 }
 .scope-chip {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap; /* 5 çip yan yana; etiket alt satıra kırılmasın */
   background: transparent;
   border: none;
   color: var(--muted);
   border-radius: 10px;
-  padding: 8px 6px;
-  font-size: 12px;
+  padding: 8px 3px;
+  font-size: 11px;
   font-family: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -929,6 +944,7 @@ body {
 .history-item.who-utku  { border-left-color: var(--utku); }
 .history-item.who-gozde { border-left-color: var(--gozde); }
 .history-item.who-both  { border-left-color: var(--both); }
+.history-item.who-hepberaber { border-left-color: var(--hepberaber); }
 .history-item.is-pending { opacity: 0.6; }
 
 @media (max-width: 360px) {
@@ -947,15 +963,18 @@ body {
   .icon-btn { width: 40px; height: 40px; }
   .card { padding: 6px 12px; }
   .card-head { margin-bottom: 4px; }
-  .actions { gap: 8px; }
-  .action-avatar { width: 44px; height: 44px; }
-  .action-btn { padding: 5px 8px 5px; gap: 4px; }
-  .action-today { font-size: 10px; padding: 1px 7px; }
+  .actions { gap: 6px; }
+  .action-avatar { width: 40px; height: 40px; }
+  .action-btn { padding: 4px 5px 4px; gap: 3px; }
+  .action-today { font-size: 9px; padding: 1px 5px; }
   .today-top { gap: 6px; margin-bottom: 4px; }
   .today-hero { padding: 4px 10px; gap: 1px; }
-  .today-num { font-size: 24px; }
+  .today-num { font-size: 22px; }
+  .today-duo { gap: 2px; }
   .duo-row { padding: 1px 8px; }
-  .duo-num { font-size: 13px; }
+  .duo-who { font-size: 11px; line-height: 1.2; }
+  .duo-num { font-size: 12px; line-height: 1.2; }
+  .duo-row .avatar-tiny { width: 13px; height: 13px; }
   .today-flow { margin-bottom: 2px; }
   .flow-track { height: 10px; }
   .flow-dot { width: 7px; height: 7px; }
@@ -981,6 +1000,7 @@ body {
   .action-btn.utku { background: linear-gradient(165deg, #96d66a, #60a83c 45%, #387620); }
   .action-btn.gozde { background: linear-gradient(165deg, #daeb82, #a0c43c 45%, #6e8c1e); }
   .action-btn.both { background: linear-gradient(165deg, #78e0b4, #38a87a 45%, #1e7652); }
+  .action-btn.hepberaber { background: linear-gradient(165deg, #ffd87a, #d6a43c 45%, #966c1e); }
   [data-theme="light"] .card { background: rgba(255, 255, 255, 0.95); }
   [data-theme="light"] .tabbar { background: rgba(255, 255, 255, 0.96); }
 }

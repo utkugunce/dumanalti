@@ -42,6 +42,10 @@
         <img class="action-avatar avatar" src="icons/avatar-both.png" alt="Ortak" />
         <span class="action-today" id="btnTodayBoth">bugün 0</span>
       </button>
+      <button class="action-btn hepberaber" data-who="hepberaber" aria-label="Hep beraber içtik">
+        <img class="action-avatar avatar" src="icons/avatar-hepberaber.svg" alt="Hep beraber" />
+        <span class="action-today" id="btnTodayHepberaber">bugün 0</span>
+      </button>
     </section>
 
     <!-- Undo bar -->
@@ -78,6 +82,10 @@
           <div class="duo-row">
             <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</span>
             <strong class="duo-num" id="todayBoth">0</strong>
+          </div>
+          <div class="duo-row">
+            <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-hepberaber.svg" alt="" /> Hep beraber</span>
+            <strong class="duo-num" id="todayHepberaber">0</strong>
           </div>
         </div>
       </div>
@@ -133,6 +141,7 @@
     <div class="scope-bar" id="scopeBar">
       <button class="scope-chip active" data-scope="all">Tümü</button>
       <button class="scope-chip" data-scope="both"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</button>
+      <button class="scope-chip" data-scope="hepberaber"><img class="avatar avatar-tiny" src="icons/avatar-hepberaber.svg" alt="" /> Beraber</button>
       <button class="scope-chip" data-scope="gozde"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</button>
       <button class="scope-chip" data-scope="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
     </div>
@@ -183,6 +192,7 @@
           <i class="dot utku-bg"></i>Utku
           <i class="dot gozde-bg"></i>Gözde
           <i class="dot both-bg"></i>Ortak
+          <i class="dot hepberaber-bg"></i>Beraber
         </span>
       </div>
       <div class="chart" id="chart" aria-label="Son 7 günün grafiği"></div>
@@ -244,6 +254,7 @@
         <button class="hist-chip" data-f="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
         <button class="hist-chip" data-f="gozde"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</button>
         <button class="hist-chip" data-f="both"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</button>
+        <button class="hist-chip" data-f="hepberaber"><img class="avatar avatar-tiny" src="icons/avatar-hepberaber.svg" alt="" /> Hep beraber</button>
       </div>
       <div id="historyList" class="history-list"></div>
       <p id="historyEmpty" class="empty">Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆</p>

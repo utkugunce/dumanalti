@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Hep beraber: misafirlerle içilen sigo — amber fon, üç kişilik siluet -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#ffd97a"/>
+      <stop offset="1" stop-color="#c98f2b"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="64" fill="url(#g)"/>
+  <g fill="#ffffff" opacity="0.55">
+    <circle cx="34" cy="52" r="12"/>
+    <path d="M14 92c0-13 9-21 20-21s20 8 20 21z"/>
+    <circle cx="94" cy="52" r="12"/>
+    <path d="M74 92c0-13 9-21 20-21s20 8 20 21z"/>
+  </g>
+  <g fill="#ffffff">
+    <circle cx="64" cy="56" r="16"/>
+    <path d="M38 104c0-17 12-27 26-27s26 10 26 27z"/>
+  </g>
+</svg>

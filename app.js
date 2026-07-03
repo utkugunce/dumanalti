@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.2.0";
-  var APP_BUILD = 59;
+  var APP_VERSION = "4.3.0";
+  var APP_BUILD = 60;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -22,8 +22,12 @@
   var WHO = {
     utku:  { label: "Utku", emoji: "🧔", avatar: "icons/avatar-utku.png", cls: "utku-bg" },
     gozde: { label: "Gözde", emoji: "👩", avatar: "icons/avatar-gozde.png", cls: "gozde-bg" },
-    both:  { label: "Ortak", emoji: "👩‍❤️‍👨", avatar: "icons/avatar-both.png", cls: "both-bg" }
+    both:  { label: "Ortak", emoji: "👩‍❤️‍👨", avatar: "icons/avatar-both.png", cls: "both-bg" },
+    hepberaber: { label: "Hep beraber", emoji: "🎉", avatar: "icons/avatar-hepberaber.svg", cls: "hepberaber-bg" }
   };
+
+  // Ortak ve hep beraber içilenler ikisinin de kişisel sayacına işlenir
+  function isShared(w) { return w === "both" || w === "hepberaber"; }
 
   function makeAvatar(who, cls) {
     var img = document.createElement("img");
@@ -46,13 +50,14 @@
   var comboCount = 0;
   var comboTimer = null;
   var historyFilter = "all";
-  var statsScope = "all"; // İstatistik kişi filtresi: all | both | gozde | utku
-  var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak içilenler dahil mi
+  var statsScope = "all"; // İstatistik kişi filtresi: all | both | hepberaber | gozde | utku
+  var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak/beraber içilenler dahil mi
 
   function scopedEntries() {
     if (statsScope === "both") return entries.filter(function (e) { return e.who === "both"; });
-    if (statsScope === "gozde") return entries.filter(function (e) { return e.who === "gozde" || (scopeIncludeBoth && e.who === "both"); });
-    if (statsScope === "utku") return entries.filter(function (e) { return e.who === "utku" || (scopeIncludeBoth && e.who === "both"); });
+    if (statsScope === "hepberaber") return entries.filter(function (e) { return e.who === "hepberaber"; });
+    if (statsScope === "gozde") return entries.filter(function (e) { return e.who === "gozde" || (scopeIncludeBoth && isShared(e.who)); });
+    if (statsScope === "utku") return entries.filter(function (e) { return e.who === "utku" || (scopeIncludeBoth && isShared(e.who)); });
     return entries;
   }
 
@@ -149,7 +154,7 @@
 
   // ---------- Stats ----------
   function countWho(list) {
-    var c = { utku: 0, gozde: 0, both: 0, total: 0 };
+    var c = { utku: 0, gozde: 0, both: 0, hepberaber: 0, total: 0 };
     for (var i = 0; i < list.length; i++) {
       var w = list[i].who;
       if (c[w] === undefined) c[w] = 0;
@@ -182,14 +187,16 @@
 
   function renderToday() {
     var t = countWho(todayEntries());
-    el("todayUtku").textContent = t.utku + t.both;
-    el("todayGozde").textContent = t.gozde + t.both;
+    el("todayUtku").textContent = t.utku + t.both + t.hepberaber;
+    el("todayGozde").textContent = t.gozde + t.both + t.hepberaber;
     el("todayBoth").textContent = t.both;
+    el("todayHepberaber").textContent = t.hepberaber;
     el("todayTotal").textContent = t.total;
 
-    el("btnTodayUtku").textContent = "bugün " + (t.utku + t.both);
-    el("btnTodayGozde").textContent = "bugün " + (t.gozde + t.both);
+    el("btnTodayUtku").textContent = "bugün " + (t.utku + t.both + t.hepberaber);
+    el("btnTodayGozde").textContent = "bugün " + (t.gozde + t.both + t.hepberaber);
     el("btnTodayBoth").textContent = "bugün " + t.both;
+    el("btnTodayHepberaber").textContent = "bugün " + t.hepberaber;
 
     var now = new Date();
     el("todayDate").textContent =
@@ -242,7 +249,9 @@
   }
 
   function breakdownText(c) {
-    return "🧔 " + (c.utku + c.both) + " · 👩 " + (c.gozde + c.both) + " · 👩‍❤️‍👨 " + c.both;
+    var s = "🧔 " + (c.utku + c.both + c.hepberaber) + " · 👩 " + (c.gozde + c.both + c.hepberaber) + " · 👩‍❤️‍👨 " + c.both;
+    if (c.hepberaber) s += " · 🎉 " + c.hepberaber;
+    return s;
   }
 
   function renderStatCards() {
@@ -307,7 +316,7 @@
         var h = Math.max(6, Math.round((total / maxTotal) * maxPx));
         stack.style.height = h + "px";
 
-        ["utku", "gozde", "both"].forEach(function (w) {
+        ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {
           if (day.counts[w] > 0) {
             var seg = document.createElement("div");
             seg.className = "bar-seg " + WHO[w].cls;
@@ -339,8 +348,8 @@
       var duel = weeklyDuelText();
       if (duel) items.push({ e: "🥇", t: duel });
 
-      var utkuTotal = all.utku + all.both;
-      var gozdeTotal = all.gozde + all.both;
+      var utkuTotal = all.utku + all.both + all.hepberaber;
+      var gozdeTotal = all.gozde + all.both + all.hepberaber;
       if (utkuTotal > gozdeTotal) {
         items.push({ e: "🏆", t: "Utku toplamda " + (utkuTotal - gozdeTotal) + " sigo önde (" + utkuTotal + " - " + gozdeTotal + ")." });
       } else if (gozdeTotal > utkuTotal) {
@@ -349,8 +358,11 @@
         items.push({ e: "🤝", t: "Tam berabere! İkiniz de " + utkuTotal + " sigo." });
       }
 
-      var pct = Math.round(all.both / all.total * 100);
+      var pct = Math.round((all.both + all.hepberaber) / all.total * 100);
       items.push({ av: "both", t: "Sigoların %" + pct + "'ini birlikte içtiniz." });
+      if (all.hepberaber > 0) {
+        items.push({ av: "hepberaber", t: all.hepberaber + " kez hep beraber (misafirlerle) içtiniz." });
+      }
 
       var byDay = {};
       entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
@@ -502,9 +514,9 @@
   }
 
   function sinceData(who) {
-    // Ortak içilen sigo, Utku ve Gözde'nin de sayacını sıfırlar.
+    // Ortak veya hep beraber içilen sigo, Utku ve Gözde'nin de sayacını sıfırlar.
     var sub = entries.filter(function (e) {
-      return e.who === who || (who !== "both" && e.who === "both");
+      return e.who === who || ((who === "utku" || who === "gozde") && isShared(e.who));
     });
     if (!sub.length) return null;
     var since = Date.now() - sub[sub.length - 1].ts;
@@ -604,7 +616,7 @@
     var c = countWho(entries);
     var total = c.total || 1;
     bar.innerHTML = "";
-    ["utku", "gozde", "both"].forEach(function (w) {
+    ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {
       if (c[w] > 0) {
         var seg = document.createElement("div");
         seg.className = "share-seg " + WHO[w].cls;
@@ -615,7 +627,7 @@
     });
     var leg = el("shareLegend");
     leg.innerHTML = "";
-    ["utku", "gozde", "both"].forEach(function (w) {
+    ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {
       var pct = c.total ? Math.round(c[w] / c.total * 100) : 0;
       var item = document.createElement("span");
       item.className = "share-leg-item";
@@ -749,7 +761,7 @@
   function weeklyDuelText() {
     var sow = startOfWeek(Date.now()).getTime();
     var c = countWho(entries.filter(function (e) { return e.ts >= sow; }));
-    var u = c.utku + c.both, g = c.gozde + c.both;
+    var u = c.utku + c.both + c.hepberaber, g = c.gozde + c.both + c.hepberaber;
     if (u === 0 && g === 0) return null;
     if (u < g) return "Bu hafta düello: Utku daha az içti (" + u + " - " + g + ").";
     if (g < u) return "Bu hafta düello: Gözde daha az içti (" + g + " - " + u + ").";
@@ -866,7 +878,8 @@
   var CONFETTI_COLORS = {
     utku:  ["#4f9dff", "#2c6fd6", "#9cc6ff", "#ffffff", "#ffd166"],
     gozde: ["#ff5fa2", "#d63d80", "#ffb3d1", "#ffffff", "#ffd166"],
-    both:  ["#b07bff", "#7d4fd6", "#4f9dff", "#ff5fa2", "#ffffff", "#ffd166"]
+    both:  ["#b07bff", "#7d4fd6", "#4f9dff", "#ff5fa2", "#ffffff", "#ffd166"],
+    hepberaber: ["#ffd166", "#ffb347", "#ff8c42", "#b07bff", "#4f9dff", "#ffffff"]
   };
 
   var confettiCanvas = null, confettiCtx = null, confettiParticles = [], confettiRunning = false;
@@ -1403,7 +1416,7 @@
     return {
       all: all, today: today, avg7: avg7, thisWeek: thisWeek, lastWeek: lastWeek,
       peakH: peakH, peakCount: byHour[peakH], last: last,
-      utku: all.utku + all.both, gozde: all.gozde + all.both
+      utku: all.utku + all.both + all.hepberaber, gozde: all.gozde + all.both + all.hepberaber
     };
   }
 
@@ -1436,7 +1449,7 @@
       if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " sigo, Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
       else if (s.gozde > s.utku) out.push("Gözde önde: " + s.gozde + " sigo, Utku " + s.utku + ". Fark " + (s.gozde - s.utku) + " 🏆");
       else out.push("Tam berabere! İkiniz de " + s.utku + " sigo 🤝");
-      var pct = s.all.total ? Math.round(s.all.both / s.all.total * 100) : 0;
+      var pct = s.all.total ? Math.round((s.all.both + s.all.hepberaber) / s.all.total * 100) : 0;
       out.push("Sigoların %" + pct + "'ini birlikte içtiniz 💜");
     } else if (topic === "peak") {
       if (s.peakCount === 0) out.push("Henüz saat örüntüsü çıkaracak kadar veri yok.");
@@ -1530,10 +1543,10 @@
   }
 
   function handleQuickAction() {
-    // iOS Kısayollar uygulaması veya bir yer iminden ?add=utku|gozde|both ile
-    // açılırsa uygulamayı açar açmaz o kaydı ekler.
+    // iOS Kısayollar uygulaması veya bir yer iminden ?add=utku|gozde|both|hepberaber
+    // ile açılırsa uygulamayı açar açmaz o kaydı ekler.
     var who = new URLSearchParams(window.location.search).get("add");
-    if (who !== "utku" && who !== "gozde" && who !== "both") return;
+    if (!WHO[who]) return;
     history.replaceState(null, "", window.location.pathname);
     addEntry(who);
   }
