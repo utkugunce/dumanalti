@@ -30,6 +30,7 @@ Güncel sürüm sayacı: **v4.3.0 · derleme 60 · SW cache `dumanalti-v60`** �
 
 - Değişiklik sonrası `node --check app.js`, sonra Playwright ile görsel doğrulama (chromium: `/opt/pw-browsers/chromium`, app'i `npx serve` ile sun — `file://` çalışmaz).
 - Commit + push `main`'e; Vercel MCP `get_deployment` ile `target: production`, `state: READY` doğrula.
+- Oturum ayrı bir çalışma dalına bağlıysa: kullanıcıdan merge İSTEME — işi bitirince main'e taşımayı kendin yap (doğrudan push veya PR aç + kendin merge et), sonra dağıtımı doğrula.
 - Kullanıcıya Türkçe raporla; network-first SW olduğundan "bir kez yenileyin" hatırlat.
 - Repo private ve öyle kalmalı: `icons/avatar-*.png` gerçek kişi fotoğrafları içeriyor. Ham/orijinal fotoğrafları ASLA commit'leme (sadece işlenmiş dairesel kırpımlar).
 - Kod stili: ES5 (`var`, function ifadeleri), Türkçe yorumlar/UI metinleri.
