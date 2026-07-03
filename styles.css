@@ -67,9 +67,21 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
-.view { display: flex; flex-direction: column; gap: 8px; }
+/* Görünüm dikey boşluğu doldursun; boş alan varsa aşağıdaki kartlara dağıtılır.
+   Kısa ekranda boş alan olmadığından kartlar büyümez (kompakt düzen korunur). */
+.view { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; }
+
+/* Bugün ve Son sigaradan beri kutuları uzun ekranlarda aşağı doğru genişler */
+#view-home .today-card,
+#view-home .since-card { flex-grow: 1; display: flex; flex-direction: column; }
+#view-home .today-card .today-grid { flex: 1; align-items: stretch; }
+#view-home .today-card .today-stat { justify-content: center; }
+#view-home .since-card .since-list { flex: 1; }
+#view-home .since-card .since-row { flex: 1; }
 
 /* İstatistik group headings */
 .group-title {
