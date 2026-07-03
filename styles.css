@@ -870,17 +870,17 @@ body {
 /* Shorter visible viewport (e.g. Safari with its bottom toolbar): compact
    so Home and İstatistik each fit one screen without scrolling. */
 @media (max-height: 820px) {
-  .app { gap: 6px; padding-bottom: calc(52px + env(safe-area-inset-bottom)); }
+  .app { gap: 5px; padding-bottom: calc(52px + env(safe-area-inset-bottom)); }
   .header { padding-top: env(safe-area-inset-top); }
   .subtitle { display: none; }
   .brand-logo { width: 34px; height: 34px; border-radius: 10px; }
   .header h1 { font-size: 20px; }
   .icon-btn { width: 40px; height: 40px; }
-  .card { padding: 7px 12px; }
+  .card { padding: 6px 12px; }
   .card-head { margin-bottom: 4px; }
   .actions { gap: 8px; }
-  .action-avatar { width: 54px; height: 54px; }
-  .action-btn { padding: 8px 8px 7px; gap: 5px; }
+  .action-avatar { width: 44px; height: 44px; }
+  .action-btn { padding: 5px 8px 5px; gap: 4px; }
   .action-today { font-size: 10px; padding: 1px 7px; }
   .today-grid { margin-bottom: 6px; }
   .today-num { font-size: 18px; }
