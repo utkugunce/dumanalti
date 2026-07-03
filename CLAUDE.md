@@ -15,7 +15,7 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v4.3.1 · derleme 61 · SW cache `dumanalti-v61`** — buradan devam et.
+Güncel sürüm sayacı: **v4.3.2 · derleme 62 · SW cache `dumanalti-v62`** — buradan devam et.
 
 ## Düzen ve platform
 
@@ -24,7 +24,7 @@ Güncel sürüm sayacı: **v4.3.1 · derleme 61 · SW cache `dumanalti-v61`** �
 - Anasayfa **tek tam ekran** olmalı; uzun ekranda kartlar flex ile boşluğu doldurur.
 - Terminoloji: **"sigo"** (sigara/joint değil).
 - Kayıt türleri (sıra sabit): 1. Utku, 2. Gözde, 3. Ortak (`both`), 4. **Hep beraber** (`hepberaber`, misafirlerle içilen; amber renk, ikisinin de kişisel sayacına işlenir). Hep beraber her zaman DÖRDÜNCÜ seçenektir.
-- Maskot: **Dumancık** (yaprak filizli bulut, `icons/mascot.svg`), asistan paneliyle birlikte.
+- Maskot: **Zıvana** (yaprak filizli bulut, `icons/mascot.svg`), asistan paneliyle birlikte.
 
 ## Çalışma düzeni
 

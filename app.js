@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.3.1";
-  var APP_BUILD = 61;
+  var APP_VERSION = "4.3.2";
+  var APP_BUILD = 62;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -1395,7 +1395,7 @@
     setInterval(function () { renderSince(); }, 1000);
   }
 
-  // ---------- Dumancık: yardımcı asistan ----------
+  // ---------- Zıvana: yardımcı asistan ----------
   var asstOpened = false;
 
   function asstStats() {
@@ -1430,7 +1430,7 @@
     if (topic === "hi") {
       var hr = new Date().getHours();
       var greet = hr < 6 ? "İyi geceler" : hr < 12 ? "Günaydın" : hr < 18 ? "İyi günler" : "İyi akşamlar";
-      out.push(greet + "! Ben Dumancık 💨 Verilerinizi takip ediyorum, merak ettiğini sor.");
+      out.push(greet + "! Ben Zıvana 💨 Verilerinizi takip ediyorum, merak ettiğini sor.");
       if (s.all.total > 0) {
         if (s.today === 0) out.push("Bugün henüz hiç içmemişsiniz — böyle devam! 🌿");
         else if (s.avg7 > 0 && s.today < s.avg7) out.push("Bugün " + s.today + " sigo; 7 günlük ortalamanızın (" + s.avg7.toFixed(1) + ") altındasınız. Aferin! 👏");
