@@ -637,6 +637,33 @@ body {
   border-radius: 8px;
 }
 .history-item .h-del:active { background: var(--border); }
+/* Geçmişte kayıt düzenleme paneli (✏️ ile açılır, satırın altına yerleşir) */
+.hist-edit {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: -2px;
+}
+.hist-edit-who { display: flex; flex-wrap: wrap; gap: 6px; }
+.hist-edit-who .hist-chip.active { background: var(--accent); color: #1a1300; border-color: transparent; }
+.hist-edit-time input {
+  width: 100%;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  color-scheme: dark;
+}
+[data-theme="light"] .hist-edit-time input { color-scheme: light; }
+.hist-edit-btns { display: flex; gap: 8px; justify-content: flex-end; }
+
 .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 14px 0; }
 .hidden { display: none !important; }
 

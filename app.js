@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.3.3";
-  var APP_BUILD = 63;
+  var APP_VERSION = "4.4.0";
+  var APP_BUILD = 64;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -50,6 +50,7 @@
   var comboCount = 0;
   var comboTimer = null;
   var historyFilter = "all";
+  var editingId = null; // Geçmişte düzenleme paneli açık olan kaydın id'si
   var statsScope = "all"; // İstatistik kişi filtresi: all | both | hepberaber | gozde | utku
   var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak/beraber içilenler dahil mi
 
@@ -418,8 +419,16 @@
   function isPending(id) {
     for (var i = 0; i < outbox.length; i++) {
       if (outbox[i].type === "insert" && outbox[i].row && outbox[i].row.id === id) return true;
+      if (outbox[i].type === "update" && outbox[i].id === id) return true;
     }
     return false;
+  }
+
+  // datetime-local girdisi için yerel "YYYY-MM-DDTHH:MM" biçimi
+  function toLocalInput(ts) {
+    var d = new Date(ts);
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
+      "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
   }
 
   function dayLabel(ts) {
@@ -448,6 +457,15 @@
     main.appendChild(who);
     main.appendChild(time);
 
+    var edit = document.createElement("button");
+    edit.className = "h-del";
+    edit.textContent = "✏️";
+    edit.title = "Düzenle";
+    edit.addEventListener("click", function () {
+      editingId = editingId === e.id ? null : e.id;
+      renderHistory();
+    });
+
     var del = document.createElement("button");
     del.className = "h-del";
     del.textContent = "✕";
@@ -456,8 +474,61 @@
 
     row.appendChild(em);
     row.appendChild(main);
+    row.appendChild(edit);
     row.appendChild(del);
     return row;
+  }
+
+  // Düzenleme paneli: kişi seçimi (4 çip) + tarih/saat + kaydet/vazgeç
+  function historyEditPanel(e) {
+    var panel = document.createElement("div");
+    panel.className = "hist-edit";
+    var selectedWho = e.who;
+
+    var chips = document.createElement("div");
+    chips.className = "hist-edit-who";
+    Object.keys(WHO).forEach(function (w) {
+      var b = document.createElement("button");
+      b.className = "hist-chip" + (w === selectedWho ? " active" : "");
+      b.appendChild(makeAvatar(w, "avatar-tiny"));
+      b.appendChild(document.createTextNode(" " + WHO[w].label));
+      b.addEventListener("click", function () {
+        selectedWho = w;
+        chips.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === b); });
+      });
+      chips.appendChild(b);
+    });
+
+    var timeRow = document.createElement("div");
+    timeRow.className = "hist-edit-time";
+    var input = document.createElement("input");
+    input.type = "datetime-local";
+    input.value = toLocalInput(e.ts);
+    input.max = toLocalInput(Date.now());
+    timeRow.appendChild(input);
+
+    var btns = document.createElement("div");
+    btns.className = "hist-edit-btns";
+    var save = document.createElement("button");
+    save.className = "ghost-btn small";
+    save.textContent = "💾 Kaydet";
+    save.addEventListener("click", function () {
+      var ts = new Date(input.value).getTime();
+      if (!input.value || isNaN(ts)) { alert("Geçerli bir tarih/saat seç."); return; }
+      if (ts > Date.now()) { alert("Gelecekteki bir saat seçilemez."); return; }
+      updateEntry(e.id, selectedWho, ts);
+    });
+    var cancel = document.createElement("button");
+    cancel.className = "ghost-btn small";
+    cancel.textContent = "Vazgeç";
+    cancel.addEventListener("click", function () { editingId = null; renderHistory(); });
+    btns.appendChild(save);
+    btns.appendChild(cancel);
+
+    panel.appendChild(chips);
+    panel.appendChild(timeRow);
+    panel.appendChild(btns);
+    return panel;
   }
 
   function renderHistory() {
@@ -494,7 +565,10 @@
       head.appendChild(lbl);
       head.appendChild(cnt);
       list.appendChild(head);
-      g.items.forEach(function (e) { list.appendChild(historyItem(e)); });
+      g.items.forEach(function (e) {
+        list.appendChild(historyItem(e));
+        if (editingId === e.id) list.appendChild(historyEditPanel(e));
+      });
     });
   }
 
@@ -852,6 +926,33 @@
     refreshStatus();
   }
 
+  // Geçmişten düzenleme: kişi ve/veya saat değişir, buluta update olarak gider
+  function updateEntry(id, who, ts) {
+    var idx = findIndexById(id);
+    if (idx === -1) return;
+    entries[idx].who = who;
+    entries[idx].ts = ts;
+    sortEntries();
+    saveCache();
+
+    // Henüz gönderilmemiş bir ekleme ise satırı yerinde güncelle; değilse update kuyruğa
+    var pendingInsert = false;
+    for (var i = 0; i < outbox.length; i++) {
+      if (outbox[i].type === "insert" && outbox[i].row && outbox[i].row.id === id) {
+        outbox[i].row.who = who;
+        outbox[i].row.ts = ts;
+        pendingInsert = true;
+        break;
+      }
+    }
+    if (!pendingInsert) outbox.push({ type: "update", id: id, fields: { who: who, ts: ts } });
+    saveOutbox();
+    editingId = null;
+    render();
+    flushOutbox();
+    refreshStatus();
+  }
+
   function showUndo(who) {
     lastUndo = entries[entries.length - 1];
     var bar = el("undoBar");
@@ -1120,7 +1221,7 @@
       if (op.type === "insert") {
         p = sb.from(TABLE).upsert(op.row, { onConflict: "id", ignoreDuplicates: true });
       } else if (op.type === "update") {
-        p = sb.from(TABLE).update({ tag: op.tag }).eq("id", op.id);
+        p = sb.from(TABLE).update(op.fields || { tag: op.tag }).eq("id", op.id);
       } else {
         p = sb.from(TABLE).delete().eq("id", op.id);
       }
@@ -1157,7 +1258,13 @@
       outbox.forEach(function (op) {
         if (op.type === "insert" && op.row) map[op.row.id] = op.row;
         else if (op.type === "delete") delete map[op.id];
-        else if (op.type === "update" && map[op.id]) map[op.id].tag = op.tag || undefined;
+        else if (op.type === "update" && map[op.id]) {
+          if (op.fields) {
+            Object.keys(op.fields).forEach(function (k) { map[op.id][k] = op.fields[k]; });
+          } else {
+            map[op.id].tag = op.tag || undefined;
+          }
+        }
       });
       entries = Object.keys(map).map(function (k) { return map[k]; });
       sortEntries();
@@ -1185,7 +1292,10 @@
         var r = payload.new;
         var idx = r ? findIndexById(r.id) : -1;
         if (idx === -1) return;
+        entries[idx].who = r.who || entries[idx].who;
+        entries[idx].ts = Number(r.ts) || entries[idx].ts;
         entries[idx].tag = r.tag || undefined;
+        sortEntries();
         saveCache();
         render();
       })
