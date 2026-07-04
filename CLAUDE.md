@@ -15,7 +15,7 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v4.4.0 · derleme 64 · SW cache `dumanalti-v64`** — buradan devam et.
+Güncel sürüm sayacı: **v4.5.0 · derleme 65 · SW cache `dumanalti-v65`** — buradan devam et.
 
 ## Düzen ve platform
 
@@ -25,6 +25,7 @@ Güncel sürüm sayacı: **v4.4.0 · derleme 64 · SW cache `dumanalti-v64`** �
 - Terminoloji: **"sigo"** (sigara/joint değil).
 - Kayıt türleri (sıra sabit): 1. Utku, 2. Gözde, 3. Ortak (`both`), 4. **Hep beraber** (`hepberaber`, misafirlerle içilen; amber renk, ikisinin de kişisel sayacına işlenir). Hep beraber her zaman DÖRDÜNCÜ seçenektir.
 - Maskot: **Zıvana** (kawaii dişli yaprak, `icons/mascot.svg`, SVG parametrik üretim), asistan paneliyle birlikte.
+- **Mantıksal gün**: gün 04:00'te başlar/biter (`DAY_START_HOUR`). 00:00–04:00 arası sigolar önceki güne sayılır; gün bazlı her hesap `logicalDate`/`startOfDay`/`dayKey`/`startOfMonth` üzerinden yapılmalı, `new Date(ts)` ile doğrudan takvim günü OKUNMAZ.
 
 ## Çalışma düzeni
 

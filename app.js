@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.4.0";
-  var APP_BUILD = 64;
+  var APP_VERSION = "4.5.0";
+  var APP_BUILD = 65;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -125,12 +125,33 @@
   }
 
   // ---------- Date helpers ----------
-  function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  // Mantıksal gün: gün gece yarısı değil 04:00'te biter. Gece 00:00-04:00 arası
+  // içilenler önceki güne sayılır (gerçek saat korunur, sadece gruplama kayar).
+  var DAY_START_HOUR = 4;
+
+  // ts'i 4 saat geri kaydırılmış takvimde okur (gruplama için)
+  function logicalDate(d) {
+    var t = d instanceof Date ? d.getTime() : d;
+    return new Date(t - DAY_START_HOUR * 3600000);
+  }
+  // Mantıksal günün gerçek başlangıcı: o günün 04:00'ü
+  function startOfDay(d) {
+    var x = logicalDate(d);
+    x.setHours(0, 0, 0, 0);
+    return new Date(x.getTime() + DAY_START_HOUR * 3600000);
+  }
   function dayKey(d) {
-    var x = startOfDay(d);
+    var x = logicalDate(d);
     return x.getFullYear() + "-" + (x.getMonth() + 1) + "-" + x.getDate();
   }
   function isSameDay(a, b) { return dayKey(a) === dayKey(b); }
+  // Ayın gerçek başlangıcı: mantıksal takvimde ayın 1'i, gerçek zamanda 04:00
+  function startOfMonth() {
+    var m = logicalDate(Date.now());
+    m.setDate(1);
+    m.setHours(0, 0, 0, 0);
+    return m.getTime() + DAY_START_HOUR * 3600000;
+  }
   function startOfWeek(d) {
     var x = startOfDay(d);
     var day = (x.getDay() + 6) % 7; // Pzt=0
@@ -199,9 +220,12 @@
     el("btnTodayBoth").textContent = "bugün " + t.both;
     el("btnTodayHepberaber").textContent = "bugün " + t.hepberaber;
 
+    // Tarih çipi mantıksal günü gösterir; 04:00 öncesi 🌙 ile "gece devam ediyor"
     var now = new Date();
+    var dayRef = logicalDate(now);
     el("todayDate").textContent =
-      ("0" + now.getDate()).slice(-2) + "." + ("0" + (now.getMonth() + 1)).slice(-2) + "." + now.getFullYear();
+      ("0" + dayRef.getDate()).slice(-2) + "." + ("0" + (dayRef.getMonth() + 1)).slice(-2) + "." + dayRef.getFullYear() +
+      (now.getHours() < DAY_START_HOUR ? " 🌙" : "");
 
     // Dün bu saate kadar içilenle kıyasla: azsa yeşil, fazlaysa kırmızı rozet
     var yStart = startOfDay(now).getTime() - 86400000;
@@ -228,24 +252,23 @@
     }
   }
 
-  // Günün akışı: bugünkü her sigo 24 saatlik şeritte kişi renginde bir nokta,
-  // ince çizgi şu anki saati gösterir (renderToday dakikada bir çalışır)
+  // Günün akışı: mantıksal gün şeridi (04:00 → ertesi 04:00) üzerinde her sigo
+  // kişi renginde bir nokta, ince çizgi şu anı gösterir (dakikada bir yenilenir)
   function renderTodayFlow() {
     var track = el("todayFlow");
     if (!track) return;
     track.innerHTML = "";
+    var dayStart = startOfDay(Date.now()).getTime();
     todayEntries().forEach(function (e) {
-      var d = new Date(e.ts);
       var dot = document.createElement("span");
       dot.className = "flow-dot " + WHO[e.who].cls;
-      dot.style.left = ((d.getHours() * 60 + d.getMinutes()) / 1440 * 100) + "%";
+      dot.style.left = Math.min(100, Math.max(0, (e.ts - dayStart) / 86400000 * 100)) + "%";
       dot.title = WHO[e.who].label + " · " + formatTime(e.ts);
       track.appendChild(dot);
     });
-    var now = new Date();
     var tick = document.createElement("span");
     tick.className = "flow-now";
-    tick.style.left = ((now.getHours() * 60 + now.getMinutes()) / 1440 * 100) + "%";
+    tick.style.left = Math.min(100, (Date.now() - dayStart) / 86400000 * 100) + "%";
     track.appendChild(tick);
   }
 
@@ -263,10 +286,7 @@
     el("weekTotal").textContent = week.total;
     el("weekBreakdown").textContent = showBreakdown ? (week.total ? breakdownText(week) : "—") : "";
 
-    var monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    var month = countWho(list.filter(function (e) { return e.ts >= monthStart.getTime(); }));
+    var month = countWho(list.filter(function (e) { return e.ts >= startOfMonth(); }));
     el("monthTotal").textContent = month.total;
     el("monthBreakdown").textContent = showBreakdown ? (month.total ? breakdownText(month) : "—") : "";
 
@@ -386,8 +406,7 @@
         }
       }
 
-      var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(monthStart.getTime()).length + " sigo." });
+      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(startOfMonth()).length + " sigo." });
 
       items.push({ e: "📊", t: "Son 7 günde günde ortalama " + avg.toFixed(1) + " sigo." });
 
@@ -435,7 +454,7 @@
     var diff = Math.round((startOfDay(Date.now()).getTime() - startOfDay(ts).getTime()) / 86400000);
     if (diff === 0) return "Bugün";
     if (diff === 1) return "Dün";
-    var d = new Date(ts);
+    var d = logicalDate(ts); // 00:00-04:00 arası kayıtlar önceki günün başlığında
     return d.getDate() + " " + MONTHS[d.getMonth()] + " " + ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][d.getDay()];
   }
 
@@ -722,7 +741,7 @@
     chart.innerHTML = "";
     var list = scopedEntries();
     var counts = [0, 0, 0, 0, 0, 0, 0]; // Pzt=0 .. Paz=6
-    list.forEach(function (e) { counts[(new Date(e.ts).getDay() + 6) % 7]++; });
+    list.forEach(function (e) { counts[(logicalDate(e.ts).getDay() + 6) % 7]++; });
     var max = 1, peak = 0;
     for (var i = 0; i < 7; i++) { if (counts[i] > max) max = counts[i]; if (counts[i] > counts[peak]) peak = i; }
     var labels = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
@@ -804,13 +823,13 @@
     var grid = el("calGrid");
     if (!grid) return;
     grid.innerHTML = "";
-    var now = new Date();
+    var now = logicalDate(Date.now()); // takvim mantıksal güne göre
     var year = now.getFullYear(), month = now.getMonth();
     el("calTitle").textContent = MONTHS[month] + " " + year;
 
     var perDay = {};
     scopedEntries().forEach(function (e) {
-      var d = new Date(e.ts);
+      var d = logicalDate(e.ts);
       if (d.getFullYear() === year && d.getMonth() === month) perDay[d.getDate()] = (perDay[d.getDate()] || 0) + 1;
     });
 
