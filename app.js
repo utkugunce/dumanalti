@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.6.1";
-  var APP_BUILD = 72;
+  var APP_VERSION = "4.7.0";
+  var APP_BUILD = 73;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -207,6 +207,7 @@
     renderRecords();
     renderInsights();
     renderHistory();
+    refreshAsst();
     if (el("setCount")) el("setCount").textContent = entries.length;
   }
 
@@ -940,6 +941,7 @@
     renderToday();
     renderLimit();
     renderSince();
+    refreshAsst();
     var hist = el("view-history");
     if (hist && !hist.classList.contains("hidden")) renderHistory();
     clearTimeout(renderDeferTimer);
@@ -1670,6 +1672,7 @@
     var a = el("assistant");
     if (a) a.classList.toggle("hidden", settings.mascot === "off");
     if (settings.mascot === "off") { var p = el("asstPanel"); if (p) p.classList.add("hidden"); }
+    else if (typeof refreshAsst === "function") refreshAsst();
   }
 
   // Hızlı ekleme bağlantısını panoya kopyala (iOS Kısayollar / yer imi için)
@@ -1704,6 +1707,10 @@
 
   // ---------- Zıvana: yardımcı asistan ----------
   var asstOpened = false;
+  var ASST_SEEN_KEY = "dumanalti.asst.seen";
+  var FACES = { neutral: "icons/mascot.svg", happy: "icons/mascot.svg",
+                surprised: "icons/mascot-surprised.svg", love: "icons/mascot-love.svg" };
+  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
 
   function asstStats() {
     var all = countWho(entries);
@@ -1713,10 +1720,9 @@
     var wStart = startOfWeek(Date.now()).getTime();
     var thisWeek = entriesSince(wStart).length;
     var lastWeek = entries.filter(function (e) { return e.ts >= wStart - 7 * 86400000 && e.ts < wStart; }).length;
-    // en yoğun saat
     var byHour = [];
     for (var h = 0; h < 24; h++) byHour[h] = 0;
-    entries.forEach(function (e) { byHour[new Date(e.ts).getHours()]++; });
+    entries.forEach(function (e) { byHour[logicalDate(e.ts).getHours()]++; });
     var peakH = 0;
     for (h = 1; h < 24; h++) if (byHour[h] > byHour[peakH]) peakH = h;
     var last = entries.length ? entries[entries.length - 1] : null;
@@ -1727,7 +1733,106 @@
     };
   }
 
-  // Bir konuya veriden üretilmiş cevap döndürür (metin dizisi)
+  // Kayıtlar arası en uzun tamamlanmış ara (ms)
+  function asstLongestGap() {
+    var m = 0;
+    for (var i = 1; i < entries.length; i++) { var g = entries[i].ts - entries[i - 1].ts; if (g > m) m = g; }
+    return m;
+  }
+  // Son sigodan bu yana geçen süre (ms)
+  function asstRunningGap() { return entries.length ? Date.now() - entries[entries.length - 1].ts : 0; }
+  // Bugün dahil, ortalamanın altında kaç ardışık mantıksal gün geçti
+  function asstBelowAvgStreak(avg) {
+    if (avg <= 0) return 0;
+    var byDay = {};
+    entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
+    var d = logicalDate(Date.now()), streak = 0;
+    for (var i = 0; i < 90; i++) {
+      var p = new Date(d.getFullYear(), d.getMonth(), d.getDate() - i);
+      var k = p.getFullYear() + "-" + (p.getMonth() + 1) + "-" + p.getDate();
+      if ((byDay[k] || 0) < avg) streak++; else break;
+    }
+    return streak;
+  }
+  // Tek günde en çok (adet + "gg.aa")
+  function asstRecordDay() {
+    var byDay = {};
+    entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
+    var mk = null, mc = 0;
+    Object.keys(byDay).forEach(function (k) { if (byDay[k] > mc) { mc = byDay[k]; mk = k; } });
+    if (!mk) return null;
+    var p = mk.split("-");
+    return { count: mc, label: ("0" + p[2]).slice(-2) + "." + ("0" + p[1]).slice(-2) };
+  }
+
+  // Proaktif nudge: o an söylenmeye değer TEK şey (veya null)
+  function asstNudge() {
+    var s = asstStats();
+    if (s.all.total === 0) return null;
+    var now = new Date();
+    // 1) Günlük limit aşıldı
+    if (settings.dailyLimit > 0 && s.today > settings.dailyLimit) {
+      return { key: "limit:" + dayKey(now) + ":" + s.today, mood: "surprised", emoji: "⚠️",
+        text: "Bugün günlük limiti aştın (" + s.today + " / " + settings.dailyLimit + "). Kalanı yavaşlatmayı dene 💪" };
+    }
+    // 2) Şu an en uzun aranı kırıyorsun
+    var lg = asstLongestGap(), rg = asstRunningGap();
+    if (rg > lg && rg >= 3 * 3600000) {
+      return { key: "gap:" + Math.floor(rg / 3600000), mood: "love", emoji: "🏆",
+        text: "Rekor kırıyorsun! " + fmtCoarse(rg) + " sigo içmedin — bu en uzun aran 🏆" };
+    }
+    // 3) Toplam kilometre taşı
+    var mil = [50, 100, 250, 500, 1000, 2000];
+    for (var i = 0; i < mil.length; i++) {
+      if (s.all.total === mil[i]) return { key: "mil:" + mil[i], mood: "love", emoji: "🎉",
+        text: mil[i] + ". sigo kaydı! Koca bir geçmiş biriktirdiniz 📈" };
+    }
+    // 4) Düşük gün serisi
+    var st = asstBelowAvgStreak(s.avg7);
+    if (s.avg7 > 0 && st >= 2) {
+      return { key: "streak:" + st, mood: "love", emoji: "🔥",
+        text: st + " gündür ortalamanın altındasın 🔥 Harika gidiyorsun!" };
+    }
+    // 5) Bugün gidişat
+    if (s.today > 0 && s.avg7 > 0 && s.today < s.avg7) {
+      return { key: "under:" + dayKey(now), mood: "happy", emoji: "🌿",
+        text: "Bugün ortalamanın altındasın (" + s.today + " < " + s.avg7.toFixed(1) + "). Aferin! 🌿" };
+    }
+    if (s.today > 0 && s.avg7 > 0 && s.today > s.avg7) {
+      return { key: "over:" + dayKey(now) + ":" + s.today, mood: "surprised", emoji: "👀",
+        text: "Bugün ortalamanın üstündesin (" + s.today + " > " + s.avg7.toFixed(1) + "). Yavaşlayalım mı? 🙂" };
+    }
+    return null;
+  }
+
+  // FAB + panel yüzünü ruh haline göre değiştir (aynıysa dokunma, titremesin)
+  function setAsstFace(mood) {
+    var src = FACES[mood] || FACES.neutral;
+    document.querySelectorAll(".asst-fab-face, .asst-face").forEach(function (img) {
+      if (img.getAttribute("src") !== src) img.setAttribute("src", src);
+    });
+  }
+
+  function asstSeenKey() { try { return localStorage.getItem(ASST_SEEN_KEY) || ""; } catch (e) { return ""; } }
+  function asstMarkSeen(k) { try { localStorage.setItem(ASST_SEEN_KEY, k); } catch (e) {} }
+
+  // Yüz + rozeti canlı duruma göre güncelle (render'dan ve ekleme sonrası çağrılır)
+  function refreshAsst() {
+    if (settings.mascot === "off") return;
+    var n = asstNudge();
+    setAsstFace(n ? n.mood : "neutral");
+    var badge = el("asstBadge");
+    if (!badge) return;
+    if (!asstOpened && !asstSeenKey()) {          // ilk tanışma
+      badge.textContent = "?"; badge.classList.remove("hidden");
+    } else if (n && n.key !== asstSeenKey()) {     // görülmemiş yeni olay
+      badge.textContent = n.emoji; badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+
+  // Bir konuya veriden üretilmiş cevap (metin dizisi)
   function asstReply(topic) {
     var s = asstStats();
     if (s.all.total === 0 && topic !== "hi") {
@@ -1738,20 +1843,22 @@
       var hr = new Date().getHours();
       var greet = hr < 6 ? "İyi geceler" : hr < 12 ? "Günaydın" : hr < 18 ? "İyi günler" : "İyi akşamlar";
       var hitap = settings.owner ? " " + WHO[settings.owner].label : "";
-      out.push(greet + hitap + "! Ben Zıvana 💨 Verilerinizi takip ediyorum, merak ettiğini sor.");
-      if (s.all.total > 0) {
-        if (s.today === 0) out.push("Bugün henüz hiç içmemişsiniz — böyle devam! 🌿");
-        else if (s.avg7 > 0 && s.today < s.avg7) out.push("Bugün " + s.today + " sigo; 7 günlük ortalamanızın (" + s.avg7.toFixed(1) + ") altındasınız. Aferin! 👏");
-        else if (s.avg7 > 0 && s.today > s.avg7) out.push("Bugün " + s.today + " sigo — ortalamanızın (" + s.avg7.toFixed(1) + ") biraz üstündesiniz.");
-        else out.push("Bugün şu ana kadar " + s.today + " sigo içildi.");
-      }
+      out.push(greet + hitap + "! " + pick([
+        "Ben Zıvana 💨 Merak ettiğini sor.",
+        "Ben Zıvana 🌿 Verilerinize göz kulağım.",
+        "Zıvana burada 💨 Sana rakamları yorumlarım."
+      ]));
+      var n = asstNudge();
+      if (n) out.push(n.text);
+      else if (s.today === 0) out.push("Bugün henüz hiç içmemişsiniz — böyle devam! 🌿");
+      else out.push("Bugün şu ana kadar " + s.today + " sigo içildi.");
     } else if (topic === "today") {
       out.push("Bugün toplam " + s.today + " sigo içildi.");
       if (s.avg7 > 0) {
         var diff = s.today - s.avg7;
-        if (diff < 0) out.push("7 günlük ortalamanız " + s.avg7.toFixed(1) + " — bugün " + Math.abs(diff).toFixed(1) + " tane altındasınız, harika gidiyorsunuz! 🌿");
-        else if (diff > 0) out.push("7 günlük ortalamanız " + s.avg7.toFixed(1) + " — bugün biraz üstündesiniz, kalanı yavaşlatmayı deneyin 💪");
-        else out.push("Tam ortalamanızdasınız (" + s.avg7.toFixed(1) + ").");
+        if (diff < 0) out.push("7 günlük ortalaman " + s.avg7.toFixed(1) + " — bugün " + Math.abs(diff).toFixed(1) + " tane altındasın, harika! 🌿");
+        else if (diff > 0) out.push("7 günlük ortalaman " + s.avg7.toFixed(1) + " — bugün biraz üstündesin, kalanı yavaşlat 💪");
+        else out.push("Tam ortalamandasın (" + s.avg7.toFixed(1) + ").");
       }
     } else if (topic === "who") {
       if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " sigo, Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
@@ -1759,33 +1866,85 @@
       else out.push("Tam berabere! İkiniz de " + s.utku + " sigo 🤝");
       var pct = s.all.total ? Math.round((s.all.both + s.all.hepberaber) / s.all.total * 100) : 0;
       out.push("Sigoların %" + pct + "'ini birlikte içtiniz 💜");
+    } else if (topic === "me") {
+      if (!settings.owner) {
+        out.push("Önce Ayarlar > Kişiselleştirme'den bu cihazın kimin olduğunu seç, sana özel konuşayım 🙂");
+      } else {
+        var meName = WHO[settings.owner].label;
+        var t = countWho(todayEntries());
+        var meToday = settings.owner === "utku" ? (t.utku + t.both + t.hepberaber) : (t.gozde + t.both + t.hepberaber);
+        var meTotal = settings.owner === "utku" ? s.utku : s.gozde;
+        var other = settings.owner === "utku" ? s.gozde : s.utku;
+        out.push(meName + ", bugün senin hanene " + meToday + " sigo yazıldı (ortak + hep beraber dahil).");
+        if (meTotal > other) out.push("Toplamda " + (meTotal - other) + " sigo öndesin 🏆");
+        else if (other > meTotal) out.push("Toplamda " + (other - meTotal) + " sigo geridesin — yavaşlamak yarışı da kazandırır 😉");
+        else out.push("Rakibinle tam berabersin 🤝");
+      }
     } else if (topic === "peak") {
       if (s.peakCount === 0) out.push("Henüz saat örüntüsü çıkaracak kadar veri yok.");
       else {
-        out.push("En yoğun saatiniz " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " sigo) ⏰");
-        out.push("O saate yaklaşırken kendinizi bir bardak suyla oyalamayı deneyin 💧");
+        out.push("En yoğun saatin " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " sigo) ⏰");
+        out.push(pick([
+          "O saate yaklaşırken bir bardak su iç, kriz geçer 💧",
+          "O saatte kısa bir yürüyüş çok işe yarar 🚶",
+          "O saati bir sakızla atlatmayı dene 🍬"
+        ]));
       }
     } else if (topic === "week") {
       out.push("Bu hafta " + s.thisWeek + " sigo içtiniz.");
       if (s.lastWeek > 0) {
         if (s.thisWeek < s.lastWeek) out.push("Geçen haftaya göre " + (s.lastWeek - s.thisWeek) + " tane az — düşüşteyiz, süper! 📉");
-        else if (s.thisWeek > s.lastWeek) out.push("Geçen haftaya göre " + (s.thisWeek - s.lastWeek) + " tane fazla. Bu hafta biraz kısmayı deneyelim mi? 💪");
+        else if (s.thisWeek > s.lastWeek) out.push("Geçen haftaya göre " + (s.thisWeek - s.lastWeek) + " tane fazla. Bu hafta kısalım mı? 💪");
         else out.push("Geçen haftayla aynı seviyedesiniz.");
       }
+    } else if (topic === "month") {
+      var mCount = entriesSince(startOfMonth()).length;
+      out.push("Bu ay toplam " + mCount + " sigo içildi.");
+      var dayNo = logicalDate(Date.now()).getDate();
+      if (dayNo >= 2 && mCount > 0) out.push("Bu hızla ay sonunda ~" + Math.round(mCount / dayNo * 30) + " olur.");
+    } else if (topic === "records") {
+      var lg = asstLongestGap(), rg = asstRunningGap();
+      if (rg > lg && rg >= 3600000) out.push("Şu an rekordasın: " + fmtCoarse(rg) + " ara verdin, öncekini geçtin 🏆");
+      else if (Math.max(lg, rg) > 0) out.push("En uzun aran: " + fmtCoarse(Math.max(lg, rg)) + " ⏱️");
+      var rd = asstRecordDay();
+      if (rd) out.push("Tek günde rekor: " + rd.count + " sigo (" + rd.label + ") 🔥");
+    } else if (topic === "streak") {
+      var st = asstBelowAvgStreak(s.avg7);
+      if (s.avg7 <= 0) out.push("Seri için biraz daha veri lazım, birkaç gün geçince takip ederim 🌱");
+      else if (st >= 2) out.push(st + " gündür ortalamanın altındasın 🔥 Böyle devam!");
+      else if (st === 1) out.push("Bugün ortalamanın altındasın — seriyi büyütmeye var mısın? 💪");
+      else out.push("Şu an düşük-gün serisi yok ama her yeni gün bir fırsat 🌿");
     } else if (topic === "tip") {
-      // Veriye göre en anlamlı tavsiyeyi seç
       if (s.last) {
         var gapMin = Math.floor((Date.now() - s.last.ts) / 60000);
-        if (gapMin >= 120) out.push("Son sigodan bu yana " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem, harika gidiyorsunuz! 🌿");
+        if (gapMin >= 120) out.push("Son sigodan " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem 🌿");
       }
-      if (s.peakCount > 0) out.push("İpucu: En çok " + pad2(s.peakH) + ":00 sularında içiyorsunuz. O saatte kısa bir yürüyüş krizi atlatmaya yardımcı olur 🚶");
-      if (s.avg7 > 0) {
-        var target = Math.max(0, Math.floor(s.avg7) - 1);
-        out.push("Küçük hedef: Bugünü " + target + " sigoda bitirebilirsen ortalamanı düşürürsün. Sen yaparsın! 💪");
-      }
-      if (out.length === 0) out.push("Şimdilik harika gidiyorsunuz, böyle devam! Her eklemediğiniz sigo bir kazanç 💨");
+      if (s.peakCount > 0) out.push("En çok " + pad2(s.peakH) + ":00 sularında içiyorsun; o saatte kısa bir mola krizi atlatır 🚶");
+      if (s.avg7 > 0) out.push("Küçük hedef: bugünü " + Math.max(0, Math.floor(s.avg7) - 1) + " sigoda bitir, ortalamanı düşür 💪");
+      if (out.length === 0) out.push(pick([
+        "Harika gidiyorsun, böyle devam! Her eklemediğin sigo bir kazanç 💨",
+        "Su iç, derin nefes al, kriz 3-5 dakikada geçer 🌬️",
+        "Canın çektiğinde 10 dakika ertele — çoğu zaman istek geçer ⏳"
+      ]));
     }
     return out;
+  }
+
+  // Serbest metni bir konuya yönlendir (anahtar kelime eşleme)
+  function asstRoute(text) {
+    var q = text.toLocaleLowerCase("tr");
+    function has() { for (var i = 0; i < arguments.length; i++) if (q.indexOf(arguments[i]) >= 0) return true; return false; }
+    if (has("selam", "merhaba", "naber", "nasılsın", "nasilsin")) return "hi";
+    if (has("rekor", "en uzun", "en çok", "en cok", "record")) return "records";
+    if (has("seri", "gündür", "gundur", "sigosuz", "kaç gün", "kac gun")) return "streak";
+    if (has("ben ", "benim", "nasılım", "nasilim", "kendim")) return "me";
+    if (has("kim", "önde", "onde", "yarış", "yaris", "kazan", "düello", "duello")) return "who";
+    if (has("hafta")) return "week";
+    if (has("ay", "aylık", "aylik")) return "month";
+    if (has("saat", "yoğun", "yogun", "ne zaman")) return "peak";
+    if (has("tavsiye", "ipucu", "öneri", "oneri", "yardım", "yardim", "bırak", "birak")) return "tip";
+    if (has("bugün", "bugun", "gün", "gun")) return "today";
+    return null;
   }
 
   function asstPush(text, isMe) {
@@ -1797,13 +1956,21 @@
     body.scrollTop = body.scrollHeight;
   }
 
-  var ASST_CHIPS = [
-    { k: "today", t: "Bugün nasıl?" },
-    { k: "who", t: "Kim önde?" },
-    { k: "week", t: "Bu hafta?" },
-    { k: "peak", t: "En yoğun saatim?" },
-    { k: "tip", t: "Tavsiye ver 💡" }
-  ];
+  // Çipler: kişisel soru yalnız cihaz sahibi seçiliyse eklenir
+  function asstChips() {
+    var c = [
+      { k: "today", t: "Bugün nasıl?" },
+      { k: "who", t: "Kim önde?" },
+      { k: "week", t: "Bu hafta?" },
+      { k: "month", t: "Bu ay?" },
+      { k: "records", t: "Rekorlarım 🏆" },
+      { k: "streak", t: "Serim 🔥" },
+      { k: "peak", t: "Yoğun saatim?" },
+      { k: "tip", t: "Tavsiye 💡" }
+    ];
+    if (settings.owner) c.splice(1, 0, { k: "me", t: "Ben nasılım?" });
+    return c;
+  }
 
   function asstAsk(topic, label) {
     if (label) asstPush(label, true);
@@ -1811,28 +1978,43 @@
     var i = 0;
     (function next() {
       if (i >= replies.length) return;
-      setTimeout(function () {
-        asstPush(replies[i], false);
-        i++;
-        next();
-      }, i === 0 ? 250 : 500);
+      setTimeout(function () { asstPush(replies[i], false); i++; next(); }, i === 0 ? 250 : 500);
     })();
+  }
+
+  // Serbest metin gönderimi
+  function asstSubmit() {
+    var inp = el("asstInput");
+    if (!inp) return;
+    var text = (inp.value || "").trim();
+    if (!text) return;
+    inp.value = "";
+    asstPush(text, true);
+    var topic = asstRoute(text);
+    if (topic) { setTimeout(function () { asstAsk(topic); }, 250); return; }
+    setTimeout(function () {
+      asstPush("Tam anlamadım 🤔 Şunları sorabilirsin: bugün, kim önde, bu hafta/ay, rekorlarım, serim, yoğun saatim, tavsiye.", false);
+    }, 250);
   }
 
   function asstOpen() {
     var panel = el("asstPanel");
     panel.classList.remove("hidden");
+    var n = asstNudge();
+    if (n) asstMarkSeen(n.key); else asstMarkSeen("intro");
     el("asstBadge").classList.add("hidden");
     if (!asstOpened) {
       asstOpened = true;
       el("asstBody").innerHTML = "";
       asstAsk("hi");
+    } else if (n) {
+      setTimeout(function () { asstPush(n.text, false); }, 200); // açıkken yeni olayı hatırlat
     }
   }
 
   function bindAssistant() {
     var chips = el("asstChips");
-    ASST_CHIPS.forEach(function (c) {
+    asstChips().forEach(function (c) {
       var b = document.createElement("button");
       b.className = "asst-chip";
       b.textContent = c.t;
@@ -1845,9 +2027,9 @@
       else panel.classList.add("hidden");
     });
     el("asstClose").addEventListener(TAP_EVT, function () { el("asstPanel").classList.add("hidden"); });
-    // İlk açılışta dikkat çeken rozet
-    el("asstBadge").textContent = "?";
-    el("asstBadge").classList.remove("hidden");
+    var form = el("asstForm");
+    if (form) form.addEventListener("submit", function (ev) { ev.preventDefault(); asstSubmit(); });
+    refreshAsst();
   }
 
   function handleQuickAction() {

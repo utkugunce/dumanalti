@@ -1,5 +1,5 @@
 /* Dumanaltı service worker — önce ağ (network-first), offline yedek */
-var CACHE = "dumanalti-v72";
+var CACHE = "dumanalti-v73";
 var ASSETS = [
   "./",
   "./index.html",
@@ -9,6 +9,8 @@ var ASSETS = [
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/mascot.svg",
+  "./icons/mascot-surprised.svg",
+  "./icons/mascot-love.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/avatar-utku.png",
