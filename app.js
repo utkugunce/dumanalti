@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.5.0";
-  var APP_BUILD = 65;
+  var APP_VERSION = "4.5.1";
+  var APP_BUILD = 66;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -1047,7 +1047,7 @@
         angle2D: -Math.PI / 2 + (0.5 * radSpread - Math.random() * radSpread),
         velocity: sv * 0.5 + Math.random() * sv,
         decay: opts.decay || 0.9,
-        gravity: 1.8,
+        gvel: 0, // yerçekimi hızı: 0'dan başlar, süzülme hızına doğru artar
         drift: (Math.random() - 0.5) * 3.2,
         wobble: Math.random() * 10,
         wobbleSpeed: 0.05 + Math.random() * 0.06,
@@ -1064,21 +1064,34 @@
     }
   }
 
-  function confettiFrame() {
+  // Kare süresine göre normalize edilmiş fizik: 60/120Hz'de ve kare düşmelerinde
+  // aynı hızda akar (dtF = kaç adet 60fps karesi geçti)
+  var confettiLastT = 0;
+
+  function confettiFrame(nowT) {
     ensureConfettiCanvas();
     var ctx = confettiCtx;
     var W = window.innerWidth, H = window.innerHeight;
     ctx.clearRect(0, 0, W, H);
 
+    var dtF = 1;
+    if (typeof nowT === "number") {
+      if (confettiLastT) dtF = Math.min(3, Math.max(0.5, (nowT - confettiLastT) / 16.667));
+      confettiLastT = nowT;
+    }
+
     var alive = [];
     for (var i = 0; i < confettiParticles.length; i++) {
       var p = confettiParticles[i];
-      p.x += Math.cos(p.angle2D) * p.velocity + p.drift;
-      p.y += Math.sin(p.angle2D) * p.velocity + p.gravity;
-      p.velocity *= p.decay;          // hız sönümlenir, sonra sabit süzülme kalır
-      p.wobble += p.wobbleSpeed;      // yana doğru salınım
-      p.tiltAngle += p.tiltSpeed;     // 3B takla dönüşü
-      p.tick++;
+      p.x += (Math.cos(p.angle2D) * p.velocity + p.drift) * dtF;
+      // Yerçekimi anında bastırmaz: parçacık önce fırlar, düşüş hızı yavaşça
+      // süzülme hızına (kağıt hafif, fotoğraf ağır) ulaşır → doğal patlama+yağmur
+      p.gvel = Math.min(p.shape === "paper" ? 2.6 : 3.4, p.gvel + 0.13 * dtF);
+      p.y += (Math.sin(p.angle2D) * p.velocity + p.gvel) * dtF;
+      p.velocity *= Math.pow(p.decay, dtF); // patlama hızı sönümlenir
+      p.wobble += p.wobbleSpeed * dtF;      // yana doğru salınım
+      p.tiltAngle += p.tiltSpeed * dtF;     // 3B takla dönüşü
+      p.tick += dtF;
 
       var progress = p.tick / p.totalTicks;
       if (progress >= 1 || p.y > H + 40) continue;
@@ -1118,13 +1131,12 @@
           ctx.restore();
         }
       } else {
+        // fillText her karede pahalı (Safari); emoji bir kez sprite'a çizilir
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(0.5 * wobX);
-        ctx.font = (p.size * p.scalar) + "px serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(p.emoji, 0, 0);
+        var es = p.size * p.scalar;
+        ctx.drawImage(emojiSprite(p.emoji), -es / 2, -es / 2, es, es);
         ctx.restore();
       }
     }
@@ -1135,8 +1147,26 @@
       requestAnimationFrame(confettiFrame);
     } else {
       confettiRunning = false;
+      confettiLastT = 0;
       ctx.clearRect(0, 0, W, H);
     }
+  }
+
+  // Emoji sprite önbelleği: her emoji bir kez 48px canvas'a çizilir
+  var emojiSprites = {};
+  function emojiSprite(ch) {
+    var s = emojiSprites[ch];
+    if (!s) {
+      s = document.createElement("canvas");
+      s.width = 48; s.height = 48;
+      var c = s.getContext("2d");
+      c.font = "40px serif";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.fillText(ch, 24, 26);
+      emojiSprites[ch] = s;
+    }
+    return s;
   }
 
   function emojiConfetti(who, x, y, combo) {
@@ -1152,7 +1182,7 @@
     }
 
     ensureConfettiCanvas();
-    var total = reduce ? 14 : Math.min(240, 110 + (combo - 1) * 30);
+    var total = reduce ? 14 : Math.min(200, 100 + (combo - 1) * 25);
     // Fırlatma hızını üstteki boşluğa göre ölçekle: buton tepedeyse parçalar
     // ekrandan taşmasın, patlama görünür kalsın.
     var vk = Math.max(0.55, Math.min(1, oy / 450));
