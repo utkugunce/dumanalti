@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.5.4";
-  var APP_BUILD = 69;
+  var APP_VERSION = "4.5.5";
+  var APP_BUILD = 70;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -906,6 +906,21 @@
   // ---------- Actions ----------
   var renderDeferTimer = null;
 
+  // Sabit (kaydırılamayan) öğelerde dokunma anında tepki; kaydırılabilir
+  // listelerdeki butonlar bilerek click'te kalır (yanlış tetiklenmesin)
+  var TAP_EVT = window.PointerEvent ? "pointerdown" : "click";
+
+  // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
+  function renderStats() {
+    renderStatCards();
+    renderChart();
+    renderHourly();
+    renderShare();
+    renderDow();
+    renderCalendar();
+    renderRecords();
+  }
+
   // Dokunma anında akıcılık: sadece görünür hafif kartlar hemen çizilir,
   // ağır DOM işleri (grafikler, takvim, içgörüler...) animasyon sonrasına kalır
   function renderQuick() {
@@ -1508,8 +1523,7 @@
     document.querySelectorAll(".action-btn").forEach(function (btn) {
       // click parmak kalkınca ateşlenir; pointerdown parmağın değdiği anda —
       // tepki anında gelsin diye ekleme pointerdown'a bağlı (click yedek)
-      var evName = window.PointerEvent ? "pointerdown" : "click";
-      btn.addEventListener(evName, function (ev) {
+      btn.addEventListener(TAP_EVT, function (ev) {
         if (ev.button > 0) return; // sadece birincil tuş/parmak
         // Çift tetikleme koruması: kısa süre tekrar tetiklenmesin
         if (btn.dataset.lock === "1") return;
@@ -1525,8 +1539,8 @@
     });
 
     // Geri al da dokunma anında tepki versin (click parmak kalkınca ateşlenir)
-    el("undoBtn").addEventListener(window.PointerEvent ? "pointerdown" : "click", undoLast);
-    el("themeToggle").addEventListener("click", toggleTheme);
+    el("undoBtn").addEventListener(TAP_EVT, undoLast);
+    el("themeToggle").addEventListener(TAP_EVT, toggleTheme);
     el("exportBtn").addEventListener("click", exportData);
     el("importBtn").addEventListener("click", function () { el("importFile").click(); });
     el("importFile").addEventListener("change", function (e) {
@@ -1537,7 +1551,7 @@
 
     // Sekmeler: sabit çubukta kaydırma riski yok, dokunma anında geçiş yap
     document.querySelectorAll(".tab").forEach(function (btn) {
-      btn.addEventListener(window.PointerEvent ? "pointerdown" : "click", function () {
+      btn.addEventListener(TAP_EVT, function () {
         showTab(btn.getAttribute("data-tab"));
       });
     });
@@ -1559,7 +1573,7 @@
         document.querySelectorAll(".scope-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
         var toggle = el("scopeToggle");
         if (toggle) toggle.classList.toggle("hidden", statsScope !== "gozde" && statsScope !== "utku");
-        render();
+        renderStats(); // tüm uygulamayı değil, sadece görünen istatistikleri çiz
       });
     });
 
@@ -1568,7 +1582,7 @@
       b.addEventListener("click", function () {
         scopeIncludeBoth = b.getAttribute("data-include") === "yes";
         document.querySelectorAll("#scopeToggle .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
-        render();
+        renderStats();
       });
     });
 
@@ -1728,15 +1742,15 @@
       var b = document.createElement("button");
       b.className = "asst-chip";
       b.textContent = c.t;
-      b.addEventListener("click", function () { asstAsk(c.k, c.t); });
+      b.addEventListener(TAP_EVT, function () { asstAsk(c.k, c.t); });
       chips.appendChild(b);
     });
-    el("asstFab").addEventListener("click", function () {
+    el("asstFab").addEventListener(TAP_EVT, function () {
       var panel = el("asstPanel");
       if (panel.classList.contains("hidden")) asstOpen();
       else panel.classList.add("hidden");
     });
-    el("asstClose").addEventListener("click", function () { el("asstPanel").classList.add("hidden"); });
+    el("asstClose").addEventListener(TAP_EVT, function () { el("asstPanel").classList.add("hidden"); });
     // İlk açılışta dikkat çeken rozet
     el("asstBadge").textContent = "?";
     el("asstBadge").classList.remove("hidden");
