@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.5.2";
-  var APP_BUILD = 67;
+  var APP_VERSION = "4.5.3";
+  var APP_BUILD = 68;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -1500,11 +1500,15 @@
   // ---------- Init ----------
   function bind() {
     document.querySelectorAll(".action-btn").forEach(function (btn) {
-      btn.addEventListener("click", function (ev) {
-        // Çift tıklama (ghost click) koruması: kısa süre tekrar tetiklenmesin
+      // click parmak kalkınca ateşlenir; pointerdown parmağın değdiği anda —
+      // tepki anında gelsin diye ekleme pointerdown'a bağlı (click yedek)
+      var evName = window.PointerEvent ? "pointerdown" : "click";
+      btn.addEventListener(evName, function (ev) {
+        if (ev.button > 0) return; // sadece birincil tuş/parmak
+        // Çift tetikleme koruması: kısa süre tekrar tetiklenmesin
         if (btn.dataset.lock === "1") return;
         btn.dataset.lock = "1";
-        setTimeout(function () { btn.dataset.lock = "0"; }, 800);
+        setTimeout(function () { btn.dataset.lock = "0"; }, 350);
 
         var who = btn.getAttribute("data-who");
         btn.classList.remove("pop");
