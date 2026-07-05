@@ -182,30 +182,6 @@
       </div>
     </section>
 
-    <!-- Harcama (yalnızca maliyet girilince görünür) -->
-    <h3 class="group-title hidden" id="costTitle">💸 Harcama</h3>
-    <section class="card hidden" id="costCard">
-      <div class="stats-grid">
-        <div class="stat-mini">
-          <span class="stat-label">Bu hafta</span>
-          <span class="stat-value" id="costWeek">₺0</span>
-        </div>
-        <div class="stat-mini">
-          <span class="stat-label">Bu ay</span>
-          <span class="stat-value" id="costMonth">₺0</span>
-        </div>
-        <div class="stat-mini">
-          <span class="stat-label">Aylık tahmin</span>
-          <span class="stat-value" id="costProjection">₺0</span>
-          <span class="stat-sub">son 7 güne göre</span>
-        </div>
-        <div class="stat-mini">
-          <span class="stat-label">Tüm zamanlar</span>
-          <span class="stat-value" id="costAll">₺0</span>
-        </div>
-      </div>
-    </section>
-
     <!-- Dağılım -->
     <h3 class="group-title">📈 Dağılım</h3>
     <!-- 7 day chart -->
@@ -294,15 +270,6 @@
         <input type="number" inputmode="numeric" id="setLimit" min="0" step="1" placeholder="örn. 10" />
       </div>
       <p class="set-note">Limit girersen Anasayfa'da dolan bir halka çıkar; aşınca kırmızıya döner. Gün 04:00'te başlar.</p>
-    </section>
-
-    <h3 class="group-title">💸 Maliyet</h3>
-    <section class="card settings-card">
-      <div class="set-row">
-        <label for="setPrice">Bir sigonun maliyeti (₺)</label>
-        <input type="number" inputmode="decimal" id="setPrice" min="0" step="0.1" placeholder="örn. 5" />
-      </div>
-      <p class="set-note">Girersen İstatistik'te harcama kartı, Bilgiler'de aylık harcama satırı çıkar.</p>
     </section>
 
     <h3 class="group-title">🎨 Görünüm</h3>

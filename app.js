@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.6.0";
-  var APP_BUILD = 71;
+  var APP_VERSION = "4.6.1";
+  var APP_BUILD = 72;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -37,7 +37,7 @@
     return img;
   }
 
-  var settings = { dailyLimit: 0, price: 0, confetti: "full", owner: "", mascot: "on" };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -100,7 +100,6 @@
       var s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
       if (s && typeof s === "object") {
         settings.dailyLimit = +s.dailyLimit || 0;
-        settings.price = +s.price || 0;
         settings.confetti = s.confetti === "lite" || s.confetti === "off" ? s.confetti : "full";
         settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
         settings.mascot = s.mascot === "off" ? "off" : "on";
@@ -199,7 +198,6 @@
     renderToday();
     renderLimit();
     renderStatCards();
-    renderCost();
     renderChart();
     renderSince();
     renderHourly();
@@ -302,30 +300,6 @@
     var all = countWho(list);
     el("allTotal").textContent = all.total;
     el("allBreakdown").textContent = showBreakdown ? (all.total ? breakdownText(all) : "—") : "";
-  }
-
-  // Türk lirası biçimi: küçükse kuruşlu, büyükse binlik ayraçlı tam sayı
-  function fmtMoney(v) {
-    if (v < 100) return "₺" + (Math.round(v * 100) / 100).toString().replace(".", ",");
-    return "₺" + Math.round(v).toLocaleString("tr-TR");
-  }
-
-  function renderCost() {
-    var has = settings.price > 0;
-    ["costTitle", "costCard"].forEach(function (id) {
-      var n = el(id); if (n) n.classList.toggle("hidden", !has);
-    });
-    if (!has) return;
-    var list = scopedEntries();
-    var p = settings.price;
-    var week = list.filter(function (e) { return e.ts >= startOfWeek(Date.now()).getTime(); }).length;
-    var month = list.filter(function (e) { return e.ts >= startOfMonth(); }).length;
-    var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-    var last7 = list.filter(function (e) { return e.ts >= sevenAgo; }).length;
-    el("costWeek").textContent = fmtMoney(week * p);
-    el("costMonth").textContent = fmtMoney(month * p);
-    el("costProjection").textContent = fmtMoney(last7 / 7 * 30 * p); // aylık tahmin
-    el("costAll").textContent = fmtMoney(list.length * p);
   }
 
   function renderChart() {
@@ -435,11 +409,7 @@
         }
       }
 
-      var monthCount = entriesSince(startOfMonth()).length;
-      items.push({ e: "📅", t: "Bu ay toplam " + monthCount + " sigo." });
-      if (settings.price > 0 && monthCount > 0) {
-        items.push({ e: "💸", t: "Bu ay tahmini " + fmtMoney(monthCount * settings.price) + " harcadınız." });
-      }
+      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(startOfMonth()).length + " sigo." });
 
       items.push({ e: "📊", t: "Son 7 günde günde ortalama " + avg.toFixed(1) + " sigo." });
 
@@ -956,7 +926,6 @@
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
   function renderStats() {
     renderStatCards();
-    renderCost();
     renderChart();
     renderHourly();
     renderShare();
@@ -1692,11 +1661,6 @@
       el("setLimit").value = settings.dailyLimit || "";
       el("setLimit").addEventListener("input", function () { settings.dailyLimit = +this.value || 0; saveSettings(); renderLimit(); });
     }
-    if (el("setPrice")) {
-      el("setPrice").value = settings.price || "";
-      el("setPrice").addEventListener("input", function () { settings.price = +this.value || 0; saveSettings(); renderCost(); renderInsights(); });
-    }
-
     setInterval(function () { renderToday(); }, 60000);
     setInterval(function () { renderSince(); }, 1000);
   }
