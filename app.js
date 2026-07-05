@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.5.3";
-  var APP_BUILD = 68;
+  var APP_VERSION = "4.5.4";
+  var APP_BUILD = 69;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -906,6 +906,18 @@
   // ---------- Actions ----------
   var renderDeferTimer = null;
 
+  // Dokunma anında akıcılık: sadece görünür hafif kartlar hemen çizilir,
+  // ağır DOM işleri (grafikler, takvim, içgörüler...) animasyon sonrasına kalır
+  function renderQuick() {
+    renderToday();
+    renderLimit();
+    renderSince();
+    var hist = el("view-history");
+    if (hist && !hist.classList.contains("hidden")) renderHistory();
+    clearTimeout(renderDeferTimer);
+    renderDeferTimer = setTimeout(render, 700);
+  }
+
   function addEntry(who, x, y) {
     var entry = { id: uuid(), who: who, ts: Date.now() };
     entries.push(entry);
@@ -914,13 +926,7 @@
     outbox.push({ type: "insert", row: entry });
     saveCache();
     saveOutbox();
-    // Patlama akıcı kalsın: sadece ekranda görünen hafif kartları hemen çiz,
-    // ağır DOM işlerini (grafikler, geçmiş, takvim...) animasyon sonrasına ertele
-    renderToday();
-    renderLimit();
-    renderSince();
-    clearTimeout(renderDeferTimer);
-    renderDeferTimer = setTimeout(render, 700);
+    renderQuick();
     showUndo(who);
     var combo = bumpCombo();
     emojiConfetti(who, x, y, combo);
@@ -936,7 +942,7 @@
     if (idx === -1) return;
     entries.splice(idx, 1);
     saveCache();
-    render();
+    renderQuick();
 
     // Henüz gönderilmemiş bir ekleme ise, kuyruktan iptal et; aksi halde silme kuyruğa gir
     var pendingInsert = false;
@@ -1518,7 +1524,8 @@
       });
     });
 
-    el("undoBtn").addEventListener("click", undoLast);
+    // Geri al da dokunma anında tepki versin (click parmak kalkınca ateşlenir)
+    el("undoBtn").addEventListener(window.PointerEvent ? "pointerdown" : "click", undoLast);
     el("themeToggle").addEventListener("click", toggleTheme);
     el("exportBtn").addEventListener("click", exportData);
     el("importBtn").addEventListener("click", function () { el("importFile").click(); });
@@ -1528,9 +1535,11 @@
     });
     el("resetBtn").addEventListener("click", resetData);
 
-    // Sekmeler
+    // Sekmeler: sabit çubukta kaydırma riski yok, dokunma anında geçiş yap
     document.querySelectorAll(".tab").forEach(function (btn) {
-      btn.addEventListener("click", function () { showTab(btn.getAttribute("data-tab")); });
+      btn.addEventListener(window.PointerEvent ? "pointerdown" : "click", function () {
+        showTab(btn.getAttribute("data-tab"));
+      });
     });
     showTab(localStorage.getItem(TAB_KEY) || "home");
 
