@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.5.5";
-  var APP_BUILD = 70;
+  var APP_VERSION = "4.6.0";
+  var APP_BUILD = 71;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -37,7 +37,7 @@
     return img;
   }
 
-  var settings = { dailyLimit: 0 };
+  var settings = { dailyLimit: 0, price: 0, confetti: "full", owner: "", mascot: "on" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -100,6 +100,10 @@
       var s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
       if (s && typeof s === "object") {
         settings.dailyLimit = +s.dailyLimit || 0;
+        settings.price = +s.price || 0;
+        settings.confetti = s.confetti === "lite" || s.confetti === "off" ? s.confetti : "full";
+        settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
+        settings.mascot = s.mascot === "off" ? "off" : "on";
       }
     } catch (e) {}
   }
@@ -195,6 +199,7 @@
     renderToday();
     renderLimit();
     renderStatCards();
+    renderCost();
     renderChart();
     renderSince();
     renderHourly();
@@ -297,6 +302,30 @@
     var all = countWho(list);
     el("allTotal").textContent = all.total;
     el("allBreakdown").textContent = showBreakdown ? (all.total ? breakdownText(all) : "—") : "";
+  }
+
+  // Türk lirası biçimi: küçükse kuruşlu, büyükse binlik ayraçlı tam sayı
+  function fmtMoney(v) {
+    if (v < 100) return "₺" + (Math.round(v * 100) / 100).toString().replace(".", ",");
+    return "₺" + Math.round(v).toLocaleString("tr-TR");
+  }
+
+  function renderCost() {
+    var has = settings.price > 0;
+    ["costTitle", "costCard"].forEach(function (id) {
+      var n = el(id); if (n) n.classList.toggle("hidden", !has);
+    });
+    if (!has) return;
+    var list = scopedEntries();
+    var p = settings.price;
+    var week = list.filter(function (e) { return e.ts >= startOfWeek(Date.now()).getTime(); }).length;
+    var month = list.filter(function (e) { return e.ts >= startOfMonth(); }).length;
+    var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
+    var last7 = list.filter(function (e) { return e.ts >= sevenAgo; }).length;
+    el("costWeek").textContent = fmtMoney(week * p);
+    el("costMonth").textContent = fmtMoney(month * p);
+    el("costProjection").textContent = fmtMoney(last7 / 7 * 30 * p); // aylık tahmin
+    el("costAll").textContent = fmtMoney(list.length * p);
   }
 
   function renderChart() {
@@ -406,7 +435,11 @@
         }
       }
 
-      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(startOfMonth()).length + " sigo." });
+      var monthCount = entriesSince(startOfMonth()).length;
+      items.push({ e: "📅", t: "Bu ay toplam " + monthCount + " sigo." });
+      if (settings.price > 0 && monthCount > 0) {
+        items.push({ e: "💸", t: "Bu ay tahmini " + fmtMoney(monthCount * settings.price) + " harcadınız." });
+      }
 
       items.push({ e: "📊", t: "Son 7 günde günde ortalama " + avg.toFixed(1) + " sigo." });
 
@@ -887,13 +920,23 @@
   }
 
   // ---------- Status ----------
+  var lastSyncAt = 0;
   function setStatus(text, state) {
     var node = el("cloudStatus");
-    if (!node) return;
-    // Metin gizli; açıklama dokununca/hover'da title olarak görünür
-    node.title = text;
-    node.setAttribute("aria-label", text);
-    node.className = "cloud-status status-" + (state || "offline");
+    if (node) {
+      // Metin gizli; açıklama dokununca/hover'da title olarak görünür
+      node.title = text;
+      node.setAttribute("aria-label", text);
+      node.className = "cloud-status status-" + (state || "offline");
+    }
+    // Ayarlar'daki ayrıntılı satır
+    var info = el("syncInfo");
+    if (info) {
+      var extra = "";
+      if (state === "online" && lastSyncAt) extra = " · son: " + formatTime(lastSyncAt);
+      else if (outbox.length) extra = " · " + outbox.length + " işlem bekliyor";
+      info.textContent = "Durum: " + text + extra;
+    }
   }
   function refreshStatus() {
     if (!sb) { setStatus("📴 Yerel mod", "offline"); return; }
@@ -913,6 +956,7 @@
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
   function renderStats() {
     renderStatCards();
+    renderCost();
     renderChart();
     renderHourly();
     renderShare();
@@ -1213,7 +1257,9 @@
   }
 
   function emojiConfetti(who, x, y, combo) {
-    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (settings.confetti === "off") return; // kutlama efekti kapalı
+    var reduce = settings.confetti === "lite" ||
+      (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     var W = window.innerWidth, H = window.innerHeight;
     var ox = x != null ? x : W / 2;
     var oy = y != null ? y : H / 2;
@@ -1368,6 +1414,7 @@
       sortEntries();
       saveCache();
       cloudReady = true;
+      lastSyncAt = Date.now();
       render();
       refreshStatus();
     }).catch(function (err) { cloudError(err); });
@@ -1475,8 +1522,14 @@
   }
 
   // ---------- Theme ----------
+  // Tema tercihi: "dark" | "light" | "auto". Auto sistemin koyu/açık ayarını izler.
+  var themePref = "dark";
+  function systemIsLight() {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+  }
   function applyTheme(theme) {
-    var light = theme === "light";
+    themePref = theme === "light" || theme === "auto" ? theme : "dark";
+    var light = themePref === "light" || (themePref === "auto" && systemIsLight());
     if (light) {
       document.documentElement.setAttribute("data-theme", "light");
       el("themeToggle").textContent = "☀️";
@@ -1487,7 +1540,7 @@
     var seg = document.getElementById("themeSeg");
     if (seg) {
       seg.querySelectorAll(".seg-btn").forEach(function (b) {
-        b.classList.toggle("active", b.getAttribute("data-theme") === (light ? "light" : "dark"));
+        b.classList.toggle("active", b.getAttribute("data-theme") === themePref);
       });
     }
   }
@@ -1499,10 +1552,12 @@
     refreshStatus();
     flushOutbox().then(syncFromRemote).then(function () { refreshStatus(); });
   }
+  // Başlıktaki 🌙/☀️ düğmesi koyu ↔ açık arasında geçer (auto'yu kırar)
   function toggleTheme() {
-    var current = localStorage.getItem(THEME_KEY) === "light" ? "dark" : "light";
-    localStorage.setItem(THEME_KEY, current);
-    applyTheme(current);
+    var light = document.documentElement.getAttribute("data-theme") === "light";
+    var next = light ? "dark" : "light";
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
   }
 
   var TAB_KEY = "dumanalti.tab";
@@ -1586,27 +1641,101 @@
       });
     });
 
-    // Tema seçici
-    document.querySelectorAll("#themeSeg .seg-btn").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var t = b.getAttribute("data-theme");
-        localStorage.setItem(THEME_KEY, t);
-        applyTheme(t);
+    // Segment düğmesi yardımcısı: bir gruptaki aktif düğmeyi işaretle, seçilince çalıştır
+    function bindSeg(segId, attr, current, onPick) {
+      var seg = el(segId);
+      if (!seg) return;
+      seg.querySelectorAll(".seg-btn").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute(attr) === current);
+        b.addEventListener(TAP_EVT, function () {
+          var v = b.getAttribute(attr);
+          seg.querySelectorAll(".seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
+          onPick(v);
+        });
       });
+    }
+
+    // Tema seçici (auto/dark/light)
+    bindSeg("themeSeg", "data-theme", themePref, function (t) {
+      localStorage.setItem(THEME_KEY, t);
+      applyTheme(t);
     });
 
-    if (el("syncNowBtn")) el("syncNowBtn").addEventListener("click", syncNow);
+    // Kutlama efekti (tam/sade/kapalı)
+    bindSeg("confettiSeg", "data-confetti", settings.confetti, function (v) {
+      settings.confetti = v; saveSettings();
+    });
+
+    // Cihaz sahibi (adla selamlama)
+    bindSeg("ownerSeg", "data-owner", settings.owner, function (v) {
+      settings.owner = v; saveSettings();
+    });
+
+    // Zıvana görünürlüğü
+    bindSeg("mascotSeg", "data-mascot", settings.mascot, function (v) {
+      settings.mascot = v; saveSettings(); applyMascot();
+    });
+
+    if (el("syncNowBtn")) el("syncNowBtn").addEventListener(TAP_EVT, syncNow);
+    if (el("exportCsvBtn")) el("exportCsvBtn").addEventListener("click", exportCsv);
+
+    // Hızlı ekleme bağlantısı kopyala
+    document.querySelectorAll("[data-quick]").forEach(function (b) {
+      b.addEventListener("click", function () { copyQuickLink(b.getAttribute("data-quick"), b); });
+    });
 
     bindAssistant();
+    applyMascot();
 
-    // Ayarlar
+    // Ayarlar: sayı girdileri
     if (el("setLimit")) {
       el("setLimit").value = settings.dailyLimit || "";
       el("setLimit").addEventListener("input", function () { settings.dailyLimit = +this.value || 0; saveSettings(); renderLimit(); });
     }
+    if (el("setPrice")) {
+      el("setPrice").value = settings.price || "";
+      el("setPrice").addEventListener("input", function () { settings.price = +this.value || 0; saveSettings(); renderCost(); renderInsights(); });
+    }
 
     setInterval(function () { renderToday(); }, 60000);
     setInterval(function () { renderSince(); }, 1000);
+  }
+
+  // Zıvana'yı ayara göre göster/gizle
+  function applyMascot() {
+    var a = el("assistant");
+    if (a) a.classList.toggle("hidden", settings.mascot === "off");
+    if (settings.mascot === "off") { var p = el("asstPanel"); if (p) p.classList.add("hidden"); }
+  }
+
+  // Hızlı ekleme bağlantısını panoya kopyala (iOS Kısayollar / yer imi için)
+  function copyQuickLink(who, btn) {
+    var url = location.origin + location.pathname + "?add=" + who;
+    var done = function () {
+      var old = btn.textContent;
+      btn.textContent = "✓ Kopyalandı";
+      setTimeout(function () { btn.textContent = old; }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { prompt("Bağlantı:", url); });
+    } else { prompt("Bağlantı:", url); }
+  }
+
+  // Kayıtları CSV olarak dışa aktar (Excel/Numbers'ta açılır)
+  function exportCsv() {
+    var rows = ["tarih,saat,kisi,mantiksal_gun"];
+    entries.forEach(function (e) {
+      var d = new Date(e.ts);
+      var tarih = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+      rows.push(tarih + "," + formatTime(e.ts) + "," + WHO[e.who].label + "," + dayKey(e.ts));
+    });
+    var blob = new Blob(["﻿" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "dumanalti-" + dayKey(Date.now()) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ---------- Zıvana: yardımcı asistan ----------
@@ -1644,7 +1773,8 @@
     if (topic === "hi") {
       var hr = new Date().getHours();
       var greet = hr < 6 ? "İyi geceler" : hr < 12 ? "Günaydın" : hr < 18 ? "İyi günler" : "İyi akşamlar";
-      out.push(greet + "! Ben Zıvana 💨 Verilerinizi takip ediyorum, merak ettiğini sor.");
+      var hitap = settings.owner ? " " + WHO[settings.owner].label : "";
+      out.push(greet + hitap + "! Ben Zıvana 💨 Verilerinizi takip ediyorum, merak ettiğini sor.");
       if (s.all.total > 0) {
         if (s.today === 0) out.push("Bugün henüz hiç içmemişsiniz — böyle devam! 🌿");
         else if (s.avg7 > 0 && s.today < s.avg7) out.push("Bugün " + s.today + " sigo; 7 günlük ortalamanızın (" + s.avg7.toFixed(1) + ") altındasınız. Aferin! 👏");
@@ -1766,6 +1896,13 @@
   }
 
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+  // Auto modda sistem teması değişince anında uygula
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: light)");
+    var onSys = function () { if (themePref === "auto") applyTheme("auto"); };
+    if (mq.addEventListener) mq.addEventListener("change", onSys);
+    else if (mq.addListener) mq.addListener(onSys);
+  }
   el("appVersion").textContent = "v" + APP_VERSION + " · derleme " + APP_BUILD;
   loadSettings();
   loadCache();

@@ -182,6 +182,30 @@
       </div>
     </section>
 
+    <!-- Harcama (yalnızca maliyet girilince görünür) -->
+    <h3 class="group-title hidden" id="costTitle">💸 Harcama</h3>
+    <section class="card hidden" id="costCard">
+      <div class="stats-grid">
+        <div class="stat-mini">
+          <span class="stat-label">Bu hafta</span>
+          <span class="stat-value" id="costWeek">₺0</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-label">Bu ay</span>
+          <span class="stat-value" id="costMonth">₺0</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-label">Aylık tahmin</span>
+          <span class="stat-value" id="costProjection">₺0</span>
+          <span class="stat-sub">son 7 güne göre</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-label">Tüm zamanlar</span>
+          <span class="stat-value" id="costAll">₺0</span>
+        </div>
+      </div>
+    </section>
+
     <!-- Dağılım -->
     <h3 class="group-title">📈 Dağılım</h3>
     <!-- 7 day chart -->
@@ -269,7 +293,16 @@
         <label for="setLimit">Günlük limit (0 = kapalı)</label>
         <input type="number" inputmode="numeric" id="setLimit" min="0" step="1" placeholder="örn. 10" />
       </div>
-      <p class="set-note">Limit girersen Anasayfa'da dolan bir halka çıkar; aşınca kırmızıya döner.</p>
+      <p class="set-note">Limit girersen Anasayfa'da dolan bir halka çıkar; aşınca kırmızıya döner. Gün 04:00'te başlar.</p>
+    </section>
+
+    <h3 class="group-title">💸 Maliyet</h3>
+    <section class="card settings-card">
+      <div class="set-row">
+        <label for="setPrice">Bir sigonun maliyeti (₺)</label>
+        <input type="number" inputmode="decimal" id="setPrice" min="0" step="0.1" placeholder="örn. 5" />
+      </div>
+      <p class="set-note">Girersen İstatistik'te harcama kartı, Bilgiler'de aylık harcama satırı çıkar.</p>
     </section>
 
     <h3 class="group-title">🎨 Görünüm</h3>
@@ -277,10 +310,39 @@
       <div class="set-row">
         <label>Tema</label>
         <div class="seg" id="themeSeg">
+          <button class="seg-btn" data-theme="auto">🌗 Oto</button>
           <button class="seg-btn" data-theme="dark">🌙 Koyu</button>
           <button class="seg-btn" data-theme="light">☀️ Açık</button>
         </div>
       </div>
+      <div class="set-row">
+        <label>Kutlama efekti</label>
+        <div class="seg" id="confettiSeg">
+          <button class="seg-btn" data-confetti="full">🎉 Tam</button>
+          <button class="seg-btn" data-confetti="lite">✨ Sade</button>
+          <button class="seg-btn" data-confetti="off">🚫 Kapalı</button>
+        </div>
+      </div>
+    </section>
+
+    <h3 class="group-title">🙋 Kişiselleştirme</h3>
+    <section class="card settings-card">
+      <div class="set-row">
+        <label>Bu cihaz kimin?</label>
+        <div class="seg" id="ownerSeg">
+          <button class="seg-btn" data-owner="utku">🧔 Utku</button>
+          <button class="seg-btn" data-owner="gozde">👩 Gözde</button>
+          <button class="seg-btn" data-owner="">—</button>
+        </div>
+      </div>
+      <div class="set-row">
+        <label>Zıvana (asistan)</label>
+        <div class="seg" id="mascotSeg">
+          <button class="seg-btn" data-mascot="on">💨 Açık</button>
+          <button class="seg-btn" data-mascot="off">🙈 Gizli</button>
+        </div>
+      </div>
+      <p class="set-note">Cihaz sahibini seçersen Zıvana seni adınla selamlar.</p>
     </section>
 
     <h3 class="group-title">☁️ Senkronizasyon</h3>
@@ -289,14 +351,27 @@
         <label>Bulut</label>
         <button id="syncNowBtn" class="ghost-btn small">🔄 Şimdi senkronla</button>
       </div>
-      <p class="set-note">Veriler bulutta tutulur; Utku ve Gözde aynı URL'de ortak veriyi gerçek zamanlı görür. Durum aşağıda görünür.</p>
+      <p class="set-note" id="syncInfo">Durum: —</p>
+      <p class="set-note">Veriler bulutta tutulur; Utku ve Gözde aynı URL'de ortak veriyi gerçek zamanlı görür.</p>
+    </section>
+
+    <h3 class="group-title">⚡ Hızlı ekleme</h3>
+    <section class="card settings-card">
+      <p class="set-note">Bağlantıyı kopyala, iOS Kısayollar'a veya yer imine ekle: uygulama açılır açılmaz o kaydı ekler.</p>
+      <div class="data-buttons">
+        <button class="ghost-btn" data-quick="utku">🧔 Utku</button>
+        <button class="ghost-btn" data-quick="gozde">👩 Gözde</button>
+        <button class="ghost-btn" data-quick="both">💑 Ortak</button>
+        <button class="ghost-btn" data-quick="hepberaber">🎉 Hep beraber</button>
+      </div>
     </section>
 
     <h3 class="group-title">💾 Veri</h3>
     <section class="card data-tools">
       <div class="set-row"><label>Toplam kayıt</label><strong id="setCount">0</strong></div>
       <div class="data-buttons">
-        <button id="exportBtn" class="ghost-btn">📤 Dışa aktar</button>
+        <button id="exportBtn" class="ghost-btn">📤 JSON</button>
+        <button id="exportCsvBtn" class="ghost-btn">📊 CSV</button>
         <button id="importBtn" class="ghost-btn">📥 İçe aktar</button>
         <button id="resetBtn" class="ghost-btn danger">🗑️ Sıfırla</button>
       </div>

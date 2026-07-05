@@ -921,6 +921,11 @@ body {
 
 .ghost-btn.small { flex: none; min-width: 0; padding: 8px 12px; font-size: 12px; }
 
+/* Ayarlardaki çok düğmeli segmentler dar ekranda sığsın: satır sarabilir, düğme küçülür */
+.settings-card .set-row { flex-wrap: wrap; }
+.settings-card .seg { flex-wrap: wrap; justify-content: flex-end; }
+.settings-card .seg-btn { padding: 6px 10px; font-size: 12px; }
+
 /* About */
 .about-card { text-align: center; }
 .about-logo { width: 58px; height: 58px; border-radius: 15px; display: block; margin: 2px auto 4px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
