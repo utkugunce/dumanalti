@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.5.1";
-  var APP_BUILD = 66;
+  var APP_VERSION = "4.5.2";
+  var APP_BUILD = 67;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -904,6 +904,8 @@
   }
 
   // ---------- Actions ----------
+  var renderDeferTimer = null;
+
   function addEntry(who, x, y) {
     var entry = { id: uuid(), who: who, ts: Date.now() };
     entries.push(entry);
@@ -912,7 +914,13 @@
     outbox.push({ type: "insert", row: entry });
     saveCache();
     saveOutbox();
-    render();
+    // Patlama akıcı kalsın: sadece ekranda görünen hafif kartları hemen çiz,
+    // ağır DOM işlerini (grafikler, geçmiş, takvim...) animasyon sonrasına ertele
+    renderToday();
+    renderLimit();
+    renderSince();
+    clearTimeout(renderDeferTimer);
+    renderDeferTimer = setTimeout(render, 700);
     showUndo(who);
     var combo = bumpCombo();
     emojiConfetti(who, x, y, combo);
@@ -1012,6 +1020,20 @@
       confettiAvatarImgs[who] = img;
     }
     return confettiAvatarImgs[who];
+  }
+
+  // Büyük avatar fotoğrafını her karede ölçeklemek pahalı; bir kez 64px sprite'a indir
+  var confettiAvatarSprites = {};
+  function avatarSprite(who) {
+    var s = confettiAvatarSprites[who];
+    if (s) return s;
+    var img = confettiAvatarImg(who);
+    if (!(img.complete && img.naturalWidth)) return null; // henüz yüklenmediyse bu karede çizme
+    s = document.createElement("canvas");
+    s.width = 64; s.height = 64;
+    s.getContext("2d").drawImage(img, 0, 0, 64, 64);
+    confettiAvatarSprites[who] = s;
+    return s;
   }
 
   function ensureConfettiCanvas() {
@@ -1119,15 +1141,15 @@
         ctx.closePath();
         ctx.fill();
       } else if (p.shape === "avatar") {
-        var img = confettiAvatarImg(p.who);
-        if (img.complete && img.naturalWidth) {
+        var av = avatarSprite(p.who);
+        if (av) {
           var s = p.size * p.scalar;
           ctx.save();
           ctx.translate(p.x, p.y);
           ctx.rotate(0.35 * wobX);
           // takla: dikey eksende daralıp genişleme (madeni para dönüşü)
           ctx.scale(1, 0.45 + 0.55 * Math.abs(tiltCos));
-          ctx.drawImage(img, -s / 2, -s / 2, s, s);
+          ctx.drawImage(av, -s / 2, -s / 2, s, s);
           ctx.restore();
         }
       } else {
@@ -1177,11 +1199,17 @@
     combo = combo || 1;
 
     if (!reduce) {
-      screenShake(combo);
+      // Sarsıntı blur'lu cam kartların tamamını yeniden boyatıyor (Safari'de pahalı);
+      // patlamanın ilk karelerini yemesin diye sadece combo anlarına saklandı
+      if (combo >= 3) screenShake(combo);
       flashAt(ox, oy);
     }
 
     ensureConfettiCanvas();
+    // Sprite'ları ilk kare gelmeden ısındır: patlama anında tek seferlik iş kalmasın
+    avatarSprite(who);
+    for (var ei = 0; ei < CONFETTI_EXTRAS.length; ei++) emojiSprite(CONFETTI_EXTRAS[ei]);
+
     var total = reduce ? 14 : Math.min(200, 100 + (combo - 1) * 25);
     // Fırlatma hızını üstteki boşluğa göre ölçekle: buton tepedeyse parçalar
     // ekrandan taşmasın, patlama görünür kalsın.
