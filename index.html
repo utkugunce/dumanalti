@@ -54,6 +54,7 @@
         <span id="undoText">Eklendi</span>
         <button id="undoBtn" class="undo-btn">Geri al</button>
       </div>
+      <div id="undoTags" class="undo-tags" aria-label="Bağlam etiketi"></div>
     </div>
 
     <!-- Today summary -->
@@ -154,6 +155,10 @@
       </div>
     </div>
 
+    <!-- Haftalık düello (Utku vs Gözde, kişi filtresinden bağımsız) -->
+    <h3 class="group-title">⚔️ Haftalık düello</h3>
+    <section class="card" id="duelCard"></section>
+
     <!-- Özet -->
     <h3 class="group-title">📋 Özet</h3>
     <!-- Stat cards -->
@@ -235,8 +240,14 @@
       <div class="cal-grid" id="calGrid"></div>
     </section>
 
+    <!-- Rozetler -->
+    <h3 class="group-title">🏅 Rozetler</h3>
+    <section class="card">
+      <div class="badge-grid" id="badgeGrid"></div>
+    </section>
+
     <!-- Rekorlar -->
-    <h3 class="group-title">🏅 Rekorlar</h3>
+    <h3 class="group-title">📌 Rekorlar</h3>
     <section class="card">
       <div class="record-list" id="recordList"></div>
     </section>

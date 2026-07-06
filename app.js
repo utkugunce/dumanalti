@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.7.0";
-  var APP_BUILD = 73;
+  var APP_VERSION = "4.8.0";
+  var APP_BUILD = 74;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -28,6 +28,17 @@
 
   // Ortak ve hep beraber içilenler ikisinin de kişisel sayacına işlenir
   function isShared(w) { return w === "both" || w === "hepberaber"; }
+
+  // Bağlam etiketleri: bir sigoya isteğe bağlı ruh hali/durum
+  var TAGS = {
+    keyif:  { e: "😌", t: "Keyif" },
+    stres:  { e: "😮‍💨", t: "Stres" },
+    sabah:  { e: "☕", t: "Sabah" },
+    yemek:  { e: "🍽️", t: "Yemek sonrası" },
+    sosyal: { e: "🎉", t: "Sosyal" },
+    sikkin: { e: "🫠", t: "Sıkkın" }
+  };
+  var TAG_ORDER = ["keyif", "stres", "sabah", "yemek", "sosyal", "sikkin"];
 
   function makeAvatar(who, cls) {
     var img = document.createElement("img");
@@ -197,6 +208,7 @@
   function render() {
     renderToday();
     renderLimit();
+    renderDuel();
     renderStatCards();
     renderChart();
     renderSince();
@@ -204,6 +216,7 @@
     renderShare();
     renderDow();
     renderCalendar();
+    renderBadges();
     renderRecords();
     renderInsights();
     renderHistory();
@@ -421,13 +434,22 @@
       var DOW_FULL = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
       items.push({ e: "🗓️", t: "En çok " + DOW_FULL[maxDow] + " içiyorsunuz." });
 
+      // En sık bağlam etiketi (etiketlenmiş kayıt varsa)
+      var byTag = {}, tagged = 0;
+      entries.forEach(function (e) { if (e.tag && TAGS[e.tag]) { byTag[e.tag] = (byTag[e.tag] || 0) + 1; tagged++; } });
+      if (tagged >= 3) {
+        var topTag = null, topN = 0;
+        Object.keys(byTag).forEach(function (k) { if (byTag[k] > topN) { topN = byTag[k]; topTag = k; } });
+        if (topTag) items.push({ e: TAGS[topTag].e, t: "En çok \"" + TAGS[topTag].t + "\" anında içiyorsunuz (%" + Math.round(topN / tagged * 100) + ")." });
+      }
+
       if (entries.length) {
         var last = entries[entries.length - 1];
         items.push({ e: "⏱️", t: "Son sigodan bu yana " + relativeTime(last.ts).replace(" önce", "") + " geçti." });
       }
     }
 
-    items.slice(0, 7).forEach(function (it) {
+    items.slice(0, 8).forEach(function (it) {
       var li = document.createElement("li");
       var span = it.av ? makeAvatar(it.av, "avatar-tiny") : document.createElement("span");
       if (!it.av) { span.className = "emoji"; span.textContent = it.e; }
@@ -476,7 +498,8 @@
     who.textContent = WHO[e.who].label + " içti";
     var time = document.createElement("span");
     time.className = "h-time";
-    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
+    var tagStr = e.tag && TAGS[e.tag] ? " · " + TAGS[e.tag].e + " " + TAGS[e.tag].t : "";
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + tagStr + (pending ? " · ⏳ bekliyor" : "");
     main.appendChild(who);
     main.appendChild(time);
 
@@ -522,6 +545,22 @@
       chips.appendChild(b);
     });
 
+    // Bağlam etiketi çipleri (biri seçili değilse etiketsiz)
+    var selectedTag = e.tag || "";
+    var tagChips = document.createElement("div");
+    tagChips.className = "hist-edit-who";
+    TAG_ORDER.forEach(function (k) {
+      var b = document.createElement("button");
+      b.className = "hist-chip" + (k === selectedTag ? " active" : "");
+      b.textContent = TAGS[k].e + " " + TAGS[k].t;
+      b.addEventListener("click", function () {
+        selectedTag = (selectedTag === k) ? "" : k; // tekrar basınca kaldır
+        tagChips.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.remove("active"); });
+        if (selectedTag) b.classList.add("active");
+      });
+      tagChips.appendChild(b);
+    });
+
     var timeRow = document.createElement("div");
     timeRow.className = "hist-edit-time";
     var input = document.createElement("input");
@@ -539,7 +578,7 @@
       var ts = new Date(input.value).getTime();
       if (!input.value || isNaN(ts)) { alert("Geçerli bir tarih/saat seç."); return; }
       if (ts > Date.now()) { alert("Gelecekteki bir saat seçilemez."); return; }
-      updateEntry(e.id, selectedWho, ts);
+      updateEntry(e.id, selectedWho, ts, selectedTag);
     });
     var cancel = document.createElement("button");
     cancel.className = "ghost-btn small";
@@ -549,6 +588,7 @@
     btns.appendChild(cancel);
 
     panel.appendChild(chips);
+    panel.appendChild(tagChips);
     panel.appendChild(timeRow);
     panel.appendChild(btns);
     return panel;
@@ -804,10 +844,24 @@
     for (var t = firstDay; t <= lastDay; t += 86400000) { if (!byDay[dayKey(t)]) free++; }
     var span = Math.round((lastDay - firstDay) / 86400000) + 1;
 
+    // Mantıksal ay toplamı (bu görünüm/scope için)
+    function scMonth(off) {
+      var d = logicalDate(Date.now()), m = d.getMonth() + off, y = d.getFullYear();
+      return list.filter(function (e) {
+        var x = logicalDate(e.ts);
+        return x.getFullYear() === y + Math.floor(m / 12) && x.getMonth() === ((m % 12) + 12) % 12;
+      }).length;
+    }
+    var tm = scMonth(0), lm = scMonth(-1);
+    var delta = tm - lm;
+    var trendStr = lm > 0 ? " (" + (delta > 0 ? "+" : "") + delta + " geçen aya göre " + (delta < 0 ? "📉" : delta > 0 ? "📈" : "➖") + ")" : "";
+
     var items = [
       { e: "🔥", t: "Tek günde rekor: " + maxC + " sigo (" + dd + ")" },
       { e: "⏱️", t: "En uzun ara: " + fmtCoarse(maxGap) },
-      { e: "🧹", t: "Sigosuz gün: " + free },
+      { e: "🧊", t: "En uzun sigosuz seri: " + longestCleanStreak(list) + " gün" },
+      { e: "🧹", t: "Toplam sigosuz gün: " + free },
+      { e: "🔀", t: "Bu ay: " + tm + " sigo" + trendStr },
       { e: "📆", t: "Takip süresi: " + span + " gün" }
     ];
     items.forEach(function (it) {
@@ -863,6 +917,135 @@
     if (u < g) return "Bu hafta düello: Utku daha az içti (" + u + " - " + g + ").";
     if (g < u) return "Bu hafta düello: Gözde daha az içti (" + g + " - " + u + ").";
     return "Bu hafta düello: berabere (" + u + " - " + g + ").";
+  }
+
+  // Bir haftanın kişisel toplamları (offset 0=bu hafta, -1=geçen hafta)
+  function weekTotals(offset) {
+    var sow = startOfWeek(Date.now()).getTime() + offset * 7 * 86400000;
+    var eow = sow + 7 * 86400000;
+    var c = countWho(entries.filter(function (e) { return e.ts >= sow && e.ts < eow; }));
+    return { utku: c.utku + c.both + c.hepberaber, gozde: c.gozde + c.both + c.hepberaber };
+  }
+
+  // ⚔️ Haftalık düello: az içen önde. İki çubuk + geçen hafta kazananı.
+  function renderDuel() {
+    var card = el("duelCard");
+    if (!card) return;
+    var w = weekTotals(0);
+    if (w.utku === 0 && w.gozde === 0) {
+      card.innerHTML = '<p class="empty">Bu hafta henüz kayıt yok. İlk içen geride başlar 😏</p>';
+      return;
+    }
+    var leader = w.utku === w.gozde ? "" : (w.utku < w.gozde ? "utku" : "gozde");
+    var max = Math.max(w.utku, w.gozde, 1);
+    card.innerHTML = "";
+    var wrap = document.createElement("div");
+    wrap.className = "duel";
+    ["utku", "gozde"].forEach(function (who) {
+      var row = document.createElement("div");
+      row.className = "duel-row";
+      var name = document.createElement("span");
+      name.className = "duel-name";
+      name.appendChild(makeAvatar(who, "avatar-sm"));
+      name.appendChild(document.createTextNode(" " + WHO[who].label));
+      var track = document.createElement("div");
+      track.className = "duel-track";
+      var fill = document.createElement("div");
+      fill.className = "duel-fill " + WHO[who].cls;
+      fill.style.width = (w[who] / max * 100) + "%";
+      track.appendChild(fill);
+      var val = document.createElement("span");
+      val.className = "duel-val";
+      val.textContent = w[who] + (leader === who ? " 🏆" : "");
+      row.appendChild(name);
+      row.appendChild(track);
+      row.appendChild(val);
+      wrap.appendChild(row);
+    });
+    card.appendChild(wrap);
+
+    var foot = document.createElement("div");
+    foot.className = "duel-verdict";
+    var msg = leader ? WHO[leader].label + " önde (az içen kazanır) 🏆" : "Şu an berabere 🤝";
+    var lw = weekTotals(-1);
+    if (lw.utku !== 0 || lw.gozde !== 0) {
+      var lwWin = lw.utku === lw.gozde ? "berabere" : (lw.utku < lw.gozde ? WHO.utku.label : WHO.gozde.label) + " kazandı";
+      msg += " · Geçen hafta: " + lwWin;
+    }
+    foot.textContent = msg;
+    card.appendChild(foot);
+  }
+
+  // En uzun ardışık sigosuz gün serisi (takip aralığı içinde)
+  function longestCleanStreak(list) {
+    if (!list.length) return 0;
+    var byDay = {};
+    list.forEach(function (e) { byDay[dayKey(e.ts)] = true; });
+    var first = startOfDay(list[0].ts).getTime(), last = startOfDay(list[list.length - 1].ts).getTime();
+    var run = 0, best = 0;
+    for (var t = first; t <= last; t += 86400000) {
+      if (byDay[dayKey(t)]) run = 0; else { run++; if (run > best) best = run; }
+    }
+    return best;
+  }
+
+  // Mantıksal ay toplamı (offset 0=bu ay, -1=geçen ay)
+  function monthCount(offset) {
+    var d = logicalDate(Date.now());
+    var y = d.getFullYear(), m = d.getMonth() + offset;
+    return entries.filter(function (e) {
+      var x = logicalDate(e.ts);
+      return x.getFullYear() === y + Math.floor(m / 12) && x.getMonth() === ((m % 12) + 12) % 12;
+    }).length;
+  }
+
+  // 🏅 Rozetler: veriden kazanılmış/kilitli başarımlar
+  function computeBadges() {
+    var c = countWho(entries);
+    var total = entries.length;
+    var lg = Math.max(asstLongestGap(), asstRunningGap());
+    var clean = longestCleanStreak(entries);
+    var together = c.both + c.hepberaber;
+    var night = false, morning = false;
+    entries.forEach(function (e) {
+      var h = new Date(e.ts).getHours();
+      if (h >= 0 && h < 4) night = true;
+      if (h >= 4 && h < 8) morning = true;
+    });
+    return [
+      { e: "🌱", t: "İlk adım", d: "İlk sigo kaydı", on: total >= 1 },
+      { e: "💯", t: "Yüzler", d: "100 kayıt", on: total >= 100 },
+      { e: "🏆", t: "Beşyüz", d: "500 kayıt", on: total >= 500 },
+      { e: "⏱️", t: "Yarım gün", d: "12 saat ara", on: lg >= 12 * 3600000 },
+      { e: "🌗", t: "Tam gün", d: "24 saat ara", on: lg >= 24 * 3600000 },
+      { e: "🧊", t: "Temiz seri", d: "3 gün sigosuz", on: clean >= 3 },
+      { e: "💜", t: "Birlikte", d: "50 ortak/beraber", on: together >= 50 },
+      { e: "🦉", t: "Gece kuşu", d: "00–04 arası", on: night },
+      { e: "🌅", t: "Erkenci", d: "04–08 arası", on: morning }
+    ];
+  }
+
+  function renderBadges() {
+    var grid = el("badgeGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    var list = computeBadges();
+    var earned = 0;
+    list.forEach(function (b) {
+      if (b.on) earned++;
+      var cell = document.createElement("div");
+      cell.className = "badge" + (b.on ? " got" : "");
+      cell.title = b.d + (b.on ? "" : " (kilitli)");
+      var ic = document.createElement("span");
+      ic.className = "badge-emoji";
+      ic.textContent = b.on ? b.e : "🔒";
+      var nm = document.createElement("span");
+      nm.className = "badge-name";
+      nm.textContent = b.t;
+      cell.appendChild(ic);
+      cell.appendChild(nm);
+      grid.appendChild(cell);
+    });
   }
 
   var RING_C = 2 * Math.PI * 42; // r=42
@@ -926,7 +1109,9 @@
 
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
   function renderStats() {
+    renderDuel();
     renderStatCards();
+    renderBadges();
     renderChart();
     renderHourly();
     renderShare();
@@ -989,31 +1174,49 @@
     refreshStatus();
   }
 
-  // Geçmişten düzenleme: kişi ve/veya saat değişir, buluta update olarak gider
-  function updateEntry(id, who, ts) {
+  // Bir kaydın alanlarını günceller (kişi/saat/etiket); buluta update olarak gider
+  function patchEntry(id, fields) {
     var idx = findIndexById(id);
     if (idx === -1) return;
-    entries[idx].who = who;
-    entries[idx].ts = ts;
+    Object.keys(fields).forEach(function (k) {
+      var v = fields[k];
+      if (k === "tag" && !v) delete entries[idx].tag; else entries[idx][k] = v;
+    });
     sortEntries();
     saveCache();
-
     // Henüz gönderilmemiş bir ekleme ise satırı yerinde güncelle; değilse update kuyruğa
     var pendingInsert = false;
     for (var i = 0; i < outbox.length; i++) {
       if (outbox[i].type === "insert" && outbox[i].row && outbox[i].row.id === id) {
-        outbox[i].row.who = who;
-        outbox[i].row.ts = ts;
+        Object.keys(fields).forEach(function (k) {
+          if (k === "tag" && !fields[k]) delete outbox[i].row.tag; else outbox[i].row[k] = fields[k];
+        });
         pendingInsert = true;
         break;
       }
     }
-    if (!pendingInsert) outbox.push({ type: "update", id: id, fields: { who: who, ts: ts } });
+    // Bulut için: tag boşsa null gönder (sütunu temizle)
+    if (!pendingInsert) {
+      var cloudFields = {};
+      Object.keys(fields).forEach(function (k) { cloudFields[k] = (k === "tag" && !fields[k]) ? null : fields[k]; });
+      outbox.push({ type: "update", id: id, fields: cloudFields });
+    }
     saveOutbox();
-    editingId = null;
-    render();
     flushOutbox();
     refreshStatus();
+  }
+
+  // Geçmişten düzenleme: kişi + saat + etiket
+  function updateEntry(id, who, ts, tag) {
+    editingId = null;
+    patchEntry(id, { who: who, ts: ts, tag: tag || null });
+    render();
+  }
+
+  // Bir sigoya bağlam etiketi ata/kaldır (undo bar veya düzenlemeden)
+  function setTag(id, tag) {
+    patchEntry(id, { tag: tag || null });
+    renderQuick();
   }
 
   function showUndo(who) {
@@ -1023,9 +1226,32 @@
     ut.innerHTML = "";
     ut.appendChild(makeAvatar(who, "avatar-sm"));
     ut.appendChild(document.createTextNode(" " + WHO[who].label + " eklendi"));
+
+    // Bağlam etiketi çipleri: son eklenen sigoyu tek dokunuşla etiketle
+    var tagBox = el("undoTags");
+    if (tagBox) {
+      var entryId = lastUndo.id;
+      tagBox.innerHTML = "";
+      TAG_ORDER.forEach(function (k) {
+        var b = document.createElement("button");
+        b.className = "tag-chip";
+        b.textContent = TAGS[k].e + " " + TAGS[k].t;
+        b.addEventListener(TAP_EVT, function () {
+          var cur = findIndexById(entryId);
+          var already = cur !== -1 && entries[cur].tag === k;
+          setTag(entryId, already ? null : k); // aynısına tekrar basınca kaldır
+          tagBox.querySelectorAll(".tag-chip").forEach(function (x) { x.classList.remove("on"); });
+          if (!already) b.classList.add("on");
+          clearTimeout(undoTimer);
+          undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 3000);
+        });
+        tagBox.appendChild(b);
+      });
+    }
+
     bar.classList.remove("hidden");
     clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 4000);
+    undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 5000);
   }
 
   function undoLast() {
