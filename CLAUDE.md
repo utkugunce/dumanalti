@@ -15,13 +15,14 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v4.8.0 · derleme 74 · SW cache `dumanalti-v74`** — buradan devam et.
+Güncel sürüm sayacı: **v4.8.1 · derleme 75 · SW cache `dumanalti-v75`** — buradan devam et.
 
 ## Düzen ve platform
 
 - Uygulama artık PWA olarak değil **Safari'de** kullanılıyor; `100dvh` önemli.
 - Düzen ayarları her zaman **iPhone 13 (390×844)** ve **iPhone 11 (414×896)** için test edilir, Safari-efektif yükseklikler dahil.
-- Anasayfa **tek tam ekran** olmalı; uzun ekranda kartlar flex ile boşluğu doldurur.
+- Anasayfa **tek tam ekran** olmalı; uzun ekranda kartlar flex ile boşluğu doldurur. Kompakt eşikler: `@media (max-height:900px)` (iPhone 13/11 dahil) ve daha sıkı `@media (max-height:700px)` (Safari iki araç çubuklu).
+- Tipografi **SF Pro Rounded** (`font-family: ui-rounded, "SF Pro Rounded", …`); SF Pro'dan biraz geniş olduğundan düzen değişiminde taşma tekrar test edilir. Gölgeler katmanlı-yumuşak (`--shadow`: yakın ince + uzak diffüz).
 - Terminoloji: **"sigo"** (sigara/joint değil).
 - Kayıt türleri (sıra sabit): 1. Utku, 2. Gözde, 3. Ortak (`both`), 4. **Hep beraber** (`hepberaber`, misafirlerle içilen; amber renk, ikisinin de kişisel sayacına işlenir). Hep beraber her zaman DÖRDÜNCÜ seçenektir.
 - Maskot: **Zıvana** (kawaii dişli yaprak, `icons/mascot.svg`, SVG parametrik üretim), asistan paneliyle birlikte. Duruma göre yüz değişir: `mascot.svg` (sakin), `mascot-surprised.svg` (limit aşımı/üstünde), `mascot-love.svg` (rekor/kutlama). Asistan proaktif nudge üretir (`asstNudge`), FAB rozeti+yüzü buna göre; serbest metin `asstRoute` ile konuya yönlenir.

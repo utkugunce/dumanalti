@@ -13,8 +13,9 @@
   --hepberaber: #ffc857;
   --accent: #a4e05a;
   --danger: #ff5a5a;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  --radius: 18px;
+  /* Katmanlı yumuşak gölge: yakın ince + uzak diffüz (premium derinlik) */
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.16), 0 10px 28px -8px rgba(0, 0, 0, 0.42);
+  --radius: 20px;
 }
 
 [data-theme="light"] {
@@ -25,7 +26,7 @@
   --muted: #5b6675;
   --border: rgba(20, 30, 60, 0.12);
   --glass-hi: rgba(255, 255, 255, 0.85);
-  --shadow: 0 10px 30px rgba(20, 30, 60, 0.1);
+  --shadow: 0 1px 2px rgba(20, 30, 60, 0.06), 0 10px 28px -8px rgba(20, 30, 60, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -36,7 +37,10 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* SF Pro Rounded (iOS Safari'de ui-rounded ile gelir): oyunbaz, yumuşak kimlik */
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   /* camın arkasında blur'lanacak renk lekeleri (Utku yeşil, Gözde lime, ortak nane) */
   background:
     radial-gradient(70% 45% at 85% -5%, rgba(122, 199, 79, 0.42), transparent 65%),
@@ -993,7 +997,7 @@ body {
 /* Short screens: compact Home to keep it one page */
 /* Shorter visible viewport (e.g. Safari with its bottom toolbar): compact
    so Home and İstatistik each fit one screen without scrolling. */
-@media (max-height: 820px) {
+@media (max-height: 900px) {
   .app { gap: 5px; padding-bottom: calc(52px + env(safe-area-inset-bottom)); }
   .header { padding-top: env(safe-area-inset-top); }
   .subtitle { display: none; }
@@ -1030,6 +1034,18 @@ body {
   .insight-list .emoji { font-size: 14px; }
   .footer { padding: 0 0 1px; }
   .cloud-status { padding: 4px; }
+}
+
+/* Çok kısa görünür alan (Safari iki araç çubuklu, ~664px): birkaç px daha topla
+   ki yuvarlak font ve tek-ekran anasayfa yine sığsın */
+@media (max-height: 700px) {
+  .app { gap: 3px; }
+  .card { padding: 5px 12px; }
+  .action-avatar { width: 36px; height: 36px; }
+  .today-num { font-size: 20px; }
+  .since-row { padding: 4px 12px; }
+  .since-time { font-size: 15px; }
+  .insight-list li { font-size: 11px; line-height: 1.15; }
 }
 
 /* backdrop-filter desteklemeyen tarayıcılar: cam yerine opak yüzeye düş */
