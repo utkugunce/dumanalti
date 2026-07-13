@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.8.1";
-  var APP_BUILD = 75;
+  var APP_VERSION = "4.8.2";
+  var APP_BUILD = 76;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -1273,6 +1273,7 @@
   };
 
   var confettiCanvas = null, confettiCtx = null, confettiParticles = [], confettiRunning = false;
+  var confettiLastFrameAt = 0; // son çizilen karenin zamanı (donma tespiti için)
   var confettiAvatarImgs = {};
 
   function confettiAvatarImg(who) {
@@ -1426,6 +1427,7 @@
     }
     ctx.globalAlpha = 1;
     confettiParticles = alive;
+    confettiLastFrameAt = Date.now();
 
     if (confettiParticles.length) {
       requestAnimationFrame(confettiFrame);
@@ -1435,6 +1437,25 @@
       ctx.clearRect(0, 0, W, H);
     }
   }
+
+  // Konfetiyi tamamen durdur ve temizle (arka plana geçişte / donma sonrası)
+  function clearConfetti() {
+    confettiParticles = [];
+    confettiRunning = false;
+    confettiLastT = 0;
+    if (confettiCtx) confettiCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  }
+
+  // iOS Safari sayfayı arka plana alınca requestAnimationFrame'i düşürür ve konfeti
+  // ekranda donar. Sekme gizlenince/çıkışta konfetiyi temizle ki takılı kalmasın.
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) clearConfetti();
+  });
+  window.addEventListener("pagehide", clearConfetti);
+  window.addEventListener("blur", function () {
+    // Odak kaybında da güvence: kısa süre sonra hâlâ donmuşsa temizle
+    setTimeout(function () { if (confettiRunning && Date.now() - confettiLastFrameAt > 400) clearConfetti(); }, 500);
+  });
 
   // Emoji sprite önbelleği: her emoji bir kez 48px canvas'a çizilir
   var emojiSprites = {};
@@ -1487,8 +1508,13 @@
     fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 180, velocity: 28 * vk, decay: 0.92, scalar: 1.2 });
     fireConfetti(who, ox, oy, Math.round(total * 0.10), { spread: 180, velocity: 46 * vk });
 
+    // Döngü ölmüşse (rAF düştüyse) yeniden başlat: confettiRunning true olsa bile
+    // son kareden 300ms+ geçtiyse donmuş sayılır, temiz başlat.
+    if (confettiRunning && Date.now() - confettiLastFrameAt > 300) confettiRunning = false;
     if (!confettiRunning) {
       confettiRunning = true;
+      confettiLastFrameAt = Date.now();
+      confettiLastT = 0;
       requestAnimationFrame(confettiFrame);
     }
   }
