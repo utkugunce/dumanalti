@@ -553,8 +553,9 @@ body {
   font-size: 13px;
   line-height: 1.3;
 }
-/* Son iki satır Zıvana'nın butonuyla çakışmasın diye sağdan boşluk bırakır */
-.insight-list li:nth-last-child(-n+2) { padding-right: 58px; }
+/* Son iki satır alttaki iki yüzen butonla (sol '+' ve sağ Zıvana) çakışmasın:
+   metin ortadaki boş bölgede kalsın diye iki yandan boşluk */
+.insight-list li:nth-last-child(-n+2) { padding-right: 58px; padding-left: 58px; }
 .insight-list .emoji { font-size: 16px; }
 
 /* History */

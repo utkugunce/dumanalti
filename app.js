@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.9.0";
-  var APP_BUILD = 77;
+  var APP_VERSION = "4.9.1";
+  var APP_BUILD = 78;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -231,11 +231,6 @@
     el("todayBoth").textContent = t.both;
     el("todayHepberaber").textContent = t.hepberaber;
     el("todayTotal").textContent = t.total;
-
-    el("btnTodayUtku").textContent = "bugün " + (t.utku + t.both + t.hepberaber);
-    el("btnTodayGozde").textContent = "bugün " + (t.gozde + t.both + t.hepberaber);
-    el("btnTodayBoth").textContent = "bugün " + t.both;
-    el("btnTodayHepberaber").textContent = "bugün " + t.hepberaber;
 
     // Tarih çipi mantıksal günü gösterir; 04:00 öncesi 🌙 ile "gece devam ediyor"
     var now = new Date();
@@ -1837,25 +1832,9 @@
 
   // ---------- Init ----------
   function bind() {
-    document.querySelectorAll(".action-btn").forEach(function (btn) {
-      // click parmak kalkınca ateşlenir; pointerdown parmağın değdiği anda —
-      // tepki anında gelsin diye ekleme pointerdown'a bağlı (click yedek)
-      btn.addEventListener(TAP_EVT, function (ev) {
-        if (ev.button > 0) return; // sadece birincil tuş/parmak
-        // Çift tetikleme koruması: kısa süre tekrar tetiklenmesin
-        if (btn.dataset.lock === "1") return;
-        btn.dataset.lock = "1";
-        setTimeout(function () { btn.dataset.lock = "0"; }, 350);
+    // Sigo ekleme artık her sayfadaki genişleyen '+' butonundan (bindAddDial)
 
-        var who = btn.getAttribute("data-who");
-        btn.classList.remove("pop");
-        void btn.offsetWidth;
-        btn.classList.add("pop");
-        addEntry(who, ev.clientX, ev.clientY);
-      });
-    });
-
-    // Geri al da dokunma anında tepki versin (click parmak kalkınca ateşlenir)
+    // Geri al dokunma anında tepki versin (click parmak kalkınca ateşlenir)
     el("undoBtn").addEventListener(TAP_EVT, undoLast);
     el("themeToggle").addEventListener(TAP_EVT, toggleTheme);
     el("exportBtn").addEventListener("click", exportData);
