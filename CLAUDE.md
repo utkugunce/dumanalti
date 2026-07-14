@@ -1,6 +1,6 @@
 # Dumanaltı
 
-Utku & Gözde'nin iki kişilik sigo takip web uygulaması, Safari'de kullanılıyor (yeşil liquid glass tema). Vanilla JS/HTML/CSS, build adımı yok. Vercel `main` dalını otomatik olarak dumanalti.vercel.app'e dağıtır; veriler Supabase'de (realtime + offline outbox).
+Utku & Gözde'nin iki kişilik sigo takip web uygulaması, Safari'de kullanılıyor (Gece Yeşimi: nötr charcoal + zümrüt jewel aksan, liquid glass). Vanilla JS/HTML/CSS, build adımı yok. Vercel `main` dalını otomatik olarak dumanalti.vercel.app'e dağıtır; veriler Supabase'de (realtime + offline outbox).
 
 ## Her değişiklikte sürüm güncelle (ZORUNLU)
 
@@ -15,7 +15,7 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v4.9.1 · derleme 78 · SW cache `dumanalti-v78`** — buradan devam et.
+Güncel sürüm sayacı: **v4.10.0 · derleme 79 · SW cache `dumanalti-v79`** — buradan devam et.
 
 ## Düzen ve platform
 

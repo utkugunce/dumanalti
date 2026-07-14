@@ -1,32 +1,33 @@
 /* Liquid glass: yüzeyler yarı saydam, arka plandaki renk lekeleri camdan sızar */
+/* Tema: Gece Yeşimi — nötr charcoal zemin + zümrüt/yeşim jewel aksan (muted, 2026) */
 :root {
-  --bg: #0a120c;
-  --bg-elev: rgba(255, 255, 255, 0.055);
-  --bg-elev-2: rgba(255, 255, 255, 0.085);
-  --text: #f3f5f8;
-  --muted: #9aa3b2;
-  --border: rgba(255, 255, 255, 0.13);
-  --glass-hi: rgba(255, 255, 255, 0.18);
-  --utku: #7ac74f;
-  --gozde: #c9e265;
-  --both: #4fc796;
-  --hepberaber: #ffc857;
-  --accent: #a4e05a;
-  --danger: #ff5a5a;
+  --bg: #0d0f11;
+  --bg-elev: rgba(255, 255, 255, 0.05);
+  --bg-elev-2: rgba(255, 255, 255, 0.08);
+  --text: #eef2f0;
+  --muted: #87928d;
+  --border: rgba(255, 255, 255, 0.09);
+  --glass-hi: rgba(255, 255, 255, 0.16);
+  --utku: #4fbf7a;
+  --gozde: #a9cf5e;
+  --both: #2ec4b6;
+  --hepberaber: #e0a83a;
+  --accent: #22c39a;
+  --danger: #f2555f;
   /* Katmanlı yumuşak gölge: yakın ince + uzak diffüz (premium derinlik) */
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.16), 0 10px 28px -8px rgba(0, 0, 0, 0.42);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 12px 30px -8px rgba(0, 0, 0, 0.5);
   --radius: 20px;
 }
 
 [data-theme="light"] {
-  --bg: #eef6ec;
-  --bg-elev: rgba(255, 255, 255, 0.6);
-  --bg-elev-2: rgba(255, 255, 255, 0.55);
-  --text: #161a22;
-  --muted: #5b6675;
-  --border: rgba(20, 30, 60, 0.12);
+  --bg: #f2f4f2;
+  --bg-elev: rgba(255, 255, 255, 0.72);
+  --bg-elev-2: rgba(255, 255, 255, 0.62);
+  --text: #16201c;
+  --muted: #5d6b64;
+  --border: rgba(20, 40, 32, 0.12);
   --glass-hi: rgba(255, 255, 255, 0.85);
-  --shadow: 0 1px 2px rgba(20, 30, 60, 0.06), 0 10px 28px -8px rgba(20, 30, 60, 0.16);
+  --shadow: 0 1px 2px rgba(20, 40, 32, 0.06), 0 10px 28px -8px rgba(20, 40, 32, 0.14);
 }
 
 * { box-sizing: border-box; }
@@ -41,12 +42,10 @@ body {
   font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* camın arkasında blur'lanacak renk lekeleri (Utku yeşil, Gözde lime, ortak nane) */
+  /* Muted derinlik: çok hafif zümrüt sızıntısı, çiğ değil */
   background:
-    radial-gradient(70% 45% at 85% -5%, rgba(122, 199, 79, 0.42), transparent 65%),
-    radial-gradient(55% 40% at -10% 25%, rgba(201, 226, 101, 0.3), transparent 65%),
-    radial-gradient(65% 50% at 110% 75%, rgba(79, 199, 150, 0.34), transparent 65%),
-    radial-gradient(50% 40% at 30% 110%, rgba(255, 200, 87, 0.16), transparent 65%),
+    radial-gradient(80% 50% at 50% 118%, rgba(16, 120, 96, 0.16), transparent 62%),
+    radial-gradient(60% 45% at 88% -8%, rgba(34, 195, 154, 0.07), transparent 60%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
@@ -57,10 +56,8 @@ body {
 
 [data-theme="light"] body {
   background:
-    radial-gradient(70% 45% at 85% -5%, rgba(122, 199, 79, 0.22), transparent 65%),
-    radial-gradient(55% 40% at -10% 25%, rgba(201, 226, 101, 0.18), transparent 65%),
-    radial-gradient(65% 50% at 110% 75%, rgba(79, 199, 150, 0.2), transparent 65%),
-    radial-gradient(50% 40% at 30% 110%, rgba(255, 200, 87, 0.12), transparent 65%),
+    radial-gradient(80% 50% at 50% 118%, rgba(16, 120, 96, 0.09), transparent 62%),
+    radial-gradient(60% 45% at 88% -8%, rgba(34, 195, 154, 0.06), transparent 60%),
     var(--bg);
   background-attachment: fixed;
 }
@@ -386,8 +383,8 @@ body {
 .today-top { display: flex; gap: 8px; margin-bottom: 4px; }
 .today-hero {
   flex: 1.15;
-  background: linear-gradient(160deg, rgba(164, 224, 90, 0.2), rgba(164, 224, 90, 0.05));
-  border: 1px solid rgba(164, 224, 90, 0.22);
+  background: linear-gradient(160deg, rgba(34, 195, 154, 0.16), rgba(34, 195, 154, 0.04));
+  border: 1px solid rgba(34, 195, 154, 0.24);
   border-radius: 14px;
   padding: 8px 12px;
   display: flex;
@@ -407,7 +404,7 @@ body {
 }
 .trend-chip.up { background: rgba(255, 90, 90, 0.16); color: var(--danger); }
 .trend-chip.down { background: rgba(122, 199, 79, 0.2); color: var(--accent); }
-[data-theme="light"] .trend-chip.down { color: #4c8b2b; }
+[data-theme="light"] .trend-chip.down { color: #0e7a5f; }
 .today-hero-sub { font-size: 11px; color: var(--muted); }
 .today-duo { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .duo-row {
@@ -770,7 +767,7 @@ body {
   background: var(--bg-elev-2);
   color: var(--muted);
 }
-.wc-trend.down { color: #36d399; }
+.wc-trend.down { color: #22c39a; }
 .wc-trend.up { color: var(--danger); }
 
 /* Hourly distribution */
@@ -850,10 +847,10 @@ body {
 .cal-legend .cal-cell { width: 13px; height: 13px; aspect-ratio: auto; border-radius: 3px; }
 .cal-cell.blank { background: transparent; }
 .cal-cell.l0 { background: var(--bg-elev-2); }
-.cal-cell.l1 { background: rgba(79, 157, 255, 0.30); color: var(--text); }
-.cal-cell.l2 { background: rgba(79, 157, 255, 0.50); color: var(--text); }
-.cal-cell.l3 { background: rgba(79, 157, 255, 0.72); color: #fff; }
-.cal-cell.l4 { background: rgba(79, 157, 255, 0.95); color: #fff; }
+.cal-cell.l1 { background: rgba(34, 195, 154, 0.30); color: var(--text); }
+.cal-cell.l2 { background: rgba(34, 195, 154, 0.50); color: var(--text); }
+.cal-cell.l3 { background: rgba(34, 195, 154, 0.72); color: #fff; }
+.cal-cell.l4 { background: rgba(34, 195, 154, 0.95); color: #fff; }
 .cal-cell.today { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Weekly duel */
@@ -894,7 +891,7 @@ body {
 .ring-wrap { position: relative; width: 150px; height: 150px; margin: 4px auto 2px; }
 .ring { width: 150px; height: 150px; transform: rotate(-90deg); }
 .ring-bg { fill: none; stroke: var(--bg-elev-2); stroke-width: 9; }
-.ring-fg { fill: none; stroke: #36d399; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease, stroke 0.3s; }
+.ring-fg { fill: none; stroke: #22c39a; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease, stroke 0.3s; }
 .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .ring-num { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
 .ring-sub { font-size: 12px; color: var(--muted); }
@@ -985,7 +982,7 @@ body {
   flex: none;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
 }
-.status-online .status-dot  { background: #36d399; box-shadow: 0 0 8px 1px rgba(54, 211, 153, 0.6); animation: statusPulse 2s infinite; }
+.status-online .status-dot  { background: #22c39a; box-shadow: 0 0 8px 1px rgba(34, 195, 154, 0.6); animation: statusPulse 2s infinite; }
 .status-syncing .status-dot { background: var(--accent); box-shadow: 0 0 8px 1px rgba(255, 181, 71, 0.6); animation: statusPulse 1.1s infinite; }
 .status-error .status-dot   { background: var(--danger); box-shadow: 0 0 8px 1px rgba(255, 90, 90, 0.6); animation: statusPulse 0.9s infinite; }
 .status-offline .status-dot { background: var(--muted); }
@@ -1079,12 +1076,12 @@ body {
   width: 60px; height: 60px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.28);
-  background: linear-gradient(165deg, #a4e05a, #4c8b2b);
+  background: linear-gradient(165deg, #22c39a, #0e7a5f);
   color: #10230d;
   font-size: 34px; font-weight: 700; line-height: 1;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  box-shadow: 0 8px 22px -6px rgba(164, 224, 90, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 22px -6px rgba(34, 195, 154, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -1136,8 +1133,8 @@ body {
   width: 60px; height: 60px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.28);
-  background: linear-gradient(165deg, #6bbf4a, #3e7d2a);
-  box-shadow: 0 8px 22px -6px rgba(107, 191, 74, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(165deg, #1fb48f, #0c6b53);
+  box-shadow: 0 8px 22px -6px rgba(31, 180, 143, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   padding: 0;
@@ -1204,7 +1201,7 @@ body {
 }
 .asst-msg.me {
   align-self: flex-end;
-  background: linear-gradient(160deg, #5fae43, #3e7d2a);
+  background: linear-gradient(160deg, #22c39a, #0c6b53);
   color: #fff; border: none;
   border-radius: 14px 14px 4px 14px;
 }
