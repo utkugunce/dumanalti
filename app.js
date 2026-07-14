@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.8.2";
-  var APP_BUILD = 76;
+  var APP_VERSION = "4.9.0";
+  var APP_BUILD = 77;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -1784,7 +1784,9 @@
   }
 
   var TAB_KEY = "dumanalti.tab";
+  var closeAddDial = function () {}; // bindAddDial içinde atanır
   function showTab(name) {
+    closeAddDial();
     ["home", "stats", "history", "settings"].forEach(function (n) {
       var v = el("view-" + n);
       if (v) v.classList.toggle("hidden", n !== name);
@@ -1794,6 +1796,43 @@
     });
     try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
     window.scrollTo(0, 0);
+  }
+
+  // Genişleyen global sigo-ekle butonu (tüm sayfalarda)
+  function bindAddDial() {
+    var dial = el("addDial"), fab = el("addFab");
+    if (!dial || !fab) return;
+    var scrim = null;
+    function open() {
+      dial.classList.add("open");
+      var ub = el("undoBar"); if (ub) ub.classList.add("hidden"); // menü açılınca toast'ı kapat
+      if (!scrim) {
+        scrim = document.createElement("div");
+        scrim.className = "add-scrim";
+        document.body.appendChild(scrim);
+        scrim.addEventListener(TAP_EVT, close);
+        requestAnimationFrame(function () { if (scrim) scrim.classList.add("show"); });
+      }
+    }
+    function close() {
+      dial.classList.remove("open");
+      if (scrim) { var s = scrim; scrim = null; s.classList.remove("show"); setTimeout(function () { s.remove(); }, 200); }
+    }
+    closeAddDial = close;
+    fab.addEventListener(TAP_EVT, function (ev) {
+      ev.stopPropagation();
+      dial.classList.contains("open") ? close() : open();
+    });
+    dial.querySelectorAll(".add-opt").forEach(function (b) {
+      b.addEventListener(TAP_EVT, function () {
+        if (b.dataset.lock === "1") return;
+        b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
+        var who = b.getAttribute("data-who");
+        var r = b.getBoundingClientRect();
+        close();
+        addEntry(who, r.left + r.width / 2, r.top + r.height / 2);
+      });
+    });
   }
 
   // ---------- Init ----------
@@ -1908,6 +1947,7 @@
     });
 
     bindAssistant();
+    bindAddDial();
     applyMascot();
 
     // Ayarlar: sayı girdileri

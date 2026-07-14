@@ -672,18 +672,29 @@ body {
 .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 14px 0; }
 .hidden { display: none !important; }
 
-/* Undo bar */
+/* Undo bar — tüm sayfalarda çalışan yüzen toast (tab bar ve FAB'ların üstünde) */
 .undo-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(132px + env(safe-area-inset-bottom));
+  width: min(92vw, 532px);
+  z-index: 360;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--bg-elev-2);
+  background: rgba(20, 24, 22, 0.82);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 10px 14px;
   font-size: 13px;
-  animation: slideIn 0.25s ease;
+  box-shadow: var(--shadow);
+  animation: slideUp 0.25s ease;
 }
+[data-theme="light"] .undo-bar { background: rgba(255, 255, 255, 0.9); }
+@keyframes slideUp { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .undo-top { display: flex; align-items: center; justify-content: space-between; }
 #undoText { display: inline-flex; align-items: center; gap: 6px; }
 .undo-tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1061,6 +1072,63 @@ body {
 }
 
 /* ===== Zıvana asistan maskot ===== */
+/* ===== Global sigo ekleme (genişleyen buton, sol altta) ===== */
+.add-dial { position: fixed; left: 14px; z-index: 365; bottom: calc(64px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.add-fab {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(165deg, #a4e05a, #4c8b2b);
+  color: #10230d;
+  font-size: 34px; font-weight: 700; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 22px -6px rgba(164, 224, 90, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.add-dial.open .add-fab { transform: rotate(135deg); }
+.add-fab:active { transform: scale(0.92); }
+.add-dial.open .add-fab:active { transform: rotate(135deg) scale(0.92); }
+
+.add-options { display: flex; flex-direction: column; gap: 9px; pointer-events: none; }
+.add-opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 14px 5px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(20, 24, 22, 0.82);
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  color: var(--text);
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  /* kapalıyken gizli: aşağı kaymış + saydam, tıklanamaz */
+  opacity: 0; transform: translateY(14px) scale(0.85);
+  transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+[data-theme="light"] .add-opt { background: rgba(255, 255, 255, 0.9); }
+.add-opt .avatar { width: 40px; height: 40px; border-radius: 50%; }
+.add-opt:active { filter: brightness(1.1); }
+.add-dial.open .add-options { pointer-events: auto; }
+.add-dial.open .add-opt { opacity: 1; transform: none; }
+/* sırayla açılma (alttan üste) */
+.add-dial.open .add-opt:nth-child(1) { transition-delay: 0.02s; }
+.add-dial.open .add-opt:nth-child(2) { transition-delay: 0.06s; }
+.add-dial.open .add-opt:nth-child(3) { transition-delay: 0.10s; }
+.add-dial.open .add-opt:nth-child(4) { transition-delay: 0.14s; }
+/* açıkken arka planı hafif karart (dokununca kapanır) */
+.add-scrim { position: fixed; inset: 0; z-index: 362; background: rgba(0, 0, 0, 0.28); opacity: 0; transition: opacity 0.2s; }
+.add-scrim.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .add-fab, .add-opt { transition: none; }
+  .add-dial.open .add-fab { transform: rotate(135deg); }
+}
+
 .assistant { position: fixed; right: 14px; z-index: 350; bottom: calc(64px + env(safe-area-inset-bottom)); }
 .asst-fab {
   position: relative;
