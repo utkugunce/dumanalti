@@ -1,3 +1,4 @@
+// @ts-check
 /* Dumanaltı — Utku & Gözde sigo takip PWA
    Veriler Supabase'de bulutta tutulur ve cihazlar arasında gerçek zamanlı
    senkronlanır. Çevrimdışıyken yerel önbellekten okunur, internet gelince
@@ -48,13 +49,14 @@
     return img;
   }
 
+  /** @type {Settings} */
   var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
-  /** @type {{id:string, who:string, ts:number}[]} */
+  /** @type {Entry[]} */
   var entries = [];
-  /** @type {{type:string, row?:object, id?:string}[]} */
+  /** @type {OutboxOp[]} */
   var outbox = [];
   var lastUndo = null;
   var undoTimer = null;
@@ -222,7 +224,7 @@
     renderInsights();
     renderHistory();
     refreshAsst();
-    if (el("setCount")) el("setCount").textContent = entries.length;
+    if (el("setCount")) el("setCount").textContent = String(entries.length);
     if (el("profileSub")) {
       var days = entries.length ? Math.round((startOfDay(Date.now()).getTime() - startOfDay(entries[0].ts).getTime()) / 86400000) + 1 : 0;
       el("profileSub").textContent = entries.length + " kayıt · " + days + " gün takip";
@@ -231,11 +233,11 @@
 
   function renderToday() {
     var t = countWho(todayEntries());
-    el("todayUtku").textContent = t.utku + t.both + t.hepberaber;
-    el("todayGozde").textContent = t.gozde + t.both + t.hepberaber;
-    el("todayBoth").textContent = t.both;
-    el("todayHepberaber").textContent = t.hepberaber;
-    el("todayTotal").textContent = t.total;
+    el("todayUtku").textContent = String(t.utku + t.both + t.hepberaber);
+    el("todayGozde").textContent = String(t.gozde + t.both + t.hepberaber);
+    el("todayBoth").textContent = String(t.both);
+    el("todayHepberaber").textContent = String(t.hepberaber);
+    el("todayTotal").textContent = String(t.total);
 
     // Tarih çipi mantıksal günü gösterir; 04:00 öncesi 🌙 ile "gece devam ediyor"
     var now = new Date();
@@ -313,7 +315,7 @@
     var wStart = startOfWeek(Date.now()).getTime();
     var week = countWho(list.filter(function (e) { return e.ts >= wStart; }));
     var lastWeek = list.filter(function (e) { return e.ts >= wStart - 7 * 86400000 && e.ts < wStart; }).length;
-    el("weekTotal").textContent = week.total;
+    el("weekTotal").textContent = String(week.total);
     el("weekBreakdown").textContent = showBreakdown ? (week.total ? breakdownText(week) : "—") : "";
     setTrend("weekTrend", week.total, lastWeek);
 
@@ -324,7 +326,7 @@
       var pm = md.getMonth() - 1, py = md.getFullYear();
       return d.getFullYear() === py + Math.floor(pm / 12) && d.getMonth() === ((pm % 12) + 12) % 12;
     }).length;
-    el("monthTotal").textContent = month.total;
+    el("monthTotal").textContent = String(month.total);
     el("monthBreakdown").textContent = showBreakdown ? (month.total ? breakdownText(month) : "—") : "";
     setTrend("monthTrend", month.total, lastMonthN);
 
@@ -333,7 +335,7 @@
     el("dailyAvg").textContent = (last7.length / 7).toFixed(1);
 
     var all = countWho(list);
-    el("allTotal").textContent = all.total;
+    el("allTotal").textContent = String(all.total);
     el("allBreakdown").textContent = showBreakdown ? (all.total ? breakdownText(all) : "—") : "";
   }
 
@@ -450,8 +452,8 @@
       dh.className = "ins-duel-head";
       dh.innerHTML = "<span>⚔️ Bu hafta düello</span><span class=\"ins-duel-tip\">az içen önde</span>";
       duel.appendChild(dh);
-      [["utku", wk.utku], ["gozde", wk.gozde]].forEach(function (p) {
-        var who = p[0], val = p[1];
+      [{ who: "utku", val: wk.utku }, { who: "gozde", val: wk.gozde }].forEach(function (p) {
+        var who = p.who, val = p.val;
         var row = document.createElement("div");
         row.className = "ins-duel-row";
         var av = makeAvatar(who, "avatar-sm");
@@ -519,7 +521,7 @@
       var tile = document.createElement("div");
       tile.className = "ins-tile";
       var e = document.createElement("span"); e.className = "ins-tile-e"; e.textContent = t.e;
-      var v = document.createElement("span"); v.className = "ins-tile-v"; v.textContent = t.v;
+      var v = document.createElement("span"); v.className = "ins-tile-v"; v.textContent = String(t.v);
       var l = document.createElement("span"); l.className = "ins-tile-l"; l.textContent = t.l;
       tile.appendChild(e); tile.appendChild(v); tile.appendChild(l);
       grid.appendChild(tile);
@@ -789,7 +791,7 @@
     for (h = 0; h < 24; h++) {
       var col = document.createElement("div");
       col.className = "hour-col";
-      col.setAttribute("data-h", h);
+      col.setAttribute("data-h", String(h));
       col.setAttribute("data-count", counts[h]);
       col.setAttribute("tabindex", "0");
       col.setAttribute("role", "img");
@@ -804,7 +806,7 @@
       if (h % 6 === 0) {
         var lab = document.createElement("span");
         lab.className = "hour-lab";
-        lab.textContent = h;
+        lab.textContent = String(h);
         col.appendChild(lab);
       }
       chart.appendChild(col);
@@ -812,10 +814,12 @@
     el("hourPeak").textContent = list.length ? "en yoğun " + pad2(peakH) + ":00" : "";
 
     // Bara dokununca o saatte kaç sigo içildiğini balonda göster
-    if (!chart.hourTipBound) {
-      chart.hourTipBound = true;
+    var chartX = /** @type {any} */ (chart); // dinamik işaret alanı (expando)
+    if (!chartX.hourTipBound) {
+      chartX.hourTipBound = true;
       chart.addEventListener("click", function (ev) {
-        var c = ev.target.closest ? ev.target.closest(".hour-col") : null;
+        var tgt = /** @type {Element} */ (ev.target);
+        var c = tgt.closest ? tgt.closest(".hour-col") : null;
         showHourTip(chart, c);
       });
     }
@@ -898,7 +902,7 @@
       col.setAttribute("aria-label", DOW_FULL_A[i] + ": " + counts[i] + " sigo");
       var v = document.createElement("span");
       v.className = "dow-val";
-      v.textContent = counts[i] || "";
+      v.textContent = counts[i] ? String(counts[i]) : "";
       var bar = document.createElement("div");
       bar.className = "dow-bar" + (i === peak && counts[peak] > 0 ? " peak" : "");
       bar.style.height = (counts[i] === 0 ? 3 : Math.max(6, Math.round(counts[i] / max * 100))) + "%";
@@ -1012,7 +1016,7 @@
       var cell = document.createElement("span");
       cell.className = "cal-cell l" + lvl + (day === now.getDate() ? " today" : "");
       cell.title = day + " " + MONTHS[month] + " · " + c + " sigo";
-      cell.textContent = day;
+      cell.textContent = String(day);
       grid.appendChild(cell);
     }
   }
@@ -1179,8 +1183,8 @@
     var today = todayEntries().length;
     var pct = Math.min(1, today / lim);
     var ring = el("limitRing");
-    ring.style.strokeDasharray = RING_C;
-    ring.style.strokeDashoffset = RING_C * (1 - pct);
+    ring.style.strokeDasharray = String(RING_C);
+    ring.style.strokeDashoffset = String(RING_C * (1 - pct));
 
     var color = "#36d399";
     if (today > lim) color = "var(--danger)";
@@ -1666,9 +1670,9 @@
   }
 
   function screenShake(combo) {
-    var app = document.querySelector(".app") || document.body;
+    var app = /** @type {HTMLElement} */ (document.querySelector(".app") || document.body);
     app.classList.remove("shake");
-    void app.offsetWidth;
+    void app.offsetWidth; // reflow tetikle (animasyonu yeniden başlatmak için)
     app.classList.add(combo >= 3 ? "shake-hard" : "shake");
     setTimeout(function () { app.classList.remove("shake"); app.classList.remove("shake-hard"); }, 520);
   }
@@ -1845,7 +1849,7 @@
     var reader = new FileReader();
     reader.onload = function () {
       try {
-        var data = JSON.parse(reader.result);
+        var data = JSON.parse(/** @type {string} */ (reader.result));
         var incoming = Array.isArray(data) ? data : data.entries;
         if (!Array.isArray(incoming)) throw new Error("Geçersiz dosya");
         var map = {};
@@ -1969,7 +1973,8 @@
       ev.stopPropagation();
       dial.classList.contains("open") ? close() : open();
     });
-    dial.querySelectorAll(".add-opt").forEach(function (b) {
+    dial.querySelectorAll(".add-opt").forEach(function (bEl) {
+      var b = /** @type {HTMLElement} */ (bEl);
       b.addEventListener(TAP_EVT, function () {
         if (b.dataset.lock === "1") return;
         b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
@@ -1991,8 +1996,9 @@
     el("exportBtn").addEventListener("click", exportData);
     el("importBtn").addEventListener("click", function () { el("importFile").click(); });
     el("importFile").addEventListener("change", function (e) {
-      if (e.target.files && e.target.files[0]) importData(e.target.files[0]);
-      e.target.value = "";
+      var input = /** @type {HTMLInputElement} */ (e.target);
+      if (input.files && input.files[0]) importData(input.files[0]);
+      input.value = "";
     });
     el("resetBtn").addEventListener("click", resetData);
 
@@ -2371,7 +2377,8 @@
   // Serbest metni bir konuya yönlendir (anahtar kelime eşleme)
   function asstRoute(text) {
     var q = text.toLocaleLowerCase("tr");
-    function has() { for (var i = 0; i < arguments.length; i++) if (q.indexOf(arguments[i]) >= 0) return true; return false; }
+    /** @type {(...terms: string[]) => boolean} */
+    var has = function () { for (var i = 0; i < arguments.length; i++) if (q.indexOf(arguments[i]) >= 0) return true; return false; };
     if (has("selam", "merhaba", "naber", "nasılsın", "nasilsin")) return "hi";
     if (has("rekor", "en uzun", "en çok", "en cok", "record")) return "records";
     if (has("seri", "gündür", "gundur", "sigosuz", "kaç gün", "kac gun")) return "streak";
@@ -2438,7 +2445,7 @@
 
   // Serbest metin gönderimi
   function asstSubmit() {
-    var inp = el("asstInput");
+    var inp = /** @type {HTMLInputElement} */ (el("asstInput"));
     if (!inp) return;
     var text = (inp.value || "").trim();
     if (!text) return;

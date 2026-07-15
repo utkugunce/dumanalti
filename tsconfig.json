@@ -1,0 +1,17 @@
+{
+  "//": "Sadece tip DENETİMİ için — derleme/bundle YOK (noEmit). App ham app.js olarak yayınlanır.",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["ES2017", "DOM", "DOM.Iterable"],
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "//include": "service-worker.js hariç: SW, DOM lib'iyle çakışan ServiceWorkerGlobalScope (WebWorker lib) bağlamı ister; küçük ve stabil boilerplate.",
+  "include": ["app.js", "config.js", "types/globals.d.ts"],
+  "exclude": ["node_modules", "tests", "playwright.config.js"]
+}

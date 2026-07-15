@@ -30,7 +30,7 @@ Güncel sürüm sayacı: **v5.2.0 · derleme 83 · SW cache `dumanalti-v83`** �
 
 ## Çalışma düzeni
 
-- Değişiklik sonrası `node --check app.js`, sonra Playwright ile görsel doğrulama (chromium: `/opt/pw-browsers/chromium`, app'i `npx serve` ile sun — `file://` çalışmaz).
+- Değişiklik sonrası `node --check app.js` + `npm run typecheck` (build'siz TS denetimi: `tsc --noEmit`, `// @ts-check` + `types/globals.d.ts`; **yeşil kalmalı**), sonra Playwright ile görsel doğrulama (chromium: `/opt/pw-browsers/chromium`, app'i `npx serve` ile sun — `file://` çalışmaz). Not: derleme/bundle YOK; `app.js` ham haliyle yayınlanır, `tsc` yalnızca tip denetler.
 - Commit + push `main`'e; Vercel MCP `get_deployment` ile `target: production`, `state: READY` doğrula.
 - Oturum ayrı bir çalışma dalına bağlıysa: kullanıcıdan merge İSTEME — işi bitirince main'e taşımayı kendin yap (doğrudan push veya PR aç + kendin merge et), sonra dağıtımı doğrula.
 - Kullanıcıya Türkçe raporla; network-first SW olduğundan "bir kez yenileyin" hatırlat.
