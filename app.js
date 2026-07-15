@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.0.0";
-  var APP_BUILD = 80;
+  var APP_VERSION = "5.1.0";
+  var APP_BUILD = 81;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -396,91 +396,128 @@
     });
   }
 
+  // 🔎 Bilgiler: metin listesi yerine görsel mini-pano
+  //   1) haftalık düello mini-bar  2) öne çıkan içgörü  3) istatistik kutucukları
   function renderInsights() {
-    var list = el("insightList");
-    list.innerHTML = "";
-    var items = [];
+    var body = el("insightBody");
+    if (!body) return;
+    body.innerHTML = "";
     var all = countWho(entries);
 
     if (all.total === 0) {
-      items.push({ e: "✨", t: "Henüz veri yok. İlk sigoyu eklediğinde burada istatistikler çıkacak." });
+      var empty = document.createElement("div");
+      empty.className = "ins-empty";
+      empty.innerHTML = '<span class="ins-empty-e">✨</span><span>Henüz veri yok. İlk sigoyu eklediğinde burada içgörüler belirir.</span>';
+      body.appendChild(empty);
+      return;
+    }
+
+    // --- Ortak veriler ---
+    var utkuTotal = all.utku + all.both + all.hepberaber;
+    var gozdeTotal = all.gozde + all.both + all.hepberaber;
+    var pct = Math.round((all.both + all.hepberaber) / all.total * 100);
+    var monthTotal = entriesSince(startOfMonth()).length;
+    var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
+    var avg = entriesSince(sevenAgo).length / 7;
+    var todayCount = todayEntries().length;
+
+    var byDay = {};
+    entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
+    var maxDay = null, maxDayCount = 0;
+    Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxDayCount) { maxDayCount = byDay[k]; maxDay = k; } });
+
+    var byDow = [0, 0, 0, 0, 0, 0, 0];
+    entries.forEach(function (e) { byDow[logicalDate(e.ts).getDay()]++; });
+    var maxDow = 0;
+    for (var w = 1; w < 7; w++) if (byDow[w] > byDow[maxDow]) maxDow = w;
+    var DOW_SHORT = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
+    // --- 1) Haftalık düello mini-bar ---
+    var wk = weekTotals(0);
+    if (wk.utku > 0 || wk.gozde > 0) {
+      var wmax = Math.max(wk.utku, wk.gozde, 1);
+      var leader = wk.utku === wk.gozde ? "" : (wk.utku < wk.gozde ? "utku" : "gozde");
+      var duel = document.createElement("div");
+      duel.className = "ins-duel";
+      var dh = document.createElement("div");
+      dh.className = "ins-duel-head";
+      dh.innerHTML = "<span>⚔️ Bu hafta düello</span><span class=\"ins-duel-tip\">az içen önde</span>";
+      duel.appendChild(dh);
+      [["utku", wk.utku], ["gozde", wk.gozde]].forEach(function (p) {
+        var who = p[0], val = p[1];
+        var row = document.createElement("div");
+        row.className = "ins-duel-row";
+        var av = makeAvatar(who, "avatar-sm");
+        var track = document.createElement("div");
+        track.className = "ins-bar";
+        var fill = document.createElement("div");
+        fill.className = "ins-bar-fill " + who + "-bg";
+        fill.style.width = Math.round(val / wmax * 100) + "%";
+        track.appendChild(fill);
+        var num = document.createElement("span");
+        num.className = "ins-bar-val";
+        num.textContent = val + (leader === who ? " 🏆" : "");
+        row.appendChild(av);
+        row.appendChild(track);
+        row.appendChild(num);
+        duel.appendChild(row);
+      });
+      body.appendChild(duel);
+    }
+
+    // --- 2) Öne çıkan içgörü (duruma göre seçilir) ---
+    var spot = null;
+    if (todayCount > 0 && avg > 0 && todayCount < avg) {
+      spot = { tone: "good", e: "🌿", t: "Bugün ortalamanın altındasın (" + todayCount + " < " + avg.toFixed(1) + ") — aferin!" };
+    } else if (todayCount > 0 && avg > 0 && todayCount > avg) {
+      spot = { tone: "warn", e: "⚠️", t: "Bugün ortalamanın üstündesin (" + todayCount + " > " + avg.toFixed(1) + ")." };
     } else {
-      var duel = weeklyDuelText();
-      if (duel) items.push({ e: "🥇", t: duel });
-
-      var utkuTotal = all.utku + all.both + all.hepberaber;
-      var gozdeTotal = all.gozde + all.both + all.hepberaber;
-      if (utkuTotal > gozdeTotal) {
-        items.push({ e: "🏆", t: "Utku toplamda " + (utkuTotal - gozdeTotal) + " sigo önde (" + utkuTotal + " - " + gozdeTotal + ")." });
-      } else if (gozdeTotal > utkuTotal) {
-        items.push({ e: "🏆", t: "Gözde toplamda " + (gozdeTotal - utkuTotal) + " sigo önde (" + gozdeTotal + " - " + utkuTotal + ")." });
-      } else {
-        items.push({ e: "🤝", t: "Tam berabere! İkiniz de " + utkuTotal + " sigo." });
-      }
-
-      var pct = Math.round((all.both + all.hepberaber) / all.total * 100);
-      items.push({ av: "both", t: "Sigoların %" + pct + "'ini birlikte içtiniz." });
-      if (all.hepberaber > 0) {
-        items.push({ av: "hepberaber", t: all.hepberaber + " kez hep beraber (misafirlerle) içtiniz." });
-      }
-
-      var byDay = {};
-      entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
-      var maxDay = null, maxCount = 0;
-      Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxCount) { maxCount = byDay[k]; maxDay = k; } });
-      if (maxDay) {
-        var parts = maxDay.split("-");
-        var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2);
-        items.push({ e: "📈", t: "En yoğun gün: " + dd + " (" + maxCount + " sigo)." });
-      }
-
-      var todayCount = todayEntries().length;
-      var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-      var avg = entriesSince(sevenAgo).length / 7;
-      if (todayCount > 0 && avg > 0) {
-        if (todayCount < avg) {
-          items.push({ e: "🌿", t: "Bugün ortalamanın altındasınız (" + todayCount + " < " + avg.toFixed(1) + "). Aferin!" });
-        } else if (todayCount > avg) {
-          items.push({ e: "⚠️", t: "Bugün ortalamanın üstündesiniz (" + todayCount + " > " + avg.toFixed(1) + ")." });
-        }
-      }
-
-      items.push({ e: "📅", t: "Bu ay toplam " + entriesSince(startOfMonth()).length + " sigo." });
-
-      items.push({ e: "📊", t: "Son 7 günde günde ortalama " + avg.toFixed(1) + " sigo." });
-
-      var byDow = [0, 0, 0, 0, 0, 0, 0];
-      entries.forEach(function (e) { byDow[new Date(e.ts).getDay()]++; });
-      var maxDow = 0;
-      for (var w = 1; w < 7; w++) if (byDow[w] > byDow[maxDow]) maxDow = w;
-      var DOW_FULL = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-      items.push({ e: "🗓️", t: "En çok " + DOW_FULL[maxDow] + " içiyorsunuz." });
-
-      // En sık bağlam etiketi (etiketlenmiş kayıt varsa)
+      // En sık bağlam etiketi varsa onu öne çıkar
       var byTag = {}, tagged = 0;
       entries.forEach(function (e) { if (e.tag && TAGS[e.tag]) { byTag[e.tag] = (byTag[e.tag] || 0) + 1; tagged++; } });
       if (tagged >= 3) {
         var topTag = null, topN = 0;
         Object.keys(byTag).forEach(function (k) { if (byTag[k] > topN) { topN = byTag[k]; topTag = k; } });
-        if (topTag) items.push({ e: TAGS[topTag].e, t: "En çok \"" + TAGS[topTag].t + "\" anında içiyorsunuz (%" + Math.round(topN / tagged * 100) + ")." });
+        if (topTag) spot = { tone: "neutral", e: TAGS[topTag].e, t: "En çok \"" + TAGS[topTag].t + "\" anında içiyorsun (%" + Math.round(topN / tagged * 100) + ")." };
       }
-
-      if (entries.length) {
-        var last = entries[entries.length - 1];
-        items.push({ e: "⏱️", t: "Son sigodan bu yana " + relativeTime(last.ts).replace(" önce", "") + " geçti." });
+      if (!spot && maxDay) {
+        var parts = maxDay.split("-");
+        var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2);
+        spot = { tone: "neutral", e: "🔥", t: "En yoğun gün " + dd + " · " + maxDayCount + " sigo." };
       }
     }
+    if (spot) {
+      var sEl = document.createElement("div");
+      sEl.className = "ins-spot tone-" + spot.tone;
+      sEl.innerHTML = '<span class="ins-spot-e">' + spot.e + '</span><span class="ins-spot-t"></span>';
+      sEl.querySelector(".ins-spot-t").textContent = spot.t;
+      body.appendChild(sEl);
+    }
 
-    items.slice(0, 8).forEach(function (it) {
-      var li = document.createElement("li");
-      var span = it.av ? makeAvatar(it.av, "avatar-tiny") : document.createElement("span");
-      if (!it.av) { span.className = "emoji"; span.textContent = it.e; }
-      var txt = document.createElement("span");
-      txt.textContent = it.t;
-      li.appendChild(span);
-      li.appendChild(txt);
-      list.appendChild(li);
+    // --- 3) İstatistik kutucukları ---
+    var lead = utkuTotal === gozdeTotal
+      ? { v: "berabere", l: "🤝 Toplam" }
+      : { v: (utkuTotal > gozdeTotal ? "Utku" : "Gözde") + " +" + Math.abs(utkuTotal - gozdeTotal), l: "🏆 Lider" };
+    var tiles = [
+      { e: "📅", v: monthTotal, l: "Bu ay" },
+      { e: "📊", v: avg.toFixed(1), l: "Günlük ort." },
+      { e: "🤝", v: "%" + pct, l: "Birlikte" },
+      { e: "🗓️", v: DOW_SHORT[maxDow], l: "En sık gün" },
+      { e: lead.l.split(" ")[0], v: lead.v, l: lead.l.split(" ")[1] },
+      { e: "🚬", v: all.total, l: "Toplam" }
+    ];
+    var grid = document.createElement("div");
+    grid.className = "ins-grid";
+    tiles.forEach(function (t) {
+      var tile = document.createElement("div");
+      tile.className = "ins-tile";
+      var e = document.createElement("span"); e.className = "ins-tile-e"; e.textContent = t.e;
+      var v = document.createElement("span"); v.className = "ins-tile-v"; v.textContent = t.v;
+      var l = document.createElement("span"); l.className = "ins-tile-l"; l.textContent = t.l;
+      tile.appendChild(e); tile.appendChild(v); tile.appendChild(l);
+      grid.appendChild(tile);
     });
+    body.appendChild(grid);
   }
 
   function isPending(id) {
