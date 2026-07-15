@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.1.0";
-  var APP_BUILD = 81;
+  var APP_VERSION = "5.1.1";
+  var APP_BUILD = 82;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -2455,5 +2455,48 @@
         console.warn("SW kaydı başarısız", e);
       });
     });
+  }
+
+  // Expose internals for testing
+  if (typeof window !== "undefined") {
+    window.DUMANALTI_TEST_EXPORTS = {
+      isShared: isShared,
+      logicalDate: logicalDate,
+      startOfDay: startOfDay,
+      dayKey: dayKey,
+      isSameDay: isSameDay,
+      startOfMonth: startOfMonth,
+      startOfWeek: startOfWeek,
+      formatTime: formatTime,
+      relativeTime: relativeTime,
+      countWho: countWho,
+      scopedEntries: scopedEntries,
+      entriesSince: entriesSince,
+      todayEntries: todayEntries,
+      breakdownText: breakdownText,
+      asstStats: asstStats,
+      asstLongestGap: asstLongestGap,
+      asstRunningGap: asstRunningGap,
+      asstBelowAvgStreak: asstBelowAvgStreak,
+      asstRecordDay: asstRecordDay,
+      asstNudge: asstNudge,
+      asstReply: asstReply,
+      asstRoute: asstRoute,
+      asstChips: asstChips,
+      longestCleanStreak: longestCleanStreak,
+      computeBadges: computeBadges,
+      entries: function () { return entries; },
+      setEntries: function (val) { entries = val; },
+      outbox: function () { return outbox; },
+      setOutbox: function (val) { outbox = val; },
+      settings: settings,
+      saveCache: saveCache,
+      loadCache: loadCache,
+      render: render,
+      addEntry: addEntry,
+      deleteEntry: deleteEntry,
+      updateEntry: updateEntry,
+      setTag: setTag
+    };
   }
 })();

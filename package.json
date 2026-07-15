@@ -1,0 +1,14 @@
+{
+  "name": "dumanalti",
+  "version": "5.1.1",
+  "description": "Utku & Gözde sigo takip uygulaması",
+  "main": "app.js",
+  "scripts": {
+    "test": "playwright test",
+    "serve": "serve . -p 8000"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "serve": "^14.2.4"
+  }
+}
