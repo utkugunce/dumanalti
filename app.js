@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.1.1";
-  var APP_BUILD = 82;
+  var APP_VERSION = "5.2.0";
+  var APP_BUILD = 83;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -48,7 +48,7 @@
     return img;
   }
 
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on" };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -114,6 +114,7 @@
         settings.confetti = s.confetti === "lite" || s.confetti === "off" ? s.confetti : "full";
         settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
         settings.mascot = s.mascot === "off" ? "off" : "on";
+        settings.sound = s.sound === "on" ? "on" : "off";
       }
     } catch (e) {}
   }
@@ -353,11 +354,17 @@
       days.push({ date: d, counts: c, isToday: i === 0 });
     }
 
+    var CHART_DOW_FULL = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
     days.forEach(function (day) {
       var col = document.createElement("div");
       col.className = "chart-col" + (day.isToday ? " is-today" : "");
 
       var total = day.counts.total;
+      // Erişilebilirlik: ekran okuyucu her sütunu ayrı ayrı okuyabilsin
+      var dayName = day.isToday ? "Bugün" : CHART_DOW_FULL[day.date.getDay()];
+      col.setAttribute("tabindex", "0");
+      col.setAttribute("role", "img");
+      col.setAttribute("aria-label", dayName + ": toplam " + total + " sigo");
       if (total === 0) {
         var empty = document.createElement("div");
         empty.className = "bar-empty";
@@ -784,6 +791,9 @@
       col.className = "hour-col";
       col.setAttribute("data-h", h);
       col.setAttribute("data-count", counts[h]);
+      col.setAttribute("tabindex", "0");
+      col.setAttribute("role", "img");
+      col.setAttribute("aria-label", "Saat " + pad2(h) + ":00 · " + counts[h] + " sigo");
       var bar = document.createElement("div");
       bar.className = "hour-bar" + (h === peakH && counts[peakH] > 0 ? " peak" : "");
       bar.style.height = (counts[h] === 0 ? 2 : Math.max(4, Math.round(counts[h] / max * 100))) + "%";
@@ -882,6 +892,10 @@
     for (i = 0; i < 7; i++) {
       var col = document.createElement("div");
       col.className = "dow-col";
+      var DOW_FULL_A = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+      col.setAttribute("tabindex", "0");
+      col.setAttribute("role", "img");
+      col.setAttribute("aria-label", DOW_FULL_A[i] + ": " + counts[i] + " sigo");
       var v = document.createElement("span");
       v.className = "dow-val";
       v.textContent = counts[i] || "";
@@ -1238,6 +1252,31 @@
     renderDeferTimer = setTimeout(render, 700);
   }
 
+  // iOS Safari'de dokunsal geri bildirim (Taptic) web'den tetiklenemez; onun yerine
+  // Web Audio ile üretilen minik bir "pop" sesi (ayarlardan açılır). Dosya/asset yok.
+  var _audioCtx = null;
+  function playPop(combo) {
+    if (settings.sound !== "on") return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!_audioCtx) _audioCtx = new AC();
+      if (_audioCtx.state === "suspended") _audioCtx.resume();
+      var t = _audioCtx.currentTime;
+      var osc = _audioCtx.createOscillator();
+      var gain = _audioCtx.createGain();
+      osc.connect(gain); gain.connect(_audioCtx.destination);
+      var base = combo >= 3 ? 720 : 540; // kombo'da bir tık tiz
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(base, t);
+      osc.frequency.exponentialRampToValueAtTime(base * 1.6, t + 0.07);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.16, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      osc.start(t); osc.stop(t + 0.16);
+    } catch (e) {}
+  }
+
   function addEntry(who, x, y) {
     var entry = { id: uuid(), who: who, ts: Date.now() };
     entries.push(entry);
@@ -1251,7 +1290,9 @@
     var combo = bumpCombo();
     emojiConfetti(who, x, y, combo);
     if (combo >= 3) showCombo(combo);
+    // Titreşim (Android) — iOS Safari desteklemez, orada ses efekti devreye girer.
     if (navigator.vibrate) navigator.vibrate(combo >= 3 ? [15, 30, 15] : 15);
+    playPop(combo);
 
     flushOutbox();
     refreshStatus();
@@ -2017,6 +2058,12 @@
       settings.confetti = v; saveSettings();
     });
 
+    // Ses efekti (açık/kapalı) — iOS'ta dokunsal yerine minik pop sesi
+    bindSeg("soundSeg", "data-sound", settings.sound, function (v) {
+      settings.sound = v; saveSettings();
+      if (v === "on") playPop(1); // açarken örnek ses
+    });
+
     // Cihaz sahibi (adla selamlama)
     bindSeg("ownerSeg", "data-owner", settings.owner, function (v) {
       settings.owner = v; saveSettings();
@@ -2363,13 +2410,29 @@
     return c;
   }
 
+  // "yazıyor…" göstergesi: cevap gelmeden önce üç nokta yanıp söner (native his)
+  function asstTyping() {
+    var body = el("asstBody");
+    var t = document.createElement("div");
+    t.className = "asst-msg asst-typing";
+    t.setAttribute("aria-label", "Zıvana yazıyor");
+    t.innerHTML = '<span class="asst-dot"></span><span class="asst-dot"></span><span class="asst-dot"></span>';
+    body.appendChild(t);
+    body.scrollTop = body.scrollHeight;
+    return t;
+  }
+
   function asstAsk(topic, label) {
     if (label) asstPush(label, true);
     var replies = asstReply(topic);
     var i = 0;
     (function next() {
       if (i >= replies.length) return;
-      setTimeout(function () { asstPush(replies[i], false); i++; next(); }, i === 0 ? 250 : 500);
+      var typing = asstTyping();
+      setTimeout(function () {
+        typing.remove();
+        asstPush(replies[i], false); i++; next();
+      }, i === 0 ? 350 : 550);
     })();
   }
 
@@ -2382,10 +2445,12 @@
     inp.value = "";
     asstPush(text, true);
     var topic = asstRoute(text);
-    if (topic) { setTimeout(function () { asstAsk(topic); }, 250); return; }
+    if (topic) { asstAsk(topic); return; }
+    var typing = asstTyping();
     setTimeout(function () {
+      typing.remove();
       asstPush("Tam anlamadım 🤔 Şunları sorabilirsin: bugün, kim önde, bu hafta/ay, rekorlarım, serim, yoğun saatim, tavsiye.", false);
-    }, 250);
+    }, 400);
   }
 
   function asstOpen() {
