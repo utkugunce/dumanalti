@@ -8,8 +8,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "4.10.0";
-  var APP_BUILD = 79;
+  var APP_VERSION = "5.0.0";
+  var APP_BUILD = 80;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -222,6 +222,10 @@
     renderHistory();
     refreshAsst();
     if (el("setCount")) el("setCount").textContent = entries.length;
+    if (el("profileSub")) {
+      var days = entries.length ? Math.round((startOfDay(Date.now()).getTime() - startOfDay(entries[0].ts).getTime()) / 86400000) + 1 : 0;
+      el("profileSub").textContent = entries.length + " kayıt · " + days + " gün takip";
+    }
   }
 
   function renderToday() {
@@ -290,17 +294,38 @@
     return s;
   }
 
+  // Küçük trend rozeti: bu dönem vs geçen dönem (az = iyi → düşüş yeşil)
+  function setTrend(id, cur, prev) {
+    var n = el(id); if (!n) return;
+    n.className = "stat-trend";
+    if (prev === 0 && cur === 0) { n.textContent = ""; return; }
+    var d = cur - prev;
+    if (d < 0) { n.classList.add("down"); n.textContent = "▼" + (-d); }
+    else if (d > 0) { n.classList.add("up"); n.textContent = "▲" + d; }
+    else { n.textContent = "="; }
+  }
+
   function renderStatCards() {
     var list = scopedEntries();
     var showBreakdown = statsScope === "all";
 
-    var week = countWho(list.filter(function (e) { return e.ts >= startOfWeek(Date.now()).getTime(); }));
+    var wStart = startOfWeek(Date.now()).getTime();
+    var week = countWho(list.filter(function (e) { return e.ts >= wStart; }));
+    var lastWeek = list.filter(function (e) { return e.ts >= wStart - 7 * 86400000 && e.ts < wStart; }).length;
     el("weekTotal").textContent = week.total;
     el("weekBreakdown").textContent = showBreakdown ? (week.total ? breakdownText(week) : "—") : "";
+    setTrend("weekTrend", week.total, lastWeek);
 
-    var month = countWho(list.filter(function (e) { return e.ts >= startOfMonth(); }));
+    var mStart = startOfMonth();
+    var month = countWho(list.filter(function (e) { return e.ts >= mStart; }));
+    var lastMonthN = list.filter(function (e) {
+      var d = logicalDate(e.ts), md = logicalDate(mStart);
+      var pm = md.getMonth() - 1, py = md.getFullYear();
+      return d.getFullYear() === py + Math.floor(pm / 12) && d.getMonth() === ((pm % 12) + 12) % 12;
+    }).length;
     el("monthTotal").textContent = month.total;
     el("monthBreakdown").textContent = showBreakdown ? (month.total ? breakdownText(month) : "—") : "";
+    setTrend("monthTrend", month.total, lastMonthN);
 
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
     var last7 = list.filter(function (e) { return e.ts >= sevenAgo; });
@@ -348,6 +373,8 @@
         var maxPx = 110;
         var h = Math.max(6, Math.round((total / maxTotal) * maxPx));
         stack.style.height = h + "px";
+        // Yoğunluk: yoğun günler daha canlı, hafif günler soluk
+        stack.style.opacity = (0.5 + 0.5 * (total / maxTotal)).toFixed(2);
 
         ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {
           if (day.counts[w] > 0) {
@@ -595,10 +622,27 @@
     list.innerHTML = "";
     el("historyCount").textContent = entries.length ? entries.length + " kayıt" : "";
 
+    // Özet şeridi: toplam · bu hafta · günlük ortalama
+    var sum = el("histSummary");
+    if (sum) {
+      if (!entries.length) { sum.innerHTML = ""; }
+      else {
+        var wk = entriesSince(startOfWeek(Date.now()).getTime()).length;
+        var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
+        var avg = (entriesSince(sevenAgo).length / 7).toFixed(1);
+        var td = todayEntries().length;
+        sum.innerHTML =
+          '<div class="hs-item"><span class="hs-v">' + td + '</span><span class="hs-l">bugün</span></div>' +
+          '<div class="hs-item"><span class="hs-v">' + wk + '</span><span class="hs-l">bu hafta</span></div>' +
+          '<div class="hs-item"><span class="hs-v">' + avg + '</span><span class="hs-l">günlük ort.</span></div>' +
+          '<div class="hs-item"><span class="hs-v">' + entries.length + '</span><span class="hs-l">toplam</span></div>';
+      }
+    }
+
     var filtered = entries.filter(function (e) { return historyFilter === "all" || e.who === historyFilter; });
     if (filtered.length === 0) {
       empty.classList.remove("hidden");
-      empty.textContent = entries.length ? "Bu filtrede kayıt yok." : "Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆";
+      empty.textContent = entries.length ? "Bu filtrede kayıt yok." : "Henüz kayıt yok. Sol alttaki + ile ekle 👆";
       return;
     }
     empty.classList.add("hidden");
@@ -617,10 +661,22 @@
       var lbl = document.createElement("span");
       lbl.className = "hist-day-label";
       lbl.textContent = dayLabel(g.ts);
+      // Gün başlığında kişi renkli mini noktalar (o gün kim içmiş)
+      var dots = document.createElement("span");
+      dots.className = "hist-day-dots";
+      var dc = countWho(g.items);
+      ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {
+        for (var n = 0; n < dc[w]; n++) {
+          var dt = document.createElement("i");
+          dt.className = "hd-dot " + WHO[w].cls;
+          dots.appendChild(dt);
+        }
+      });
       var cnt = document.createElement("span");
       cnt.className = "hist-day-count";
-      cnt.textContent = g.items.length + " 🚬";
+      cnt.textContent = g.items.length;
       head.appendChild(lbl);
+      head.appendChild(dots);
       head.appendChild(cnt);
       list.appendChild(head);
       g.items.forEach(function (e) {
@@ -694,6 +750,8 @@
       var bar = document.createElement("div");
       bar.className = "hour-bar" + (h === peakH && counts[peakH] > 0 ? " peak" : "");
       bar.style.height = (counts[h] === 0 ? 2 : Math.max(4, Math.round(counts[h] / max * 100))) + "%";
+      // Yoğunluk: çok içilen saat daha koyu/canlı, az içilen soluk
+      if (counts[h] > 0) bar.style.opacity = (0.4 + 0.6 * (counts[h] / max)).toFixed(2);
       bar.title = pad2(h) + ":00 · " + counts[h];
       col.appendChild(bar);
       if (h % 6 === 0) {
@@ -793,6 +851,7 @@
       var bar = document.createElement("div");
       bar.className = "dow-bar" + (i === peak && counts[peak] > 0 ? " peak" : "");
       bar.style.height = (counts[i] === 0 ? 3 : Math.max(6, Math.round(counts[i] / max * 100))) + "%";
+      if (counts[i] > 0) bar.style.opacity = (0.4 + 0.6 * (counts[i] / max)).toFixed(2);
       var l = document.createElement("span");
       l.className = "dow-lab";
       l.textContent = labels[i];
@@ -847,28 +906,31 @@
         return x.getFullYear() === y + Math.floor(m / 12) && x.getMonth() === ((m % 12) + 12) % 12;
       }).length;
     }
-    var tm = scMonth(0), lm = scMonth(-1);
-    var delta = tm - lm;
-    var trendStr = lm > 0 ? " (" + (delta > 0 ? "+" : "") + delta + " geçen aya göre " + (delta < 0 ? "📉" : delta > 0 ? "📈" : "➖") + ")" : "";
+    // En uzun art arda içilen gün serisi
+    var actRun = 0, actBest = 0;
+    for (var t2 = firstDay; t2 <= lastDay; t2 += 86400000) {
+      if (byDay[dayKey(t2)]) { actRun++; if (actRun > actBest) actBest = actRun; } else actRun = 0;
+    }
+    // Dün bu güne kadar günlük ortalama (tüm takip)
+    var dailyAvgAll = span > 0 ? (list.length / span).toFixed(1) : "0";
 
-    var items = [
-      { e: "🔥", t: "Tek günde rekor: " + maxC + " sigo (" + dd + ")" },
-      { e: "⏱️", t: "En uzun ara: " + fmtCoarse(maxGap) },
-      { e: "🧊", t: "En uzun sigosuz seri: " + longestCleanStreak(list) + " gün" },
-      { e: "🧹", t: "Toplam sigosuz gün: " + free },
-      { e: "🔀", t: "Bu ay: " + tm + " sigo" + trendStr },
-      { e: "📆", t: "Takip süresi: " + span + " gün" }
+    var tiles = [
+      { e: "🔥", v: maxC, l: "gün rekoru", sub: dd.slice(0, 5) },
+      { e: "⏱️", v: fmtCoarse(maxGap), l: "en uzun ara" },
+      { e: "🔗", v: actBest, l: "gün üst üste" },
+      { e: "🧊", v: longestCleanStreak(list), l: "gün sigosuz seri" },
+      { e: "🧹", v: free, l: "toplam sigosuz gün" },
+      { e: "📈", v: dailyAvgAll, l: "genel günlük ort." },
+      { e: "📆", v: span, l: "gün takip" },
+      { e: "🚬", v: list.length, l: "toplam kayıt" }
     ];
-    items.forEach(function (it) {
-      var row = document.createElement("div");
-      row.className = "record-row";
-      var em = document.createElement("span");
-      em.className = "record-emoji";
-      em.textContent = it.e;
-      var tx = document.createElement("span");
-      tx.textContent = it.t;
-      row.appendChild(em); row.appendChild(tx);
-      node.appendChild(row);
+    tiles.forEach(function (it) {
+      var tile = document.createElement("div");
+      tile.className = "record-tile";
+      tile.innerHTML = '<span class="rt-emoji">' + it.e + '</span>' +
+        '<span class="rt-val">' + it.v + '</span>' +
+        '<span class="rt-lbl">' + it.l + (it.sub ? ' <span class="rt-sub">' + it.sub + '</span>' : '') + '</span>';
+      node.appendChild(tile);
     });
   }
 
@@ -1026,11 +1088,11 @@
     grid.innerHTML = "";
     var list = computeBadges();
     var earned = 0;
+    var detail = el("badgeDetail");
     list.forEach(function (b) {
       if (b.on) earned++;
       var cell = document.createElement("div");
       cell.className = "badge" + (b.on ? " got" : "");
-      cell.title = b.d + (b.on ? "" : " (kilitli)");
       var ic = document.createElement("span");
       ic.className = "badge-emoji";
       ic.textContent = b.on ? b.e : "🔒";
@@ -1039,8 +1101,19 @@
       nm.textContent = b.t;
       cell.appendChild(ic);
       cell.appendChild(nm);
+      // Dokununca ne olduğunu detay satırında göster
+      cell.addEventListener(TAP_EVT, function () {
+        grid.querySelectorAll(".badge").forEach(function (x) { x.classList.remove("sel"); });
+        cell.classList.add("sel");
+        if (detail) {
+          detail.innerHTML = '<span class="bd-emoji">' + b.e + '</span> <b>' + b.t + '</b> — ' + b.d +
+            ' <span class="bd-status ' + (b.on ? "on" : "off") + '">' + (b.on ? "✓ kazanıldı" : "🔒 kilitli") + '</span>';
+        }
+      });
       grid.appendChild(cell);
     });
+    var cnt = el("badgeCount");
+    if (cnt) cnt.textContent = earned + "/" + list.length;
   }
 
   var RING_C = 2 * Math.PI * 42; // r=42
@@ -1929,11 +2002,21 @@
     bindAddDial();
     applyMascot();
 
-    // Ayarlar: sayı girdileri
-    if (el("setLimit")) {
-      el("setLimit").value = settings.dailyLimit || "";
-      el("setLimit").addEventListener("input", function () { settings.dailyLimit = +this.value || 0; saveSettings(); renderLimit(); });
+    // Bilgiler kartı açılır-kapanır (durum kalıcı)
+    var insHead = el("insightsHead");
+    if (insHead) {
+      var insCard = el("insights");
+      var open = localStorage.getItem("dumanalti.insightsOpen") !== "0";
+      insCard.classList.toggle("collapsed", !open);
+      insHead.setAttribute("aria-expanded", open ? "true" : "false");
+      insHead.addEventListener(TAP_EVT, function () {
+        var nowOpen = insCard.classList.contains("collapsed");
+        insCard.classList.toggle("collapsed", !nowOpen);
+        insHead.setAttribute("aria-expanded", nowOpen ? "true" : "false");
+        try { localStorage.setItem("dumanalti.insightsOpen", nowOpen ? "1" : "0"); } catch (e) {}
+      });
     }
+
     setInterval(function () { renderToday(); }, 60000);
     setInterval(function () { renderSince(); }, 1000);
   }

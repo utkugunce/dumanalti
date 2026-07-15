@@ -101,9 +101,12 @@
       </div>
     </section>
 
-    <!-- Insights -->
+    <!-- Insights (açılır-kapanır) -->
     <section class="card insights" id="insights">
-      <div class="card-head"><h2>Bilgiler</h2></div>
+      <button class="card-head collapse-head" id="insightsHead" aria-expanded="true">
+        <h2>Bilgiler</h2>
+        <span class="chev" aria-hidden="true">▾</span>
+      </button>
       <ul id="insightList" class="insight-list"></ul>
     </section>
     </main>
@@ -136,22 +139,22 @@
     <section class="card">
       <div class="stats-grid">
         <div class="stat-mini">
-          <span class="stat-label">Bu hafta</span>
+          <span class="stat-label">📅 Bu hafta <span class="stat-trend" id="weekTrend"></span></span>
           <span class="stat-value" id="weekTotal">0</span>
           <span class="stat-sub" id="weekBreakdown">—</span>
         </div>
         <div class="stat-mini">
-          <span class="stat-label">Bu ay</span>
+          <span class="stat-label">🗓️ Bu ay <span class="stat-trend" id="monthTrend"></span></span>
           <span class="stat-value" id="monthTotal">0</span>
           <span class="stat-sub" id="monthBreakdown">—</span>
         </div>
         <div class="stat-mini">
-          <span class="stat-label">Günlük ortalama</span>
+          <span class="stat-label">📊 Günlük ort.</span>
           <span class="stat-value" id="dailyAvg">0</span>
-          <span class="stat-sub">son 7 gün</span>
+          <span class="stat-sub" id="dailyAvgSub">son 7 gün</span>
         </div>
         <div class="stat-mini">
-          <span class="stat-label">Tüm zamanlar</span>
+          <span class="stat-label">♾️ Tüm zamanlar</span>
           <span class="stat-value" id="allTotal">0</span>
           <span class="stat-sub" id="allBreakdown">—</span>
         </div>
@@ -212,15 +215,16 @@
     </section>
 
     <!-- Rozetler -->
-    <h3 class="group-title">🏅 Rozetler</h3>
+    <h3 class="group-title">🏅 Rozetler <span class="gt-count" id="badgeCount"></span></h3>
     <section class="card">
       <div class="badge-grid" id="badgeGrid"></div>
+      <div class="badge-detail" id="badgeDetail">Bir rozete dokun, ne olduğunu göstereyim 👆</div>
     </section>
 
     <!-- Rekorlar -->
     <h3 class="group-title">📌 Rekorlar</h3>
     <section class="card">
-      <div class="record-list" id="recordList"></div>
+      <div class="record-grid" id="recordList"></div>
     </section>
     </main>
 
@@ -231,6 +235,7 @@
         <h2>Geçmiş</h2>
         <span class="muted" id="historyCount"></span>
       </div>
+      <div class="hist-summary" id="histSummary"></div>
       <div class="hist-filters" id="histFilters">
         <button class="hist-chip active" data-f="all">Tümü</button>
         <button class="hist-chip" data-f="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
@@ -245,13 +250,13 @@
 
     <main id="view-settings" class="view hidden">
 
-    <h3 class="group-title">🎯 Hedef</h3>
-    <section class="card settings-card">
-      <div class="set-row">
-        <label for="setLimit">Günlük limit (0 = kapalı)</label>
-        <input type="number" inputmode="numeric" id="setLimit" min="0" step="1" placeholder="örn. 10" />
+    <!-- Profil özeti -->
+    <section class="card profile-card">
+      <img class="profile-logo" src="icons/icon.svg" alt="Dumanaltı" />
+      <div class="profile-main">
+        <div class="profile-name">Utku &amp; Gözde</div>
+        <div class="profile-sub" id="profileSub">— kayıt · —</div>
       </div>
-      <p class="set-note">Limit girersen Anasayfa'da dolan bir halka çıkar; aşınca kırmızıya döner. Gün 04:00'te başlar.</p>
     </section>
 
     <h3 class="group-title">🎨 Görünüm</h3>
@@ -336,12 +341,6 @@
       <div class="about-version" id="appVersion"></div>
     </section>
     </main>
-
-    <footer class="footer">
-      <span id="cloudStatus" class="cloud-status status-syncing" title="Bağlanıyor…">
-        <span class="status-dot"></span>
-      </span>
-    </footer>
   </div>
 
   <!-- Zıvana: yardımcı asistan maskot -->
