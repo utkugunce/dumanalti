@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.2.0";
-  var APP_BUILD = 83;
+  var APP_VERSION = "5.3.0";
+  var APP_BUILD = 84;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -202,6 +202,29 @@
     }
     return c;
   }
+  function calcAverages(list, days) {
+    if (!days || days <= 0) {
+      return { utku: 0, gozde: 0, total: 0, utkuStr: "0.0", gozdeStr: "0.0", totalStr: "0.0", breakdown: "🧔 0.0 · 👩 0.0" };
+    }
+    var c = countWho(list);
+    var uCount = c.utku + c.both + c.hepberaber;
+    var gCount = c.gozde + c.both + c.hepberaber;
+    var uAvg = uCount / days;
+    var gAvg = gCount / days;
+    var tAvg = list.length / days;
+    var uStr = uAvg.toFixed(1);
+    var gStr = gAvg.toFixed(1);
+    var tStr = tAvg.toFixed(1);
+    return {
+      utku: uAvg,
+      gozde: gAvg,
+      total: tAvg,
+      utkuStr: uStr,
+      gozdeStr: gStr,
+      totalStr: tStr,
+      breakdown: "🧔 " + uStr + " · 👩 " + gStr
+    };
+  }
   function entriesSince(ts) { return entries.filter(function (e) { return e.ts >= ts; }); }
   function todayEntries() { return entries.filter(function (e) { return isSameDay(e.ts, Date.now()); }); }
 
@@ -332,7 +355,9 @@
 
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
     var last7 = list.filter(function (e) { return e.ts >= sevenAgo; });
-    el("dailyAvg").textContent = (last7.length / 7).toFixed(1);
+    var avg7Info = calcAverages(last7, 7);
+    el("dailyAvg").textContent = showBreakdown ? (avg7Info.utkuStr + " / " + avg7Info.gozdeStr) : avg7Info.totalStr;
+    el("dailyAvgSub").textContent = showBreakdown ? avg7Info.breakdown : "son 7 gün";
 
     var all = countWho(list);
     el("allTotal").textContent = String(all.total);
@@ -427,7 +452,8 @@
     var pct = Math.round((all.both + all.hepberaber) / all.total * 100);
     var monthTotal = entriesSince(startOfMonth()).length;
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-    var avg = entriesSince(sevenAgo).length / 7;
+    var avgInfo = calcAverages(entriesSince(sevenAgo), 7);
+    var avg = avgInfo.total;
     var todayCount = todayEntries().length;
 
     var byDay = {};
@@ -476,10 +502,22 @@
 
     // --- 2) Öne çıkan içgörü (duruma göre seçilir) ---
     var spot = null;
-    if (todayCount > 0 && avg > 0 && todayCount < avg) {
-      spot = { tone: "good", e: "🌿", t: "Bugün ortalamanın altındasın (" + todayCount + " < " + avg.toFixed(1) + ") — aferin!" };
-    } else if (todayCount > 0 && avg > 0 && todayCount > avg) {
-      spot = { tone: "warn", e: "⚠️", t: "Bugün ortalamanın üstündesin (" + todayCount + " > " + avg.toFixed(1) + ")." };
+    var myOwner = settings.owner;
+    var myToday = todayCount;
+    var myAvg = avg;
+    if (myOwner === "utku") {
+      var tc1 = countWho(todayEntries());
+      myToday = tc1.utku + tc1.both + tc1.hepberaber;
+      myAvg = avgInfo.utku;
+    } else if (myOwner === "gozde") {
+      var tc2 = countWho(todayEntries());
+      myToday = tc2.gozde + tc2.both + tc2.hepberaber;
+      myAvg = avgInfo.gozde;
+    }
+    if (myToday > 0 && myAvg > 0 && myToday < myAvg) {
+      spot = { tone: "good", e: "🌿", t: "Bugün ortalamanın altındasın (" + myToday + " < " + myAvg.toFixed(1) + ") — aferin!" };
+    } else if (myToday > 0 && myAvg > 0 && myToday > myAvg) {
+      spot = { tone: "warn", e: "⚠️", t: "Bugün ortalamanın üstündesin (" + myToday + " > " + myAvg.toFixed(1) + ")." };
     } else {
       // En sık bağlam etiketi varsa onu öne çıkar
       var byTag = {}, tagged = 0;
@@ -509,7 +547,7 @@
       : { v: (utkuTotal > gozdeTotal ? "Utku" : "Gözde") + " +" + Math.abs(utkuTotal - gozdeTotal), l: "🏆 Lider" };
     var tiles = [
       { e: "📅", v: monthTotal, l: "Bu ay" },
-      { e: "📊", v: avg.toFixed(1), l: "Günlük ort." },
+      { e: "📊", v: avgInfo.utkuStr + " / " + avgInfo.gozdeStr, l: "Günlük ort." },
       { e: "🤝", v: "%" + pct, l: "Birlikte" },
       { e: "🗓️", v: DOW_SHORT[maxDow], l: "En sık gün" },
       { e: lead.l.split(" ")[0], v: lead.v, l: lead.l.split(" ")[1] },
@@ -522,6 +560,7 @@
       tile.className = "ins-tile";
       var e = document.createElement("span"); e.className = "ins-tile-e"; e.textContent = t.e;
       var v = document.createElement("span"); v.className = "ins-tile-v"; v.textContent = String(t.v);
+      if (String(t.v).length > 6) v.style.fontSize = "13px";
       var l = document.createElement("span"); l.className = "ins-tile-l"; l.textContent = t.l;
       tile.appendChild(e); tile.appendChild(v); tile.appendChild(l);
       grid.appendChild(tile);
@@ -675,12 +714,12 @@
       else {
         var wk = entriesSince(startOfWeek(Date.now()).getTime()).length;
         var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-        var avg = (entriesSince(sevenAgo).length / 7).toFixed(1);
+        var avgInfo = calcAverages(entriesSince(sevenAgo), 7);
         var td = todayEntries().length;
         sum.innerHTML =
           '<div class="hs-item"><span class="hs-v">' + td + '</span><span class="hs-l">bugün</span></div>' +
           '<div class="hs-item"><span class="hs-v">' + wk + '</span><span class="hs-l">bu hafta</span></div>' +
-          '<div class="hs-item"><span class="hs-v">' + avg + '</span><span class="hs-l">günlük ort.</span></div>' +
+          '<div class="hs-item"><span class="hs-v" style="font-size:13px">' + avgInfo.utkuStr + ' / ' + avgInfo.gozdeStr + '</span><span class="hs-l">günlük ort.</span></div>' +
           '<div class="hs-item"><span class="hs-v">' + entries.length + '</span><span class="hs-l">toplam</span></div>';
       }
     }
@@ -967,7 +1006,8 @@
       if (byDay[dayKey(t2)]) { actRun++; if (actRun > actBest) actBest = actRun; } else actRun = 0;
     }
     // Dün bu güne kadar günlük ortalama (tüm takip)
-    var dailyAvgAll = span > 0 ? (list.length / span).toFixed(1) : "0";
+    var allAvgInfo = calcAverages(list, span);
+    var dailyAvgAll = statsScope === "all" ? (allAvgInfo.utkuStr + " / " + allAvgInfo.gozdeStr) : allAvgInfo.totalStr;
 
     var tiles = [
       { e: "🔥", v: maxC, l: "gün rekoru", sub: dd.slice(0, 5) },
@@ -983,7 +1023,7 @@
       var tile = document.createElement("div");
       tile.className = "record-tile";
       tile.innerHTML = '<span class="rt-emoji">' + it.e + '</span>' +
-        '<span class="rt-val">' + it.v + '</span>' +
+        '<span class="rt-val"' + (String(it.v).length > 6 ? ' style="font-size:15px"' : '') + '>' + it.v + '</span>' +
         '<span class="rt-lbl">' + it.l + (it.sub ? ' <span class="rt-sub">' + it.sub + '</span>' : '') + '</span>';
       node.appendChild(tile);
     });
@@ -2160,7 +2200,7 @@
     var all = countWho(entries);
     var today = todayEntries().length;
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-    var avg7 = entriesSince(sevenAgo).length / 7;
+    var avg7Info = calcAverages(entriesSince(sevenAgo), 7);
     var wStart = startOfWeek(Date.now()).getTime();
     var thisWeek = entriesSince(wStart).length;
     var lastWeek = entries.filter(function (e) { return e.ts >= wStart - 7 * 86400000 && e.ts < wStart; }).length;
@@ -2171,7 +2211,8 @@
     for (h = 1; h < 24; h++) if (byHour[h] > byHour[peakH]) peakH = h;
     var last = entries.length ? entries[entries.length - 1] : null;
     return {
-      all: all, today: today, avg7: avg7, thisWeek: thisWeek, lastWeek: lastWeek,
+      all: all, today: today, avg7: avg7Info.total, utkuAvg7: avg7Info.utku, gozdeAvg7: avg7Info.gozde,
+      thisWeek: thisWeek, lastWeek: lastWeek,
       peakH: peakH, peakCount: byHour[peakH], last: last,
       utku: all.utku + all.both + all.hepberaber, gozde: all.gozde + all.both + all.hepberaber
     };
@@ -2186,10 +2227,15 @@
   // Son sigodan bu yana geçen süre (ms)
   function asstRunningGap() { return entries.length ? Date.now() - entries[entries.length - 1].ts : 0; }
   // Bugün dahil, ortalamanın altında kaç ardışık mantıksal gün geçti
-  function asstBelowAvgStreak(avg) {
+  function asstBelowAvgStreak(avg, who) {
     if (avg <= 0) return 0;
     var byDay = {};
-    entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
+    entries.forEach(function (e) {
+      if (!who || e.who === who || isShared(e.who)) {
+        var k = dayKey(e.ts);
+        byDay[k] = (byDay[k] || 0) + 1;
+      }
+    });
     var d = logicalDate(Date.now()), streak = 0;
     for (var i = 0; i < 90; i++) {
       var p = new Date(d.getFullYear(), d.getMonth(), d.getDate() - i);
@@ -2232,19 +2278,23 @@
         text: mil[i] + ". sigo kaydı! Koca bir geçmiş biriktirdiniz 📈" };
     }
     // 4) Düşük gün serisi
-    var st = asstBelowAvgStreak(s.avg7);
-    if (s.avg7 > 0 && st >= 2) {
+    var targetAvg = settings.owner === "utku" ? s.utkuAvg7 : (settings.owner === "gozde" ? s.gozdeAvg7 : s.avg7);
+    var st = asstBelowAvgStreak(targetAvg, settings.owner);
+    if (targetAvg > 0 && st >= 2) {
       return { key: "streak:" + st, mood: "love", emoji: "🔥",
         text: st + " gündür ortalamanın altındasın 🔥 Harika gidiyorsun!" };
     }
     // 5) Bugün gidişat
-    if (s.today > 0 && s.avg7 > 0 && s.today < s.avg7) {
+    var tCounts = countWho(todayEntries());
+    var myTodayCount = settings.owner === "utku" ? (tCounts.utku + tCounts.both + tCounts.hepberaber) :
+                      (settings.owner === "gozde" ? (tCounts.gozde + tCounts.both + tCounts.hepberaber) : s.today);
+    if (myTodayCount > 0 && targetAvg > 0 && myTodayCount < targetAvg) {
       return { key: "under:" + dayKey(now), mood: "happy", emoji: "🌿",
-        text: "Bugün ortalamanın altındasın (" + s.today + " < " + s.avg7.toFixed(1) + "). Aferin! 🌿" };
+        text: "Bugün ortalamanın altındasın (" + myTodayCount + " < " + targetAvg.toFixed(1) + "). Aferin! 🌿" };
     }
-    if (s.today > 0 && s.avg7 > 0 && s.today > s.avg7) {
-      return { key: "over:" + dayKey(now) + ":" + s.today, mood: "surprised", emoji: "👀",
-        text: "Bugün ortalamanın üstündesin (" + s.today + " > " + s.avg7.toFixed(1) + "). Yavaşlayalım mı? 🙂" };
+    if (myTodayCount > 0 && targetAvg > 0 && myTodayCount > targetAvg) {
+      return { key: "over:" + dayKey(now) + ":" + myTodayCount, mood: "surprised", emoji: "👀",
+        text: "Bugün ortalamanın üstündesin (" + myTodayCount + " > " + targetAvg.toFixed(1) + "). Yavaşlayalım mı? 🙂" };
     }
     return null;
   }
@@ -2298,11 +2348,8 @@
       else out.push("Bugün şu ana kadar " + s.today + " sigo içildi.");
     } else if (topic === "today") {
       out.push("Bugün toplam " + s.today + " sigo içildi.");
-      if (s.avg7 > 0) {
-        var diff = s.today - s.avg7;
-        if (diff < 0) out.push("7 günlük ortalaman " + s.avg7.toFixed(1) + " — bugün " + Math.abs(diff).toFixed(1) + " tane altındasın, harika! 🌿");
-        else if (diff > 0) out.push("7 günlük ortalaman " + s.avg7.toFixed(1) + " — bugün biraz üstündesin, kalanı yavaşlat 💪");
-        else out.push("Tam ortalamandasın (" + s.avg7.toFixed(1) + ").");
+      if (s.utkuAvg7 > 0 || s.gozdeAvg7 > 0) {
+        out.push("7 günlük ortalamalar: 🧔 Utku " + s.utkuAvg7.toFixed(1) + " · 👩 Gözde " + s.gozdeAvg7.toFixed(1));
       }
     } else if (topic === "who") {
       if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " sigo, Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
