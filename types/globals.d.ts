@@ -10,8 +10,6 @@ interface Entry {
   id: string;
   who: Who;
   ts: number;
-  /** Bağlam etiketi anahtarı (opsiyonel). */
-  tag?: string;
 }
 
 /** Offline outbox işlemi: gönderilemeyen ekleme/güncelleme/silme. */
@@ -19,7 +17,6 @@ interface OutboxOp {
   type: "insert" | "update" | "delete";
   id?: string;
   row?: Entry;
-  tag?: string;
   fields?: Record<string, any>;
 }
 

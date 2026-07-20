@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.3.0";
-  var APP_BUILD = 84;
+  var APP_VERSION = "5.4.0";
+  var APP_BUILD = 85;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -29,17 +29,6 @@
 
   // Ortak ve hep beraber içilenler ikisinin de kişisel sayacına işlenir
   function isShared(w) { return w === "both" || w === "hepberaber"; }
-
-  // Bağlam etiketleri: bir sigoya isteğe bağlı ruh hali/durum
-  var TAGS = {
-    keyif:  { e: "😌", t: "Keyif" },
-    stres:  { e: "😮‍💨", t: "Stres" },
-    sabah:  { e: "☕", t: "Sabah" },
-    yemek:  { e: "🍽️", t: "Yemek sonrası" },
-    sosyal: { e: "🎉", t: "Sosyal" },
-    sikkin: { e: "🫠", t: "Sıkkın" }
-  };
-  var TAG_ORDER = ["keyif", "stres", "sabah", "yemek", "sosyal", "sikkin"];
 
   function makeAvatar(who, cls) {
     var img = document.createElement("img");
@@ -518,20 +507,10 @@
       spot = { tone: "good", e: "🌿", t: "Bugün ortalamanın altındasın (" + myToday + " < " + myAvg.toFixed(1) + ") — aferin!" };
     } else if (myToday > 0 && myAvg > 0 && myToday > myAvg) {
       spot = { tone: "warn", e: "⚠️", t: "Bugün ortalamanın üstündesin (" + myToday + " > " + myAvg.toFixed(1) + ")." };
-    } else {
-      // En sık bağlam etiketi varsa onu öne çıkar
-      var byTag = {}, tagged = 0;
-      entries.forEach(function (e) { if (e.tag && TAGS[e.tag]) { byTag[e.tag] = (byTag[e.tag] || 0) + 1; tagged++; } });
-      if (tagged >= 3) {
-        var topTag = null, topN = 0;
-        Object.keys(byTag).forEach(function (k) { if (byTag[k] > topN) { topN = byTag[k]; topTag = k; } });
-        if (topTag) spot = { tone: "neutral", e: TAGS[topTag].e, t: "En çok \"" + TAGS[topTag].t + "\" anında içiyorsun (%" + Math.round(topN / tagged * 100) + ")." };
-      }
-      if (!spot && maxDay) {
-        var parts = maxDay.split("-");
-        var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2);
-        spot = { tone: "neutral", e: "🔥", t: "En yoğun gün " + dd + " · " + maxDayCount + " sigo." };
-      }
+    } else if (maxDay) {
+      var parts = maxDay.split("-");
+      var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2);
+      spot = { tone: "neutral", e: "🔥", t: "En yoğun gün " + dd + " · " + maxDayCount + " sigo." };
     }
     if (spot) {
       var sEl = document.createElement("div");
@@ -605,8 +584,8 @@
     who.textContent = WHO[e.who].label + " içti";
     var time = document.createElement("span");
     time.className = "h-time";
-    var tagStr = e.tag && TAGS[e.tag] ? " · " + TAGS[e.tag].e + " " + TAGS[e.tag].t : "";
-    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + tagStr + (pending ? " · ⏳ bekliyor" : "");
+    var tagStr = "";
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
     main.appendChild(who);
     main.appendChild(time);
 
@@ -652,22 +631,6 @@
       chips.appendChild(b);
     });
 
-    // Bağlam etiketi çipleri (biri seçili değilse etiketsiz)
-    var selectedTag = e.tag || "";
-    var tagChips = document.createElement("div");
-    tagChips.className = "hist-edit-who";
-    TAG_ORDER.forEach(function (k) {
-      var b = document.createElement("button");
-      b.className = "hist-chip" + (k === selectedTag ? " active" : "");
-      b.textContent = TAGS[k].e + " " + TAGS[k].t;
-      b.addEventListener("click", function () {
-        selectedTag = (selectedTag === k) ? "" : k; // tekrar basınca kaldır
-        tagChips.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.remove("active"); });
-        if (selectedTag) b.classList.add("active");
-      });
-      tagChips.appendChild(b);
-    });
-
     var timeRow = document.createElement("div");
     timeRow.className = "hist-edit-time";
     var input = document.createElement("input");
@@ -685,7 +648,7 @@
       var ts = new Date(input.value).getTime();
       if (!input.value || isNaN(ts)) { alert("Geçerli bir tarih/saat seç."); return; }
       if (ts > Date.now()) { alert("Gelecekteki bir saat seçilemez."); return; }
-      updateEntry(e.id, selectedWho, ts, selectedTag);
+      updateEntry(e.id, selectedWho, ts);
     });
     var cancel = document.createElement("button");
     cancel.className = "ghost-btn small";
@@ -695,7 +658,6 @@
     btns.appendChild(cancel);
 
     panel.appendChild(chips);
-    panel.appendChild(tagChips);
     panel.appendChild(timeRow);
     panel.appendChild(btns);
     return panel;
@@ -1369,8 +1331,7 @@
     var idx = findIndexById(id);
     if (idx === -1) return;
     Object.keys(fields).forEach(function (k) {
-      var v = fields[k];
-      if (k === "tag" && !v) delete entries[idx].tag; else entries[idx][k] = v;
+      entries[idx][k] = fields[k];
     });
     sortEntries();
     saveCache();
@@ -1379,34 +1340,25 @@
     for (var i = 0; i < outbox.length; i++) {
       if (outbox[i].type === "insert" && outbox[i].row && outbox[i].row.id === id) {
         Object.keys(fields).forEach(function (k) {
-          if (k === "tag" && !fields[k]) delete outbox[i].row.tag; else outbox[i].row[k] = fields[k];
+          outbox[i].row[k] = fields[k];
         });
         pendingInsert = true;
         break;
       }
     }
-    // Bulut için: tag boşsa null gönder (sütunu temizle)
     if (!pendingInsert) {
-      var cloudFields = {};
-      Object.keys(fields).forEach(function (k) { cloudFields[k] = (k === "tag" && !fields[k]) ? null : fields[k]; });
-      outbox.push({ type: "update", id: id, fields: cloudFields });
+      outbox.push({ type: "update", id: id, fields: fields });
     }
     saveOutbox();
     flushOutbox();
     refreshStatus();
   }
 
-  // Geçmişten düzenleme: kişi + saat + etiket
-  function updateEntry(id, who, ts, tag) {
+  // Geçmişten düzenleme: kişi + saat
+  function updateEntry(id, who, ts) {
     editingId = null;
-    patchEntry(id, { who: who, ts: ts, tag: tag || null });
+    patchEntry(id, { who: who, ts: ts });
     render();
-  }
-
-  // Bir sigoya bağlam etiketi ata/kaldır (undo bar veya düzenlemeden)
-  function setTag(id, tag) {
-    patchEntry(id, { tag: tag || null });
-    renderQuick();
   }
 
   function showUndo(who) {
@@ -1417,31 +1369,9 @@
     ut.appendChild(makeAvatar(who, "avatar-sm"));
     ut.appendChild(document.createTextNode(" " + WHO[who].label + " eklendi"));
 
-    // Bağlam etiketi çipleri: son eklenen sigoyu tek dokunuşla etiketle
-    var tagBox = el("undoTags");
-    if (tagBox) {
-      var entryId = lastUndo.id;
-      tagBox.innerHTML = "";
-      TAG_ORDER.forEach(function (k) {
-        var b = document.createElement("button");
-        b.className = "tag-chip";
-        b.textContent = TAGS[k].e + " " + TAGS[k].t;
-        b.addEventListener(TAP_EVT, function () {
-          var cur = findIndexById(entryId);
-          var already = cur !== -1 && entries[cur].tag === k;
-          setTag(entryId, already ? null : k); // aynısına tekrar basınca kaldır
-          tagBox.querySelectorAll(".tag-chip").forEach(function (x) { x.classList.remove("on"); });
-          if (!already) b.classList.add("on");
-          clearTimeout(undoTimer);
-          undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 3000);
-        });
-        tagBox.appendChild(b);
-      });
-    }
-
     bar.classList.remove("hidden");
     clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 5000);
+    undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 4000);
   }
 
   function undoLast() {
@@ -1778,7 +1708,7 @@
       if (op.type === "insert") {
         p = sb.from(TABLE).upsert(op.row, { onConflict: "id", ignoreDuplicates: true });
       } else if (op.type === "update") {
-        p = sb.from(TABLE).update(op.fields || { tag: op.tag }).eq("id", op.id);
+        p = sb.from(TABLE).update(op.fields).eq("id", op.id);
       } else {
         p = sb.from(TABLE).delete().eq("id", op.id);
       }
@@ -1802,25 +1732,20 @@
 
   function syncFromRemote() {
     if (!sb || !navigator.onLine) return Promise.resolve();
-    return sb.from(TABLE).select("id,who,ts,tag").order("ts", { ascending: true }).then(function (res) {
+    return sb.from(TABLE).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
       if (res.error) { cloudError(res.error); return; }
       if (!res.data) return;
       var map = {};
       res.data.forEach(function (r) {
         var o = { id: r.id, who: r.who, ts: Number(r.ts) };
-        if (r.tag) o.tag = r.tag;
         map[r.id] = o;
       });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
       outbox.forEach(function (op) {
         if (op.type === "insert" && op.row) map[op.row.id] = op.row;
         else if (op.type === "delete") delete map[op.id];
-        else if (op.type === "update" && map[op.id]) {
-          if (op.fields) {
-            Object.keys(op.fields).forEach(function (k) { map[op.id][k] = op.fields[k]; });
-          } else {
-            map[op.id].tag = op.tag || undefined;
-          }
+        else if (op.type === "update" && map[op.id] && op.fields) {
+          Object.keys(op.fields).forEach(function (k) { map[op.id][k] = op.fields[k]; });
         }
       });
       entries = Object.keys(map).map(function (k) { return map[k]; });
@@ -1840,7 +1765,6 @@
         var r = payload.new;
         if (!r || findIndexById(r.id) !== -1) return;
         var o = { id: r.id, who: r.who, ts: Number(r.ts) };
-        if (r.tag) o.tag = r.tag;
         entries.push(o);
         sortEntries();
         saveCache();
@@ -1852,7 +1776,6 @@
         if (idx === -1) return;
         entries[idx].who = r.who || entries[idx].who;
         entries[idx].ts = Number(r.ts) || entries[idx].ts;
-        entries[idx].tag = r.tag || undefined;
         sortEntries();
         saveCache();
         render();
@@ -1898,7 +1821,7 @@
         incoming.forEach(function (e) {
           if (e && e.who && e.ts) {
             var id = e.id || uuid();
-            if (!map[id]) { var row = { id: id, who: e.who, ts: Number(e.ts) }; if (e.tag) row.tag = e.tag; map[id] = row; added.push(row); }
+            if (!map[id]) { var row = { id: id, who: e.who, ts: Number(e.ts) }; map[id] = row; added.push(row); }
           }
         });
         entries = Object.keys(map).map(function (k) { return map[k]; });
@@ -2614,8 +2537,7 @@
       render: render,
       addEntry: addEntry,
       deleteEntry: deleteEntry,
-      updateEntry: updateEntry,
-      setTag: setTag
+      updateEntry: updateEntry
     };
   }
 })();
