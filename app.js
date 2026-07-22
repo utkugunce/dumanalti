@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.0.0";
-  var APP_BUILD = 104;
+  var APP_VERSION = "6.0.1";
+  var APP_BUILD = 105;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -97,6 +97,8 @@
     activeCat = cat;
     entries = catStore[cat].entries;
     outbox = catStore[cat].outbox;
+    // Body data-cat özniteliğini güncelle (CSS tema vurgu renkleri için)
+    document.body.setAttribute("data-cat", cat);
     // Segment bar güncelle
     document.querySelectorAll(".cat-btn").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-cat") === cat);
@@ -3128,6 +3130,7 @@
   el("appVersion").textContent = "v" + APP_VERSION + " · derleme " + APP_BUILD;
   loadSettings();
   loadCache();
+  document.body.setAttribute("data-cat", activeCat);
   bind();
   render();
   handleQuickAction();
