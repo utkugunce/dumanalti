@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.0.2";
-  var APP_BUILD = 106;
+  var APP_VERSION = "6.0.3";
+  var APP_BUILD = 107;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -583,6 +583,9 @@
     el("todayHeroSub").textContent = "toplam " + catInfo.unit + " " + kindText + "· dün bu saatte " + ySame;
 
     renderTodayFlow();
+
+    var lastLbl = el("lastRowLabel");
+    if (lastLbl) lastLbl.textContent = "Son " + catInfo.unit + ":";
 
     var lastSmoke = el("lastSmoke");
     lastSmoke.innerHTML = "";
@@ -2925,8 +2928,10 @@
   // Bir konuya veriden üretilmiş cevap (metin dizisi)
   function asstReply(topic) {
     var s = asstStats();
+    var catInfo = CATS[activeCat] || CATS.sigo;
+    var u = catInfo.unit;
     if (s.all.total === 0 && topic !== "hi") {
-      return ["Henüz hiç kayıt yok 💨 İlk sigoyu eklediğinde sana verilerinizi yorumlarım!"];
+      return ["Henüz hiç kayıt yok 💨 İlk kaydı eklediğinde sana verilerinizi yorumlarım!"];
     }
     var out = [];
     if (topic === "hi") {
@@ -2940,19 +2945,19 @@
       ]));
       var n = asstNudge();
       if (n) out.push(n.text);
-      else if (s.today === 0) out.push("Bugün henüz hiç içmemişsiniz — böyle devam! 🌿");
-      else out.push("Bugün şu ana kadar " + s.today + " sigo içildi.");
+      else if (s.today === 0) out.push("Bugün henüz hiç tüketmemişsiniz — böyle devam! 🌿");
+      else out.push("Bugün şu ana kadar " + s.today + " " + u + " içildi.");
     } else if (topic === "today") {
-      out.push("Bugün toplam " + s.today + " sigo içildi.");
+      out.push("Bugün toplam " + s.today + " " + u + " içildi.");
       if (s.utkuAvg7 > 0 || s.gozdeAvg7 > 0) {
         out.push("7 günlük ortalamalar: 🧔 Utku " + s.utkuAvg7.toFixed(1) + " · 👩 Gözde " + s.gozdeAvg7.toFixed(1));
       }
     } else if (topic === "who") {
-      if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " sigo, Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
-      else if (s.gozde > s.utku) out.push("Gözde önde: " + s.gozde + " sigo, Utku " + s.utku + ". Fark " + (s.gozde - s.utku) + " 🏆");
-      else out.push("Tam berabere! İkiniz de " + s.utku + " sigo 🤝");
+      if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " " + u + ", Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
+      else if (s.gozde > s.utku) out.push("Gözde önde: " + s.gozde + " " + u + ", Utku " + s.utku + ". Fark " + (s.gozde - s.utku) + " 🏆");
+      else out.push("Tam berabere! İkiniz de " + s.utku + " " + u + " 🤝");
       var pct = s.all.total ? Math.round((s.all.both + s.all.hepberaber) / s.all.total * 100) : 0;
-      out.push("Sigoların %" + pct + "'ini birlikte içtiniz 💜");
+      if (activeCat === "sigo") out.push("Sigoların %" + pct + "'ini birlikte içtiniz 💜");
     } else if (topic === "me") {
       if (!settings.owner) {
         out.push("Önce Ayarlar > Kişiselleştirme'den bu cihazın kimin olduğunu seç, sana özel konuşayım 🙂");
@@ -2962,15 +2967,15 @@
         var meToday = settings.owner === "utku" ? (t.utku + t.both + t.hepberaber) : (t.gozde + t.both + t.hepberaber);
         var meTotal = settings.owner === "utku" ? s.utku : s.gozde;
         var other = settings.owner === "utku" ? s.gozde : s.utku;
-        out.push(meName + ", bugün senin hanene " + meToday + " sigo yazıldı (ortak + hep beraber dahil).");
-        if (meTotal > other) out.push("Toplamda " + (meTotal - other) + " sigo öndesin 🏆");
-        else if (other > meTotal) out.push("Toplamda " + (other - meTotal) + " sigo geridesin — yavaşlamak yarışı da kazandırır 😉");
+        out.push(meName + ", bugün senin hanene " + meToday + " " + u + " yazıldı.");
+        if (meTotal > other) out.push("Toplamda " + (meTotal - other) + " " + u + " öndesin 🏆");
+        else if (other > meTotal) out.push("Toplamda " + (other - meTotal) + " " + u + " geridesin — yavaşlamak yarışı da kazandırır 😉");
         else out.push("Rakibinle tam berabersin 🤝");
       }
     } else if (topic === "peak") {
       if (s.peakCount === 0) out.push("Henüz saat örüntüsü çıkaracak kadar veri yok.");
       else {
-        out.push("En yoğun saatin " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " sigo) ⏰");
+        out.push("En yoğun saatin " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " " + u + ") ⏰");
         out.push(pick([
           "O saate yaklaşırken bir bardak su iç, kriz geçer 💧",
           "O saatte kısa bir yürüyüş çok işe yarar 🚶",
@@ -2978,7 +2983,7 @@
         ]));
       }
     } else if (topic === "week") {
-      out.push("Bu hafta " + s.thisWeek + " sigo içtiniz.");
+      out.push("Bu hafta " + s.thisWeek + " " + u + " içtiniz.");
       if (s.lastWeek > 0) {
         if (s.thisWeek < s.lastWeek) out.push("Geçen haftaya göre " + (s.lastWeek - s.thisWeek) + " tane az — düşüşteyiz, süper! 📉");
         else if (s.thisWeek > s.lastWeek) out.push("Geçen haftaya göre " + (s.thisWeek - s.lastWeek) + " tane fazla. Bu hafta kısalım mı? 💪");
@@ -2986,7 +2991,7 @@
       }
     } else if (topic === "month") {
       var mCount = entriesSince(startOfMonth()).length;
-      out.push("Bu ay toplam " + mCount + " sigo içildi.");
+      out.push("Bu ay toplam " + mCount + " " + u + " içildi.");
       var dayNo = logicalDate(Date.now()).getDate();
       if (dayNo >= 2 && mCount > 0) out.push("Bu hızla ay sonunda ~" + Math.round(mCount / dayNo * 30) + " olur.");
     } else if (topic === "records") {
@@ -2994,7 +2999,7 @@
       if (rg > lg && rg >= 3600000) out.push("Şu an rekordasın: " + fmtCoarse(rg) + " ara verdin, öncekini geçtin 🏆");
       else if (Math.max(lg, rg) > 0) out.push("En uzun aran: " + fmtCoarse(Math.max(lg, rg)) + " ⏱️");
       var rd = asstRecordDay();
-      if (rd) out.push("Tek günde rekor: " + rd.count + " sigo (" + rd.label + ") 🔥");
+      if (rd) out.push("Tek günde rekor: " + rd.count + " " + u + " (" + rd.label + ") 🔥");
     } else if (topic === "streak") {
       var st = asstBelowAvgStreak(s.avg7);
       if (s.avg7 <= 0) out.push("Seri için biraz daha veri lazım, birkaç gün geçince takip ederim 🌱");
@@ -3004,12 +3009,12 @@
     } else if (topic === "tip") {
       if (s.last) {
         var gapMin = Math.floor((Date.now() - s.last.ts) / 60000);
-        if (gapMin >= 120) out.push("Son sigodan " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem 🌿");
+        if (gapMin >= 120) out.push("Son " + u + "dan " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem 🌿");
       }
       if (s.peakCount > 0) out.push("En çok " + pad2(s.peakH) + ":00 sularında içiyorsun; o saatte kısa bir mola krizi atlatır 🚶");
-      if (s.avg7 > 0) out.push("Küçük hedef: bugünü " + Math.max(0, Math.floor(s.avg7) - 1) + " sigoda bitir, ortalamanı düşür 💪");
+      if (s.avg7 > 0) out.push("Küçük hedef: bugünü " + Math.max(0, Math.floor(s.avg7) - 1) + " " + u + " ile bitir, ortalamanı düşür 💪");
       if (out.length === 0) out.push(pick([
-        "Harika gidiyorsun, böyle devam! Her eklemediğin sigo bir kazanç 💨",
+        "Harika gidiyorsun, böyle devam! Her içmediğin " + u + " bir kazanç 💨",
         "Su iç, derin nefes al, kriz 3-5 dakikada geçer 🌬️",
         "Canın çektiğinde 10 dakika ertele — çoğu zaman istek geçer ⏳"
       ]));
