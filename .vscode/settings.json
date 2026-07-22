@@ -1,5 +1,9 @@
 {
+  "caniuse.enable": false,
+  "compatibility.enable": false,
+  "html.compatibility.enable": false,
+  "webhint.enable": false,
+  "htmlhint.enable": false,
   "html.validate.scripts": true,
-  "html.validate.styles": true,
-  "webhint.enable": false
+  "html.validate.styles": true
 }
