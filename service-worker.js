@@ -1,5 +1,5 @@
 /* Dumanaltı service worker — önce ağ (network-first), offline yedek */
-var CACHE = "dumanalti-v107";
+var CACHE = "dumanalti-v108";
 var ASSETS = [
   "./",
   "./index.html",

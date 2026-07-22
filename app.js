@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.0.3";
-  var APP_BUILD = 107;
+  var APP_VERSION = "6.0.4";
+  var APP_BUILD = 108;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -132,6 +132,7 @@
     }
     if (duoHep) /** @type {HTMLElement} */ (duoHep).style.display = cat === "sigo" ? "" : "none";
 
+    applyMascot();
     render();
     try { localStorage.setItem("dumanalti.activeCat", cat); } catch (e) {}
   }
@@ -2750,11 +2751,12 @@
     setInterval(function () { renderSince(); }, 1000);
   }
 
-  // Zıvana'yı ayara göre göster/gizle
+  // Zıvana'yı ayara ve aktif kategoriye (sadece Sigo) göre göster/gizle
   function applyMascot() {
     var a = el("assistant");
-    if (a) a.classList.toggle("hidden", settings.mascot === "off");
-    if (settings.mascot === "off") { var p = el("asstPanel"); if (p) p.classList.add("hidden"); }
+    var hide = settings.mascot === "off" || activeCat !== "sigo";
+    if (a) a.classList.toggle("hidden", hide);
+    if (hide) { var p = el("asstPanel"); if (p) p.classList.add("hidden"); }
     else if (typeof refreshAsst === "function") refreshAsst();
   }
 
