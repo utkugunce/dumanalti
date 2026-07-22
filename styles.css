@@ -123,8 +123,8 @@ body {
   z-index: 300;
   display: flex;
   background: rgba(12, 14, 20, 0.4);
-  backdrop-filter: blur(16px) saturate(1.7);
   -webkit-backdrop-filter: blur(16px) saturate(1.7);
+  backdrop-filter: blur(16px) saturate(1.7);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.28);
@@ -226,29 +226,29 @@ body {
 .action-btn:active { transform: scale(0.92); filter: brightness(1.1); transition-duration: 0.08s; }
 .action-btn.utku {
   background: linear-gradient(165deg, rgba(150, 214, 106, 0.8), rgba(96, 168, 60, 0.55) 45%, rgba(56, 118, 32, 0.65));
-  backdrop-filter: blur(12px) saturate(1.6);
   -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 10px 26px -10px rgba(122, 199, 79, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .action-btn.gozde {
   background: linear-gradient(165deg, rgba(218, 235, 130, 0.8), rgba(160, 196, 60, 0.55) 45%, rgba(110, 140, 30, 0.65));
-  backdrop-filter: blur(12px) saturate(1.6);
   -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 10px 26px -10px rgba(201, 226, 101, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .action-btn.both {
   background: linear-gradient(165deg, rgba(120, 224, 180, 0.8), rgba(56, 168, 122, 0.55) 45%, rgba(30, 118, 82, 0.65));
-  backdrop-filter: blur(12px) saturate(1.6);
   -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 10px 26px -10px rgba(79, 199, 150, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .action-btn.hepberaber {
   background: linear-gradient(165deg, rgba(255, 216, 122, 0.8), rgba(214, 164, 60, 0.55) 45%, rgba(150, 108, 30, 0.65));
-  backdrop-filter: blur(12px) saturate(1.6);
   -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 10px 26px -10px rgba(255, 200, 87, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
@@ -265,8 +265,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.28);
   padding: 2px 9px;
   border-radius: 999px;
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 /* dokununca yaylı esneme + parlama şeridi */
@@ -358,8 +358,8 @@ body {
   border-radius: var(--radius);
   padding: 9px 13px;
   /* düşük blur + yüksek doygunluk: aynı cam hissi, daha az GPU yükü */
-  backdrop-filter: blur(14px) saturate(1.7);
   -webkit-backdrop-filter: blur(14px) saturate(1.7);
+  backdrop-filter: blur(14px) saturate(1.7);
   box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -1px 0 rgba(255, 255, 255, 0.04), var(--shadow);
 }
 .card-head {
@@ -743,8 +743,8 @@ body {
   flex-direction: column;
   gap: 10px;
   background: rgba(20, 24, 22, 0.82);
-  backdrop-filter: blur(16px) saturate(1.6);
   -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 10px 14px;
@@ -1150,8 +1150,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
   background: rgba(20, 24, 22, 0.82);
-  backdrop-filter: blur(14px) saturate(1.6);
   -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
   color: var(--text);
   font-family: inherit; font-size: 14px; font-weight: 700;
   cursor: pointer;
@@ -1218,8 +1218,8 @@ body {
   border-radius: 20px;
   background: var(--bg-elev);
   border: 1px solid var(--border);
-  backdrop-filter: blur(18px) saturate(1.7);
   -webkit-backdrop-filter: blur(18px) saturate(1.7);
+  backdrop-filter: blur(18px) saturate(1.7);
   box-shadow: inset 0 1px 0 var(--glass-hi), 0 16px 40px rgba(0, 0, 0, 0.4);
   padding: 12px;
   transform-origin: bottom right;
@@ -1326,7 +1326,8 @@ body {
   background: rgba(20, 24, 22, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
   opacity: 0; transform: translateY(14px) scale(0.85);
   transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
