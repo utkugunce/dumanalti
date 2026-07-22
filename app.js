@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.0.1";
-  var APP_BUILD = 105;
+  var APP_VERSION = "6.0.2";
+  var APP_BUILD = 106;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -112,6 +112,26 @@
     // Sigo/bong tür seçicisini sadece sigo kategorisinde göster
     var kindSeg = el("addKindSeg");
     if (kindSeg) kindSeg.style.display = cat === "sigo" ? "" : "none";
+    // Ortak ve Hep beraber seçeneklerini sadece Sigo kategorisinde göster (Sigara ve Bira için sadece Utku ve Gözde)
+    document.querySelectorAll(".add-opt[data-who='both'], .add-opt[data-who='hepberaber']").forEach(function (b) {
+      /** @type {HTMLElement} */ (b).style.display = cat === "sigo" ? "" : "none";
+    });
+    // Bugün kartında Ortak ve Hep beraber satırlarını gizle/göster
+    var duoBoth = document.querySelector(".duo-row:has(#todayBoth)");
+    if (!duoBoth) {
+      // Browser compatibility fallback for :has
+      var elBoth = el("todayBoth");
+      if (elBoth && elBoth.parentElement) duoBoth = elBoth.parentElement;
+    }
+    if (duoBoth) /** @type {HTMLElement} */ (duoBoth).style.display = cat === "sigo" ? "" : "none";
+
+    var duoHep = document.querySelector(".duo-row:has(#todayHepberaber)");
+    if (!duoHep) {
+      var elHep = el("todayHepberaber");
+      if (elHep && elHep.parentElement) duoHep = elHep.parentElement;
+    }
+    if (duoHep) /** @type {HTMLElement} */ (duoHep).style.display = cat === "sigo" ? "" : "none";
+
     render();
     try { localStorage.setItem("dumanalti.activeCat", cat); } catch (e) {}
   }
@@ -556,8 +576,11 @@
     else if (diff < 0) { trend.classList.add("down"); trend.textContent = "▼ " + (-diff); }
     else { trend.textContent = "＝"; }
 
-    var kindText = tk.sigo + " sigo · " + tk.bong + " bong";
-    el("todayHeroSub").textContent = "toplam (" + kindText + ") · dün bu saatte " + ySame;
+    var catInfo = CATS[activeCat] || CATS.sigo;
+    var kindText = activeCat === "sigo"
+      ? "(" + tk.sigo + " sigo · " + tk.bong + " bong) · "
+      : "";
+    el("todayHeroSub").textContent = "toplam " + catInfo.unit + " " + kindText + "· dün bu saatte " + ySame;
 
     renderTodayFlow();
 
@@ -565,9 +588,9 @@
     lastSmoke.innerHTML = "";
     if (entries.length) {
       var last = entries[entries.length - 1];
-      var kInfo = KINDS[entryKind(last)] || KINDS.sigo;
       lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
-      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " (" + kInfo.emoji + " " + kInfo.label + ") · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
+      var kindLabel = activeCat === "sigo" ? " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")" : "";
+      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + kindLabel + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
     } else {
       lastSmoke.textContent = "—";
     }
@@ -1081,6 +1104,11 @@
 
   function renderSince() {
     if (!el("sinceUtku")) return;
+    var head = el("sinceCardHead");
+    if (head) {
+      var catUnit = (CATS[activeCat] || CATS.sigo).unit;
+      head.textContent = "Son " + catUnit + "dan beri";
+    }
     var ids = { utku: "Utku", gozde: "Gozde" };
     Object.keys(ids).forEach(function (who) {
       var t = el("since" + ids[who]);
