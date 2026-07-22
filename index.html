@@ -30,7 +30,16 @@
       <button id="themeToggle" class="icon-btn" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
     </header>
 
+    <!-- Category selector bar for Home view -->
+    <div class="cat-bar" id="catBar">
+      <button class="cat-btn active" data-cat="sigo">🚬 Sigo</button>
+      <button class="cat-btn" data-cat="sigara">🚬 Sigara</button>
+      <button class="cat-btn" data-cat="bira">🍺 Bira</button>
+    </div>
+
     <main id="view-home" class="view">
+      <div class="cat-swiper" id="catSwiper">
+        <div class="cat-page" data-cat="sigo">
     <!-- Today summary -->
     <section class="card today-card">
       <div class="card-head">
@@ -111,7 +120,8 @@
         <span class="chev" aria-hidden="true">▾</span>
       </button>
       <div id="insightBody" class="insight-body"></div>
-    </section>
+      </div><!-- /.cat-page sigo -->
+      </div><!-- /#catSwiper -->
     </main>
 
     <main id="view-stats" class="view hidden">

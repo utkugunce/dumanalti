@@ -177,6 +177,52 @@ body {
 }
 .icon-btn:active { transform: scale(0.92); }
 
+/* Category Segment Bar & Swiper */
+.cat-bar {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-elev);
+  padding: 4px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  margin: 4px 0 2px;
+}
+.cat-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cat-btn.active {
+  background: var(--glass-hi);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.cat-swiper {
+  display: flex;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.cat-swiper::-webkit-scrollbar { display: none; }
+.cat-page {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Action buttons */
 .actions {
   display: grid;

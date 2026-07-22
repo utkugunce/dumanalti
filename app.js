@@ -9,16 +9,28 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.12.0";
-  var APP_BUILD = 103;
+  var APP_VERSION = "6.0.0";
+  var APP_BUILD = 104;
 
-  var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
-  var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
 
   var CFG = window.DUMANALTI_CONFIG || {};
-  var TABLE = CFG.table || "dumanalti_entries";
+
+  // ---------- Çoklu kategori tanımları ----------
+  var CATS = {
+    sigo:   { label: "Sigo",   emoji: "🚬", table: CFG.table || "dumanalti_entries", cacheKey: "dumanalti.entries.v1", outboxKey: "dumanalti.outbox.v1", unit: "sigo", unitPlural: "sigo" },
+    sigara: { label: "Sigara", emoji: "🚬", table: "dumanalti_sigara",               cacheKey: "dumanalti.sigara.v1", outboxKey: "dumanalti.sigara_outbox.v1", unit: "sigara", unitPlural: "sigara" },
+    bira:   { label: "Bira",   emoji: "🍺", table: "dumanalti_bira",                 cacheKey: "dumanalti.bira.v1",   outboxKey: "dumanalti.bira_outbox.v1",   unit: "bira",   unitPlural: "bira" }
+  };
+  var CAT_ORDER = ["sigo", "sigara", "bira"];
+  var activeCat = "sigo";
+
+  // Her kategorinin kendi veri deposu
+  var catStore = {};
+  CAT_ORDER.forEach(function (c) {
+    catStore[c] = { entries: [], outbox: [] };
+  });
 
   var WHO = {
     utku:  { label: "Utku", emoji: "🧔", avatar: "icons/avatar-utku.png", cls: "utku-bg" },
@@ -59,10 +71,11 @@
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
+  // entries ve outbox aktif kategoriye alias olur (switchCat ile güncellenir)
   /** @type {Entry[]} */
-  var entries = [];
+  var entries = catStore.sigo.entries;
   /** @type {OutboxOp[]} */
-  var outbox = [];
+  var outbox = catStore.sigo.outbox;
   var lastUndo = null;
   var undoTimer = null;
   var comboCount = 0;
@@ -74,6 +87,32 @@
   var statsScope = "all"; // İstatistik kişi filtresi: all | both | hepberaber | gozde | utku
   var statsKind = "all"; // İstatistik tür filtresi: all | sigo | bong
   var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak/beraber içilenler dahil mi
+
+  // Aktif kategoriyi değiştir: entries/outbox alias'larını güncelle, UI'ı yeniden çiz
+  function switchCat(cat) {
+    if (!CATS[cat]) return;
+    // Mevcut veriyi depoya geri kaydet
+    catStore[activeCat].entries = entries;
+    catStore[activeCat].outbox = outbox;
+    activeCat = cat;
+    entries = catStore[cat].entries;
+    outbox = catStore[cat].outbox;
+    // Segment bar güncelle
+    document.querySelectorAll(".cat-btn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-cat") === cat);
+    });
+    // Swiper'ı doğru sayfaya kaydır
+    var swiper = el("catSwiper");
+    if (swiper) {
+      var idx = CAT_ORDER.indexOf(cat);
+      swiper.scrollTo({ left: idx * swiper.offsetWidth, behavior: "smooth" });
+    }
+    // Sigo/bong tür seçicisini sadece sigo kategorisinde göster
+    var kindSeg = el("addKindSeg");
+    if (kindSeg) kindSeg.style.display = cat === "sigo" ? "" : "none";
+    render();
+    try { localStorage.setItem("dumanalti.activeCat", cat); } catch (e) {}
+  }
 
   function scopedEntries() {
     var list = entries;
@@ -274,8 +313,10 @@
       info.textContent = "Durum: Bulut hatası (" + lastCloudError + ") ⚠️";
       return;
     }
-    if (outbox.length > 0) {
-      info.textContent = "Durum: " + outbox.length + " kayıt senkronlanmayı bekliyor... ⏳";
+    var totalOutbox = 0;
+    CAT_ORDER.forEach(function (c) { totalOutbox += catStore[c].outbox.length; });
+    if (totalOutbox > 0) {
+      info.textContent = "Durum: " + totalOutbox + " kayıt senkronlanmayı bekliyor... ⏳";
       return;
     }
     if (cloudReady) {
@@ -288,24 +329,45 @@
 
   // ---------- Local cache ----------
   function loadCache() {
+    CAT_ORDER.forEach(function (c) {
+      var cfg = CATS[c];
+      try {
+        var raw = localStorage.getItem(cfg.cacheKey);
+        catStore[c].entries = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(catStore[c].entries)) catStore[c].entries = [];
+        catStore[c].entries.sort(function (a, b) { return a.ts - b.ts; });
+      } catch (e) { catStore[c].entries = []; }
+      try {
+        var ob = localStorage.getItem(cfg.outboxKey);
+        catStore[c].outbox = ob ? JSON.parse(ob) : [];
+        if (!Array.isArray(catStore[c].outbox)) catStore[c].outbox = [];
+      } catch (e) { catStore[c].outbox = []; }
+    });
+    // Aktif kategoriyi alias'a bağla
+    entries = catStore[activeCat].entries;
+    outbox = catStore[activeCat].outbox;
+    sortEntries();
+    // Kayıtlı aktif kategoriyi yükle
     try {
-      var raw = localStorage.getItem(CACHE_KEY);
-      entries = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(entries)) entries = [];
-      sortEntries();
-    } catch (e) { entries = []; }
-    try {
-      var ob = localStorage.getItem(OUTBOX_KEY);
-      outbox = ob ? JSON.parse(ob) : [];
-      if (!Array.isArray(outbox)) outbox = [];
-    } catch (e) { outbox = []; }
+      var saved = localStorage.getItem("dumanalti.activeCat");
+      if (saved && CATS[saved]) activeCat = saved;
+    } catch (e) {}
+    entries = catStore[activeCat].entries;
+    outbox = catStore[activeCat].outbox;
   }
 
   function saveCache() {
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(entries)); } catch (e) {}
+    try { localStorage.setItem(CATS[activeCat].cacheKey, JSON.stringify(entries)); } catch (e) {}
   }
   function saveOutbox() {
-    try { localStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox)); } catch (e) {}
+    try { localStorage.setItem(CATS[activeCat].outboxKey, JSON.stringify(outbox)); } catch (e) {}
+  }
+  // Belirli bir kategorinin önbelleğini kaydet (sync sonrası)
+  function saveCatCache(cat) {
+    try { localStorage.setItem(CATS[cat].cacheKey, JSON.stringify(catStore[cat].entries)); } catch (e) {}
+  }
+  function saveCatOutbox(cat) {
+    try { localStorage.setItem(CATS[cat].outboxKey, JSON.stringify(catStore[cat].outbox)); } catch (e) {}
   }
 
   function loadSettings() {
@@ -2053,6 +2115,8 @@
   }
 
   // ---------- Cloud sync ----------
+  var realtimeChannels = {}; // Kategori bazlı kanallar
+
   function initCloud() {
     if (!CFG.supabaseUrl || !CFG.supabaseKey || !window.supabase) {
       refreshStatus();
@@ -2068,18 +2132,28 @@
       return;
     }
 
-    flushOutbox().then(syncFromRemote).then(subscribeRealtime);
+    var promises = CAT_ORDER.map(function(c) {
+      return flushOutbox(c).then(function() { return syncFromRemote(c); }).then(function() { subscribeRealtime(c); });
+    });
+
+    Promise.all(promises).then(function() {
+      cloudReady = true;
+      refreshStatus();
+    });
 
     window.addEventListener("online", function () {
-      flushOutbox().then(syncFromRemote);
+      CAT_ORDER.forEach(function(c) { flushOutbox(c).then(function() { syncFromRemote(c); }); });
       refreshStatus();
     });
     window.addEventListener("offline", refreshStatus);
   }
 
-  function flushOutbox() {
-    if (!sb || !navigator.onLine || outbox.length === 0) return Promise.resolve();
-    var queue = outbox.slice();
+  function flushOutbox(cat) {
+    if (!cat) cat = activeCat;
+    var catOutbox = catStore[cat].outbox;
+    var tableName = CATS[cat].table;
+    if (!sb || !navigator.onLine || catOutbox.length === 0) return Promise.resolve();
+    var queue = catOutbox.slice();
     var firstErr = null;
 
     function step(i) {
@@ -2089,19 +2163,19 @@
       if (op.type === "insert") {
         var dbRow = { id: op.row.id, who: op.row.who, ts: op.row.ts };
         if (op.row.tag) dbRow.tag = op.row.tag;
-        p = sb.from(TABLE).upsert(dbRow, { onConflict: "id", ignoreDuplicates: true });
+        p = sb.from(tableName).upsert(dbRow, { onConflict: "id", ignoreDuplicates: true });
       } else if (op.type === "update") {
         var fields = Object.assign({}, op.fields);
         delete fields.kind;
-        p = sb.from(TABLE).update(fields).eq("id", op.id);
+        p = sb.from(tableName).update(fields).eq("id", op.id);
       } else {
-        p = sb.from(TABLE).delete().eq("id", op.id);
+        p = sb.from(tableName).delete().eq("id", op.id);
       }
       return p.then(function (res) {
         if (res && res.error) throw res.error;
         // başarılı: gerçek kuyruktan bu işlemi çıkar
-        var idx = outbox.indexOf(op);
-        if (idx !== -1) { outbox.splice(idx, 1); saveOutbox(); }
+        var idx = catOutbox.indexOf(op);
+        if (idx !== -1) { catOutbox.splice(idx, 1); saveCatOutbox(cat); }
       }).catch(function (err) {
         // bu işlemi kuyrukta bırak ama diğerlerini engelleme
         if (!firstErr) firstErr = err;
@@ -2109,15 +2183,18 @@
     }
 
     return step(0).then(function () {
-      render(); // senkronlananların "bekliyor" işareti kalksın
+      if (cat === activeCat) render(); // senkronlananların "bekliyor" işareti kalksın
       if (firstErr) { cloudError(firstErr); }
       else { lastCloudError = null; refreshStatus(); }
     });
   }
 
-  function syncFromRemote() {
+  function syncFromRemote(cat) {
+    if (!cat) cat = activeCat;
+    var tableName = CATS[cat].table;
+    var catOutbox = catStore[cat].outbox;
     if (!sb || !navigator.onLine) return Promise.resolve();
-    return sb.from(TABLE).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
+    return sb.from(tableName).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
       if (res.error) { cloudError(res.error); return; }
       lastCloudError = null;
       if (!res.data) return;
@@ -2128,61 +2205,73 @@
         map[r.id] = o;
       });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
-      outbox.forEach(function (op) {
+      catOutbox.forEach(function (op) {
         if (op.type === "insert" && op.row) map[op.row.id] = op.row;
         else if (op.type === "delete") delete map[op.id];
         else if (op.type === "update" && map[op.id] && op.fields) {
           Object.keys(op.fields).forEach(function (k) { map[op.id][k] = op.fields[k]; });
         }
       });
-      entries = Object.keys(map).map(function (k) { return map[k]; });
-      sortEntries();
-      saveCache();
-      cloudReady = true;
+      catStore[cat].entries = Object.keys(map).map(function (k) { return map[k]; });
+      catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
+      saveCatCache(cat);
+      if (cat === activeCat) {
+        entries = catStore[activeCat].entries;
+        render();
+      }
       lastSyncAt = Date.now();
-      render();
       refreshStatus();
     }).catch(function (err) { cloudError(err); });
   }
 
-  function subscribeRealtime() {
+  function subscribeRealtime(cat) {
+    if (!cat) cat = activeCat;
     if (!sb) return;
+    var tableName = CATS[cat].table;
     var userKey = settings.owner || "guest";
-    var ch = sb.channel("dumanalti-" + TABLE, {
+    var chName = "dumanalti-" + tableName;
+    var ch = sb.channel(chName, {
       config: { presence: { key: userKey } }
     });
-    realtimeChannel = ch;
+    realtimeChannels[cat] = ch;
+
+    // Helper: sadece o kategorinin entries dizisinde index arar
+    function catFindIndex(id) {
+      var arr = catStore[cat].entries;
+      for (var i = 0; i < arr.length; i++) { if (arr[i].id === id) return i; }
+      return -1;
+    }
 
     ch
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: TABLE }, function (payload) {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: tableName }, function (payload) {
         var r = payload.new;
-        if (!r || findIndexById(r.id) !== -1) return;
+        if (!r || catFindIndex(r.id) !== -1) return;
         var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
         if (r.tag) o.tag = r.tag;
-        entries.push(o);
-        sortEntries();
-        saveCache();
-        render();
+        catStore[cat].entries.push(o);
+        catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
+        saveCatCache(cat);
+        if (cat === activeCat) render();
       })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: TABLE }, function (payload) {
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: tableName }, function (payload) {
         var r = payload.new;
-        var idx = r ? findIndexById(r.id) : -1;
+        var idx = r ? catFindIndex(r.id) : -1;
         if (idx === -1) return;
-        entries[idx].who = r.who || entries[idx].who;
-        entries[idx].ts = Number(r.ts) || entries[idx].ts;
-        entries[idx].tag = r.tag || undefined;
-        entries[idx].kind = r.kind || entries[idx].kind || "sigo";
-        sortEntries();
-        saveCache();
-        render();
+        catStore[cat].entries[idx].who = r.who || catStore[cat].entries[idx].who;
+        catStore[cat].entries[idx].ts = Number(r.ts) || catStore[cat].entries[idx].ts;
+        catStore[cat].entries[idx].tag = r.tag || undefined;
+        catStore[cat].entries[idx].kind = r.kind || catStore[cat].entries[idx].kind || "sigo";
+        catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
+        saveCatCache(cat);
+        if (cat === activeCat) render();
       })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: TABLE }, function (payload) {
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: tableName }, function (payload) {
         var id = payload.old && payload.old.id;
-        var idx = id ? findIndexById(id) : -1;
+        var idx = id ? catFindIndex(id) : -1;
         if (idx === -1) return;
-        entries.splice(idx, 1);
-        saveCache();
-        render();
+        catStore[cat].entries.splice(idx, 1);
+        saveCatCache(cat);
+        if (cat === activeCat) render();
       })
       .on("broadcast", { event: "balkon_call" }, function (payload) {
         var p = payload ? payload.payload : null;
@@ -2201,14 +2290,13 @@
       })
       .subscribe(function (status) {
         if (status === "SUBSCRIBED") {
-          cloudReady = true;
           refreshStatus();
           if (settings.owner) {
             ch.track({ onlineAt: Date.now() });
           }
         }
         else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.warn("Realtime durumu:", status);
+          console.warn("Realtime durumu (" + cat + "):", status);
         }
       });
   }
@@ -2262,14 +2350,18 @@
       if (typed != null) alert("Sıfırlama iptal edildi.");
       return;
     }
-    entries = [];
-    outbox = [];
-    saveCache();
-    saveOutbox();
+    CAT_ORDER.forEach(function (c) {
+      catStore[c].entries = [];
+      catStore[c].outbox = [];
+      saveCatCache(c);
+      saveCatOutbox(c);
+      if (sb && navigator.onLine) {
+        sb.from(CATS[c].table).delete().neq("id", "00000000-0000-0000-0000-000000000000").then(function () {});
+      }
+    });
+    entries = catStore[activeCat].entries;
+    outbox = catStore[activeCat].outbox;
     render();
-    if (sb && navigator.onLine) {
-      sb.from(TABLE).delete().neq("id", "00000000-0000-0000-0000-000000000000").then(function () {});
-    }
     refreshStatus();
   }
 
@@ -2333,6 +2425,8 @@
       var v = el("view-" + n);
       if (v) v.classList.toggle("hidden", n !== name);
     });
+    var catBar = el("catBar");
+    if (catBar) catBar.classList.toggle("hidden", name !== "home");
     document.querySelectorAll(".tab").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === name);
     });
@@ -2423,6 +2517,30 @@
       });
     });
     showTab(localStorage.getItem(TAB_KEY) || "home");
+
+    // Kategori seçici düğmeleri (Sigo / Sigara / Bira)
+    document.querySelectorAll(".cat-btn").forEach(function (btn) {
+      btn.addEventListener(TAP_EVT, function () {
+        var cat = btn.getAttribute("data-cat");
+        if (cat) switchCat(cat);
+      });
+    });
+
+    // Kaydırmalı anasayfa geçişi (Swipe)
+    var swiper = el("catSwiper");
+    if (swiper) {
+      var scrollTimer = null;
+      swiper.addEventListener("scroll", function () {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(function () {
+          var width = swiper.offsetWidth;
+          if (!width) return;
+          var idx = Math.round(swiper.scrollLeft / width);
+          var cat = CAT_ORDER[idx];
+          if (cat && cat !== activeCat) switchCat(cat);
+        }, 100);
+      }, { passive: true });
+    }
 
     // Geçmiş kişi filtreleri
     document.querySelectorAll("#histFilters .hist-chip").forEach(function (chip) {
