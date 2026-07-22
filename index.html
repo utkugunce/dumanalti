@@ -341,7 +341,24 @@
         <label for="tgChatIdInput">Telegram Chat ID</label>
         <input id="tgChatIdInput" type="text" class="set-input" placeholder="987654321" />
       </div>
-      <p class="set-note">BotFather'dan alınan Token &amp; Chat ID girildiğinde, "Oturma Odasına Gel!" butonu sayfadan ayrılmadan Gözde'nin kilit ekranına Telegram bildirimi gönderir.</p>
+      <div class="set-row">
+        <label>Telegram Test</label>
+        <button id="testTgBotBtn" class="ghost-btn small">🧪 Botu Test Et</button>
+      </div>
+      <p class="set-note">BotFather'dan alınan Token &amp; Chat ID girildiğinde, "Oturma Odasına Gel!" butonu Telegram bildirimi atar.</p>
+    </section>
+
+    <h3 class="group-title">🔔 Alternatif Bildirim (ntfy.sh)</h3>
+    <section class="card settings-card">
+      <div class="set-row">
+        <label for="ntfyTopicInput">ntfy Konu Adı</label>
+        <input id="ntfyTopicInput" type="text" class="set-input" placeholder="dumanalti-utku-gozde" />
+      </div>
+      <div class="set-row">
+        <label>ntfy Test</label>
+        <button id="testNtfyBtn" class="ghost-btn small">🧪 ntfy Test Et</button>
+      </div>
+      <p class="set-note">Gözde App Store'dan ntfy uygulamasını indirip buradaki konu adına (örn: dumanalti-utku-gozde) abone olursa, bot kurmaya gerek kalmadan anında kilit ekranı uyarısı alır!</p>
     </section>
 
     <h3 class="group-title">☁️ Senkronizasyon</h3>

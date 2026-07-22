@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.10.2";
-  var APP_BUILD = 99;
+  var APP_VERSION = "5.11.0";
+  var APP_BUILD = 100;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -55,7 +55,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "", callApp: "telegram", tgUser: "", tgBotToken: "", tgChatId: "" };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "", callApp: "telegram", tgUser: "", tgBotToken: "", tgChatId: "", ntfyTopic: "" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -169,33 +169,87 @@
     var text = "Hadi sigo içelim!";
     var token = (settings.tgBotToken || "").trim();
     var chatId = (settings.tgChatId || "").trim();
+    var ntfyTopic = (settings.ntfyTopic || "").trim();
 
-    if (!token || !chatId) {
-      showNoticeToast("📢 Telegram bildirimi için Ayarlar'dan Bot Token & Chat ID girin!");
-      var fallbackUrl = "https://t.me/share/url?text=" + encodeURIComponent(text);
-      setTimeout(function () { window.location.href = fallbackUrl; }, 1200);
+    if (ntfyTopic) {
+      try {
+        fetch("https://ntfy.sh/" + encodeURIComponent(ntfyTopic), {
+          method: "POST",
+          body: myLabel + ": " + text
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
+    if (token && chatId) {
+      var url = "https://api.telegram.org/bot" + encodeURIComponent(token) +
+                "/sendMessage?chat_id=" + encodeURIComponent(chatId) +
+                "&text=" + encodeURIComponent(text);
+      fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data && data.ok) {
+            showNoticeToast("✈️ Telegram bildirimi gönderildi!");
+          } else {
+            var errStr = (data && data.description) || "Bilinmeyen hata";
+            showNoticeToast("⚠️ Telegram: " + errStr);
+          }
+        })
+        .catch(function () {
+          showNoticeToast("⚠️ Telegram sunucusuna ulaşılamadı");
+        });
       return;
     }
 
+    if (!ntfyTopic) {
+      showNoticeToast("📢 Bildirim için Ayarlar'dan Telegram Bot veya ntfy konusunu girin!");
+      var fallbackUrl = "https://t.me/share/url?text=" + encodeURIComponent(text);
+      setTimeout(function () { window.location.href = fallbackUrl; }, 1200);
+    }
+  }
+
+  function testTgBot() {
+    var token = (settings.tgBotToken || "").trim();
+    var chatId = (settings.tgChatId || "").trim();
+    if (!token || !chatId) {
+      alert("Lütfen önce Telegram Bot Token ve Chat ID alanlarını doldurun.");
+      return;
+    }
     var url = "https://api.telegram.org/bot" + encodeURIComponent(token) +
               "/sendMessage?chat_id=" + encodeURIComponent(chatId) +
-              "&text=" + encodeURIComponent(text);
+              "&text=" + encodeURIComponent("🧪 Dumanaltı test bildirimi başarılı!");
 
     fetch(url)
       .then(function (res) { return res.json(); })
       .then(function (data) {
         if (data && data.ok) {
-          showNoticeToast("✈️ Telegram bildirimi gönderildi!");
+          alert("✅ BAŞARILI! Telegram botu mesajı iletti.");
         } else {
-          var errStr = (data && data.description) || "Bilinmeyen hata";
-          showNoticeToast("⚠️ Telegram bildirimi iletilemedi: " + errStr);
-          console.warn("Telegram Bot Hatası:", data);
+          alert("❌ HATA: Telegram şu yanıtı döndü:\n" + ((data && data.description) || JSON.stringify(data)));
         }
       })
       .catch(function (err) {
-        showNoticeToast("⚠️ Telegram sunucusuna ulaşılamadı");
-        console.error("Telegram fetch hatası:", err);
+        alert("❌ BAĞLANTI HATASI: " + (err.message || String(err)));
       });
+  }
+
+  function testNtfy() {
+    var topic = (settings.ntfyTopic || "").trim();
+    if (!topic) {
+      alert("Lütfen önce ntfy Konu Adı girin (Örn: dumanalti-utku-gozde).");
+      return;
+    }
+    fetch("https://ntfy.sh/" + encodeURIComponent(topic), {
+      method: "POST",
+      body: "🧪 Dumanaltı test bildirimi başarılı!"
+    }).then(function (res) {
+      if (res.ok) {
+        alert("✅ BAŞARILI! ntfy bildirimi gönderildi. Gözde'nin telefonundaki ntfy uygulamasını kontrol edin.");
+      } else {
+        alert("❌ HATA: ntfy durumu " + res.status);
+      }
+    }).catch(function (err) {
+      alert("❌ HATA: " + err.message);
+    });
   }
 
   function cloudError(err) {
@@ -268,6 +322,7 @@
         settings.tgUser = typeof s.tgUser === "string" ? s.tgUser : "";
         settings.tgBotToken = typeof s.tgBotToken === "string" ? s.tgBotToken : "";
         settings.tgChatId = typeof s.tgChatId === "string" ? s.tgChatId : "";
+        settings.ntfyTopic = typeof s.ntfyTopic === "string" ? s.ntfyTopic : "";
       }
     } catch (e) {}
   }
@@ -2450,6 +2505,19 @@
         saveSettings();
       });
     }
+
+    if (el("testTgBotBtn")) el("testTgBotBtn").addEventListener("click", testTgBot);
+
+    var ntfyInp = el("ntfyTopicInput");
+    if (ntfyInp) {
+      /** @type {HTMLInputElement} */ (ntfyInp).value = settings.ntfyTopic || "";
+      ntfyInp.addEventListener("change", function () {
+        settings.ntfyTopic = (/** @type {HTMLInputElement} */ (ntfyInp).value || "").trim();
+        saveSettings();
+      });
+    }
+
+    if (el("testNtfyBtn")) el("testNtfyBtn").addEventListener("click", testNtfy);
 
     // Zıvana görünürlüğü
     bindSeg("mascotSeg", "data-mascot", settings.mascot, function (v) {

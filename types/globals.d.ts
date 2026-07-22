@@ -34,6 +34,7 @@ interface Settings {
   tgUser?: string;
   tgBotToken?: string;
   tgChatId?: string;
+  ntfyTopic?: string;
 }
 
 /** Bulut yapılandırması (config.js). */
