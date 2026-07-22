@@ -55,7 +55,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "" };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "", callApp: "telegram", tgUser: "", tgBotToken: "", tgChatId: "" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -154,12 +154,29 @@
       });
     }
 
-    var msg = encodeURIComponent("Hadi sigo içelim!");
-    var phone = (settings.waPhone || "").replace(/[^0-9]/g, "");
-    var waUrl = phone ? ("https://wa.me/" + phone + "?text=" + msg) : ("https://wa.me/?text=" + msg);
-    setTimeout(function () {
-      window.location.href = waUrl;
-    }, 450);
+    var text = "Hadi sigo içelim!";
+    var msg = encodeURIComponent(text);
+
+    if (settings.tgBotToken && settings.tgChatId) {
+      try {
+        fetch("https://api.telegram.org/bot" + settings.tgBotToken + "/sendMessage?chat_id=" + settings.tgChatId + "&text=" + msg);
+      } catch (e) {}
+    }
+
+    var callApp = settings.callApp || "telegram";
+    if (callApp === "telegram") {
+      var tgUser = (settings.tgUser || "").replace(/^@/, "");
+      var tgUrl = tgUser ? ("https://t.me/" + tgUser) : ("https://t.me/share/url?text=" + msg);
+      setTimeout(function () {
+        window.location.href = tgUrl;
+      }, 450);
+    } else {
+      var phone = (settings.waPhone || "").replace(/[^0-9]/g, "");
+      var waUrl = phone ? ("https://wa.me/" + phone + "?text=" + msg) : ("https://wa.me/?text=" + msg);
+      setTimeout(function () {
+        window.location.href = waUrl;
+      }, 450);
+    }
   }
 
   function cloudError(err) {
@@ -201,6 +218,10 @@
         settings.mascot = s.mascot === "off" ? "off" : "on";
         settings.sound = s.sound === "on" ? "on" : "off";
         settings.waPhone = typeof s.waPhone === "string" ? s.waPhone : "";
+        settings.callApp = s.callApp === "whatsapp" ? "whatsapp" : "telegram";
+        settings.tgUser = typeof s.tgUser === "string" ? s.tgUser : "";
+        settings.tgBotToken = typeof s.tgBotToken === "string" ? s.tgBotToken : "";
+        settings.tgChatId = typeof s.tgChatId === "string" ? s.tgChatId : "";
       }
     } catch (e) {}
   }
@@ -2365,6 +2386,19 @@
     bindSeg("ownerSeg", "data-owner", settings.owner, function (v) {
       settings.owner = v; saveSettings();
     });
+
+    bindSeg("callAppSeg", "data-callapp", settings.callApp || "telegram", function (v) {
+      settings.callApp = v === "whatsapp" ? "whatsapp" : "telegram"; saveSettings();
+    });
+
+    var tgInp = el("tgUserInput");
+    if (tgInp) {
+      /** @type {HTMLInputElement} */ (tgInp).value = settings.tgUser || "";
+      tgInp.addEventListener("change", function () {
+        settings.tgUser = (/** @type {HTMLInputElement} */ (tgInp).value || "").trim();
+        saveSettings();
+      });
+    }
 
     var waInp = el("waPhoneInput");
     if (waInp) {

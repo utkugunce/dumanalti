@@ -30,6 +30,10 @@ interface Settings {
   mascot: "on" | "off";
   sound: "on" | "off";
   waPhone?: string;
+  callApp?: "whatsapp" | "telegram";
+  tgUser?: string;
+  tgBotToken?: string;
+  tgChatId?: string;
 }
 
 /** Bulut yapılandırması (config.js). */
