@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.10.0";
-  var APP_BUILD = 97;
+  var APP_VERSION = "5.10.1";
+  var APP_BUILD = 98;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -90,6 +90,7 @@
   var sb = null;        // Supabase client
   var cloudReady = false;
   var lastCloudError = null;
+  var lastSyncAt = 0;
   var realtimeChannel = null;
   var onlineUsers = {};
 
@@ -172,6 +173,33 @@
     lastCloudError = msg;
     try { console.error("Dumanaltı bulut hatası:", err); } catch (e) {}
     refreshStatus();
+  }
+
+  function refreshStatus() {
+    var info = el("syncInfo");
+    if (!info) return;
+    if (!navigator.onLine) {
+      info.textContent = "Durum: Çevrimdışı (İnternet yok) 📴";
+      return;
+    }
+    if (!sb) {
+      info.textContent = "Durum: Yerel mod ⚠️";
+      return;
+    }
+    if (lastCloudError) {
+      info.textContent = "Durum: Bulut hatası (" + lastCloudError + ") ⚠️";
+      return;
+    }
+    if (outbox.length > 0) {
+      info.textContent = "Durum: " + outbox.length + " kayıt senkronlanmayı bekliyor... ⏳";
+      return;
+    }
+    if (cloudReady) {
+      var timeStr = lastSyncAt ? new Date(lastSyncAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "az önce";
+      info.textContent = "Durum: Bulut senkronize (" + timeStr + ") 🟢";
+      return;
+    }
+    info.textContent = "Durum: Bağlanıyor... 🔄";
   }
 
   // ---------- Local cache ----------
