@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.11.2";
-  var APP_BUILD = 102;
+  var APP_VERSION = "5.12.0";
+  var APP_BUILD = 103;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -2569,6 +2569,31 @@
         try { localStorage.setItem("dumanalti.insightsOpen", nowOpen ? "1" : "0"); } catch (e) {}
       });
     }
+
+    // Scroll-hide: aşağı kaydırınca FAB'lar gizlensin, yukarı kaydırınca geri gelsin
+    (function () {
+      var lastY = window.pageYOffset || 0;
+      var hidden = false;
+      var dial = el("addDial");
+      var asst = el("assistant");
+      var threshold = 12; // px – küçük titreşimleri görmezden gel
+      window.addEventListener("scroll", function () {
+        var y = window.pageYOffset || 0;
+        var delta = y - lastY;
+        if (delta > threshold && !hidden && y > 60) {
+          hidden = true;
+          if (dial) dial.classList.add("fab-hidden");
+          if (asst) asst.classList.add("fab-hidden");
+        } else if (delta < -threshold || y < 30) {
+          if (hidden) {
+            hidden = false;
+            if (dial) dial.classList.remove("fab-hidden");
+            if (asst) asst.classList.remove("fab-hidden");
+          }
+        }
+        lastY = y;
+      }, { passive: true });
+    })();
 
     setInterval(function () { renderToday(); }, 60000);
     setInterval(function () { renderSince(); }, 1000);

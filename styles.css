@@ -1180,6 +1180,16 @@ body {
   .add-dial.open .add-fab { transform: rotate(135deg); }
 }
 
+/* Scroll-hide: aşağı kaydırınca FAB'lar aşağı kayıp gizlenir */
+.add-dial, .assistant {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+}
+.add-dial.fab-hidden, .assistant.fab-hidden {
+  transform: translateY(calc(100% + 20px));
+  opacity: 0;
+  pointer-events: none;
+}
+
 .assistant { position: fixed; right: 14px; z-index: 350; bottom: calc(64px + env(safe-area-inset-bottom)); }
 .asst-fab {
   position: relative;
