@@ -9,15 +9,15 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.1.1";
-  var APP_BUILD = 111;
+  var APP_VERSION = "6.1.2";
+  var APP_BUILD = 112;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
 
   var CFG = window.DUMANALTI_CONFIG || {};
 
-  // Türkiye'de en çok tüketilen 10 bira markası
+  // Türkiye'de çok tüketilen bira markaları
   var BEER_BRANDS = [
     { id: "efes_pilsen", label: "Efes Pilsen" },
     { id: "efes_malt", label: "Efes Malt" },
@@ -28,7 +28,8 @@
     { id: "miller", label: "Miller" },
     { id: "beck_s", label: "Beck's" },
     { id: "heineken", label: "Heineken" },
-    { id: "corona", label: "Corona" }
+    { id: "corona", label: "Corona" },
+    { id: "bremen", label: "Bremen" }
   ];
 
   var BEER_SIZES = [
