@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.10.1";
-  var APP_BUILD = 98;
+  var APP_VERSION = "5.10.2";
+  var APP_BUILD = 99;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -144,6 +144,17 @@
     }, 10000);
   }
 
+  function showNoticeToast(msg) {
+    var t = el("callToast");
+    var title = el("callToastTitle");
+    var sub = el("callToastSub");
+    if (!t || !title || !sub) { alert(msg); return; }
+    title.textContent = "✈️ Telegram Bildirimi";
+    sub.textContent = msg;
+    t.classList.remove("hidden");
+    setTimeout(function () { if (t) t.classList.add("hidden"); }, 5000);
+  }
+
   function sendBalkonCall() {
     var myLabel = settings.owner === "utku" ? "Utku" : (settings.owner === "gozde" ? "Gözde" : "Partnerin");
     showCallToast(myLabel);
@@ -156,16 +167,35 @@
     }
 
     var text = "Hadi sigo içelim!";
+    var token = (settings.tgBotToken || "").trim();
+    var chatId = (settings.tgChatId || "").trim();
 
-    // Telegram Bot API üzerinden arka planda (sayfadan ayrılmadan) kilit ekranı bildirimi gönder
-    if (settings.tgBotToken && settings.tgChatId) {
-      try {
-        var url = "https://api.telegram.org/bot" + encodeURIComponent(settings.tgBotToken.trim()) +
-                  "/sendMessage?chat_id=" + encodeURIComponent(settings.tgChatId.trim()) +
-                  "&text=" + encodeURIComponent(text);
-        fetch(url, { method: "GET", mode: "no-cors" }).catch(function () {});
-      } catch (e) {}
+    if (!token || !chatId) {
+      showNoticeToast("📢 Telegram bildirimi için Ayarlar'dan Bot Token & Chat ID girin!");
+      var fallbackUrl = "https://t.me/share/url?text=" + encodeURIComponent(text);
+      setTimeout(function () { window.location.href = fallbackUrl; }, 1200);
+      return;
     }
+
+    var url = "https://api.telegram.org/bot" + encodeURIComponent(token) +
+              "/sendMessage?chat_id=" + encodeURIComponent(chatId) +
+              "&text=" + encodeURIComponent(text);
+
+    fetch(url)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.ok) {
+          showNoticeToast("✈️ Telegram bildirimi gönderildi!");
+        } else {
+          var errStr = (data && data.description) || "Bilinmeyen hata";
+          showNoticeToast("⚠️ Telegram bildirimi iletilemedi: " + errStr);
+          console.warn("Telegram Bot Hatası:", data);
+        }
+      })
+      .catch(function (err) {
+        showNoticeToast("⚠️ Telegram sunucusuna ulaşılamadı");
+        console.error("Telegram fetch hatası:", err);
+      });
   }
 
   function cloudError(err) {
