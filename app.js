@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.7.0";
-  var APP_BUILD = 93;
+  var APP_VERSION = "5.8.1";
+  var APP_BUILD = 95;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -154,7 +154,7 @@
       });
     }
 
-    var msg = encodeURIComponent(myLabel + ": Oturma odasına geliyom, sigo yansın! 🚬");
+    var msg = encodeURIComponent("Hadi sigo içelim!");
     var phone = (settings.waPhone || "").replace(/[^0-9]/g, "");
     var waUrl = phone ? ("https://wa.me/" + phone + "?text=" + msg) : ("https://wa.me/?text=" + msg);
     setTimeout(function () {
