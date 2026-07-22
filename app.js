@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.11.0";
-  var APP_BUILD = 100;
+  var APP_VERSION = "5.11.1";
+  var APP_BUILD = 101;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -2115,6 +2115,7 @@
     if (!sb || !navigator.onLine) return Promise.resolve();
     return sb.from(TABLE).select("id,who,ts,kind").order("ts", { ascending: true }).then(function (res) {
       if (res.error) { cloudError(res.error); return; }
+      lastCloudError = null;
       if (!res.data) return;
       var map = {};
       res.data.forEach(function (r) {
@@ -2296,7 +2297,20 @@
     if (!navigator.onLine) { alert("Çevrimdışısın. İnternet gelince otomatik senkronlanır."); return; }
     lastCloudError = null;
     refreshStatus();
-    flushOutbox().then(syncFromRemote).then(function () { refreshStatus(); });
+    flushOutbox()
+      .then(syncFromRemote)
+      .then(function () {
+        refreshStatus();
+        if (lastCloudError) {
+          alert("Bulut hatası:\n" + lastCloudError);
+        } else {
+          alert("Bulut senkronizasyonu başarılı! 🟢");
+        }
+      })
+      .catch(function (err) {
+        cloudError(err);
+        alert("Bulut hatası: " + ((err && err.message) || String(err)));
+      });
   }
   // Başlıktaki 🌙/☀️ düğmesi koyu ↔ açık arasında geçer (auto'yu kırar)
   function toggleTheme() {
