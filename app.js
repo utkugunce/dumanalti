@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.2.0";
-  var APP_BUILD = 114;
+  var APP_VERSION = "6.2.1";
+  var APP_BUILD = 115;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -45,6 +45,8 @@
   };
   var CAT_ORDER = ["sigo", "sigara", "bira"];
   var activeCat = "sigo";
+  var isCatSwitching = false;
+  var catSwitchTimer = null;
 
   // Her kategorinin kendi veri deposu
   var catStore = {};
@@ -127,7 +129,12 @@
     var swiper = el("catSwiper");
     if (swiper) {
       var idx = CAT_ORDER.indexOf(cat);
-      swiper.scrollTo({ left: idx * swiper.offsetWidth, behavior: "smooth" });
+      if (Math.round(swiper.scrollLeft / swiper.offsetWidth) !== idx) {
+        isCatSwitching = true;
+        swiper.scrollTo({ left: idx * swiper.offsetWidth, behavior: "smooth" });
+        clearTimeout(catSwitchTimer);
+        catSwitchTimer = setTimeout(function () { isCatSwitching = false; }, 500);
+      }
     }
     // Sigo/bong tür seçicisini sadece sigo kategorisinde göster
     var kindSeg = el("addKindSeg");
@@ -2568,7 +2575,7 @@
       if (v) v.classList.toggle("hidden", n !== name);
     });
     var catBar = el("catBar");
-    if (catBar) catBar.classList.toggle("hidden", name !== "home");
+    if (catBar) catBar.classList.toggle("hidden", name === "settings");
     document.querySelectorAll(".tab").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === name);
     });
@@ -2698,8 +2705,10 @@
     if (swiper) {
       var scrollTimer = null;
       swiper.addEventListener("scroll", function () {
+        if (isCatSwitching) return;
         clearTimeout(scrollTimer);
         scrollTimer = setTimeout(function () {
+          if (isCatSwitching) return;
           var width = swiper.offsetWidth;
           if (!width) return;
           var idx = Math.round(swiper.scrollLeft / width);
