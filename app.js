@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.5.4";
-  var APP_BUILD = 90;
+  var APP_VERSION = "5.6.0";
+  var APP_BUILD = 91;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -90,6 +90,70 @@
   var sb = null;        // Supabase client
   var cloudReady = false;
   var lastCloudError = null;
+  var realtimeChannel = null;
+  var onlineUsers = {};
+
+  function playChime() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      var ctx = new AC();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {}
+  }
+
+  function updatePresenceUI() {
+    var presEl = el("presenceStatus");
+    var presText = el("presenceText");
+    if (!presEl || !presText) return;
+    var names = Object.keys(onlineUsers);
+    if (names.length === 0) {
+      presEl.classList.add("hidden");
+    } else {
+      presEl.classList.remove("hidden");
+      presText.textContent = names.join(" & ") + " online";
+    }
+  }
+
+  function showCallToast(whoLabel) {
+    playChime();
+    var t = el("callToast");
+    var title = el("callToastTitle");
+    var sub = el("callToastSub");
+    if (!t || !title || !sub) return;
+    title.textContent = "☕ Balkon Molası!";
+    sub.textContent = (whoLabel || "Biri") + " seni balkona çağırıyor 🚬";
+    t.classList.remove("hidden");
+    var dis = el("callToastDismiss");
+    if (dis) {
+      dis.onclick = function () { t.classList.add("hidden"); };
+    }
+    setTimeout(function () {
+      if (t) t.classList.add("hidden");
+    }, 10000);
+  }
+
+  function sendBalkonCall() {
+    var myLabel = settings.owner === "utku" ? "Utku" : (settings.owner === "gozde" ? "Gözde" : "Partnerin");
+    showCallToast(myLabel);
+    if (realtimeChannel) {
+      realtimeChannel.send({
+        type: "broadcast",
+        event: "balkon_call",
+        payload: { who: myLabel, ts: Date.now() }
+      });
+    }
+  }
 
   function cloudError(err) {
     var msg = (err && (err.message || err.error_description || err.details)) || String(err);
@@ -1290,9 +1354,81 @@
   // listelerdeki butonlar bilerek click'te kalır (yanlış tetiklenmesin)
   var TAP_EVT = window.PointerEvent ? "pointerdown" : "click";
 
+  function renderWrapped() {
+    var grid = el("wrappedGrid");
+    var letter = el("wrappedLetter");
+    var title = el("wrappedTitle");
+    if (!grid || !letter) return;
+
+    var mStart = startOfMonth();
+    var monthList = entriesSince(mStart);
+    var now = new Date();
+    var monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    var monthName = monthNames[now.getMonth()];
+    if (title) title.textContent = monthName + " Ayı Özeti ✨";
+
+    if (monthList.length === 0) {
+      grid.innerHTML = '<div class="wrapped-item" style="grid-column: span 2;"><span class="wrapped-item-title">Henüz bu ay kayıt yok</span></div>';
+      letter.textContent = "Bu ay henüz sigolarınızı kaydetmeye başlamadınız. İlk sigoyla özetiniz burada görünecek! 🌿";
+      return;
+    }
+
+    var counts = countWho(monthList);
+    var total = monthList.length;
+    var sharedCount = counts.both + counts.hepberaber;
+    var sharedPct = Math.round((sharedCount / total) * 100) || 0;
+
+    var byHour = []; for (var h = 0; h < 24; h++) byHour[h] = 0;
+    monthList.forEach(function (e) {
+      byHour[logicalDate(e.ts).getHours()]++;
+    });
+    var peakH = 0; for (h = 1; h < 24; h++) if (byHour[h] > byHour[peakH]) peakH = h;
+    var peakHStr = ("0" + peakH).slice(-2) + ":00 - " + ("0" + ((peakH + 1) % 24)).slice(-2) + ":00";
+
+    var maxGap = 0;
+    for (var i = 1; i < monthList.length; i++) {
+      var g = monthList[i].ts - monthList[i - 1].ts;
+      if (g > maxGap) maxGap = g;
+    }
+    var maxGapStr = maxGap > 0 ? fmtCoarse(maxGap) : "—";
+
+    var whoChamp = "Dengeli 🎉";
+    if (counts.utku > counts.gozde + 3) whoChamp = "Utku 🧔";
+    else if (counts.gozde > counts.utku + 3) whoChamp = "Gözde 👩";
+
+    grid.innerHTML =
+      '<div class="wrapped-item">' +
+        '<span class="wrapped-item-ico">🏆</span>' +
+        '<span class="wrapped-item-title">Ayın Lideri</span>' +
+        '<span class="wrapped-item-val">' + whoChamp + '</span>' +
+        '<span class="wrapped-item-sub">Toplam ' + total + ' sigo</span>' +
+      '</div>' +
+      '<div class="wrapped-item">' +
+        '<span class="wrapped-item-ico">👩‍❤️‍👨</span>' +
+        '<span class="wrapped-item-title">Ortaklık Uyuşumu</span>' +
+        '<span class="wrapped-item-val">%' + sharedPct + '</span>' +
+        '<span class="wrapped-item-sub">' + sharedCount + ' birlikte</span>' +
+      '</div>' +
+      '<div class="wrapped-item">' +
+        '<span class="wrapped-item-ico">⏰</span>' +
+        '<span class="wrapped-item-title">Balkon Saatiniz</span>' +
+        '<span class="wrapped-item-val">' + peakHStr + '</span>' +
+        '<span class="wrapped-item-sub">Zirve zamanı</span>' +
+      '</div>' +
+      '<div class="wrapped-item">' +
+        '<span class="wrapped-item-ico">🌱</span>' +
+        '<span class="wrapped-item-title">En Uzun Mola</span>' +
+        '<span class="wrapped-item-val">' + maxGapStr + '</span>' +
+        '<span class="wrapped-item-sub">Dumansız rekor</span>' +
+      '</div>';
+
+    letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori balkon zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
+  }
+
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
   function renderStats() {
     renderDuel();
+    renderWrapped();
     renderStatCards();
     renderBadges();
     renderChart();
@@ -1820,7 +1956,13 @@
 
   function subscribeRealtime() {
     if (!sb) return;
-    sb.channel("dumanalti-" + TABLE)
+    var userKey = settings.owner || "guest";
+    var ch = sb.channel("dumanalti-" + TABLE, {
+      config: { presence: { key: userKey } }
+    });
+    realtimeChannel = ch;
+
+    ch
       .on("postgres_changes", { event: "INSERT", schema: "public", table: TABLE }, function (payload) {
         var r = payload.new;
         if (!r || findIndexById(r.id) !== -1) return;
@@ -1851,10 +1993,30 @@
         saveCache();
         render();
       })
+      .on("broadcast", { event: "balkon_call" }, function (payload) {
+        var p = payload ? payload.payload : null;
+        if (p && p.who) {
+          showCallToast(p.who);
+        }
+      })
+      .on("presence", { event: "sync" }, function () {
+        var state = ch.presenceState();
+        onlineUsers = {};
+        Object.keys(state).forEach(function (k) {
+          if (k === "utku") onlineUsers["Utku"] = true;
+          else if (k === "gozde") onlineUsers["Gözde"] = true;
+        });
+        updatePresenceUI();
+      })
       .subscribe(function (status) {
-        if (status === "SUBSCRIBED") { cloudReady = true; refreshStatus(); }
+        if (status === "SUBSCRIBED") {
+          cloudReady = true;
+          refreshStatus();
+          if (settings.owner) {
+            ch.track({ onlineAt: Date.now() });
+          }
+        }
         else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          // Canlı güncelleme bağlanamadı; veri okuma/yazma yine de çalışır.
           console.warn("Realtime durumu:", status);
         }
       });
@@ -2015,13 +2177,23 @@
       var b = /** @type {HTMLElement} */ (bEl);
       b.addEventListener(TAP_EVT, function () {
         if (b.dataset.lock === "1") return;
-        b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
         var who = b.getAttribute("data-who");
+        if (!who) return; // callBalkonBtn handles its own click
+        b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
         var r = b.getBoundingClientRect();
         close();
         addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind);
       });
     });
+
+    var callBtn = el("callBalkonBtn");
+    if (callBtn) {
+      callBtn.addEventListener(TAP_EVT, function (ev) {
+        ev.stopPropagation();
+        close();
+        sendBalkonCall();
+      });
+    }
   }
 
   // ---------- Init ----------

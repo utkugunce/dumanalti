@@ -23,6 +23,10 @@
           <p class="subtitle">Utku &amp; Gözde sigo takibi</p>
         </div>
       </div>
+      <div id="presenceStatus" class="presence-status hidden" title="Ortak online durumu">
+        <span class="presence-dot"></span>
+        <span id="presenceText" class="presence-text"></span>
+      </div>
       <button id="themeToggle" class="icon-btn" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
     </header>
 
@@ -138,6 +142,17 @@
     <!-- Haftalık düello (Utku vs Gözde, kişi filtresinden bağımsız) -->
     <h3 class="group-title">⚔️ Haftalık düello</h3>
     <section class="card" id="duelCard"></section>
+
+    <!-- Dumanaltı Wrapped (Çift Özeti) -->
+    <h3 class="group-title">💌 Dumanaltı Wrapped</h3>
+    <section class="card wrapped-card" id="wrappedCard">
+      <div class="wrapped-header">
+        <span class="wrapped-badge">Utku &amp; Gözde</span>
+        <h2 id="wrappedTitle">Bu Ayın Özeti ✨</h2>
+      </div>
+      <div class="wrapped-grid" id="wrappedGrid"></div>
+      <div class="wrapped-letter" id="wrappedLetter"></div>
+    </section>
 
     <!-- Özet -->
     <h3 class="group-title">📋 Özet</h3>
@@ -397,8 +412,21 @@
       <button class="add-opt" data-who="both" aria-label="Ortak ekle"><img class="avatar" src="icons/avatar-both.png" alt="Ortak" /><span>Ortak</span></button>
       <button class="add-opt" data-who="gozde" aria-label="Gözde ekle"><img class="avatar" src="icons/avatar-gozde.png" alt="Gözde" /><span>Gözde</span></button>
       <button class="add-opt" data-who="utku" aria-label="Utku ekle"><img class="avatar" src="icons/avatar-utku.png" alt="Utku" /><span>Utku</span></button>
+      <button id="callBalkonBtn" class="add-opt add-opt-call" type="button" aria-label="Balkon çağrısı gönder">☕ <span>Balkona Gel!</span></button>
     </div>
     <button id="addFab" class="add-fab" aria-label="Kayıt ekle">＋</button>
+  </div>
+
+  <!-- Canlı Uygulama İçi Balkon Çağrısı Toast'ı -->
+  <div id="callToast" class="call-toast hidden" role="alert">
+    <div class="call-toast-content">
+      <span class="call-toast-icon">☕</span>
+      <div class="call-toast-text">
+        <strong id="callToastTitle">Balkon Molası!</strong>
+        <span id="callToastSub">Gözde seni balkona çağırıyor 🚬</span>
+      </div>
+    </div>
+    <button id="callToastDismiss" class="call-toast-btn">Geliyorum! 🚀</button>
   </div>
 
   <!-- Global geri-al + etiket toast'ı (tüm sayfalarda) -->

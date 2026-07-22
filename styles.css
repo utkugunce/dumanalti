@@ -1381,3 +1381,176 @@ body {
   display: inline-block; font-size: 12px; font-weight: 600; color: var(--text-sub); margin-top: 2px;
 }
 
+/* Presence & Realtime status */
+.presence-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+}
+.presence-dot {
+  width: 7px;
+  height: 7px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+  animation: presencePulse 2s infinite;
+}
+@keyframes presencePulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Call Toast Banner */
+.call-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 400px;
+  background: rgba(18, 28, 24, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.25);
+  z-index: 9999;
+  animation: toastSlideDown 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes toastSlideDown {
+  from { opacity: 0; transform: translate(-50%, -20px) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+.call-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.call-toast-icon {
+  font-size: 24px;
+}
+.call-toast-text {
+  display: flex;
+  flex-direction: column;
+}
+.call-toast-text strong {
+  font-size: 14px;
+  color: var(--text);
+}
+.call-toast-text span {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.call-toast-btn {
+  background: #10b981;
+  color: #042f2e;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transition: transform 0.15s ease;
+}
+.call-toast-btn:active {
+  transform: scale(0.95);
+}
+
+/* Balkon call button inside addOptions */
+.add-opt-call {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.25)) !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  color: #fbbf24 !important;
+  font-weight: 700 !important;
+}
+
+/* Dumanaltı Wrapped Cards */
+.wrapped-card {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.03));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+.wrapped-header {
+  margin-bottom: 12px;
+}
+.wrapped-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.wrapped-header h2 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff, #a7f3d0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.wrapped-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.wrapped-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.wrapped-item-ico {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+.wrapped-item-title {
+  font-size: 11px;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+.wrapped-item-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 2px;
+}
+.wrapped-item-sub {
+  font-size: 10px;
+  color: #34d399;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.wrapped-letter {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+
