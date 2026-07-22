@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.6.0";
-  var APP_BUILD = 91;
+  var APP_VERSION = "5.6.1";
+  var APP_BUILD = 92;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -131,8 +131,8 @@
     var title = el("callToastTitle");
     var sub = el("callToastSub");
     if (!t || !title || !sub) return;
-    title.textContent = "☕ Balkon Molası!";
-    sub.textContent = (whoLabel || "Biri") + " seni balkona çağırıyor 🚬";
+    title.textContent = "🛋️ Oturma Odası Molası!";
+    sub.textContent = (whoLabel || "Biri") + " seni oturma odasına çağırıyor 🚬";
     t.classList.remove("hidden");
     var dis = el("callToastDismiss");
     if (dis) {
@@ -1411,7 +1411,7 @@
       '</div>' +
       '<div class="wrapped-item">' +
         '<span class="wrapped-item-ico">⏰</span>' +
-        '<span class="wrapped-item-title">Balkon Saatiniz</span>' +
+        '<span class="wrapped-item-title">Oturma Odası Saatiniz</span>' +
         '<span class="wrapped-item-val">' + peakHStr + '</span>' +
         '<span class="wrapped-item-sub">Zirve zamanı</span>' +
       '</div>' +
@@ -1422,7 +1422,7 @@
         '<span class="wrapped-item-sub">Dumansız rekor</span>' +
       '</div>';
 
-    letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori balkon zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
+    letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori oturma odası zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
   }
 
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
