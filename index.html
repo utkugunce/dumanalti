@@ -334,21 +334,14 @@
         </div>
       </div>
       <div class="set-row">
-        <label>Çağrı Uygulaması</label>
-        <div class="seg" id="callAppSeg">
-          <button class="seg-btn" data-callapp="telegram">✈️ Telegram</button>
-          <button class="seg-btn" data-callapp="whatsapp">💬 WhatsApp</button>
-        </div>
+        <label for="tgBotTokenInput">Telegram Bot Token</label>
+        <input id="tgBotTokenInput" type="text" class="set-input" placeholder="123456:ABC..." />
       </div>
       <div class="set-row">
-        <label for="tgUserInput">Partner Telegram Kullanıcı Adı</label>
-        <input id="tgUserInput" type="text" class="set-input" placeholder="@gozde" />
+        <label for="tgChatIdInput">Telegram Chat ID</label>
+        <input id="tgChatIdInput" type="text" class="set-input" placeholder="987654321" />
       </div>
-      <div class="set-row">
-        <label for="waPhoneInput">Partner WhatsApp No</label>
-        <input id="waPhoneInput" type="tel" class="set-input" placeholder="905xxxxxxxxx" />
-      </div>
-      <p class="set-note">Çağrı uygulaması seçilince "Oturma Odasına Gel!" butonu o sohbeti açar.</p>
+      <p class="set-note">BotFather'dan alınan Token &amp; Chat ID girildiğinde, "Oturma Odasına Gel!" butonu sayfadan ayrılmadan Gözde'nin kilit ekranına Telegram bildirimi gönderir.</p>
     </section>
 
     <h3 class="group-title">☁️ Senkronizasyon</h3>

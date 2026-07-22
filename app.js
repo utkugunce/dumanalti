@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.8.1";
-  var APP_BUILD = 95;
+  var APP_VERSION = "5.10.0";
+  var APP_BUILD = 97;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -155,27 +155,15 @@
     }
 
     var text = "Hadi sigo içelim!";
-    var msg = encodeURIComponent(text);
 
+    // Telegram Bot API üzerinden arka planda (sayfadan ayrılmadan) kilit ekranı bildirimi gönder
     if (settings.tgBotToken && settings.tgChatId) {
       try {
-        fetch("https://api.telegram.org/bot" + settings.tgBotToken + "/sendMessage?chat_id=" + settings.tgChatId + "&text=" + msg);
+        var url = "https://api.telegram.org/bot" + encodeURIComponent(settings.tgBotToken.trim()) +
+                  "/sendMessage?chat_id=" + encodeURIComponent(settings.tgChatId.trim()) +
+                  "&text=" + encodeURIComponent(text);
+        fetch(url, { method: "GET", mode: "no-cors" }).catch(function () {});
       } catch (e) {}
-    }
-
-    var callApp = settings.callApp || "telegram";
-    if (callApp === "telegram") {
-      var tgUser = (settings.tgUser || "").replace(/^@/, "");
-      var tgUrl = tgUser ? ("https://t.me/" + tgUser) : ("https://t.me/share/url?text=" + msg);
-      setTimeout(function () {
-        window.location.href = tgUrl;
-      }, 450);
-    } else {
-      var phone = (settings.waPhone || "").replace(/[^0-9]/g, "");
-      var waUrl = phone ? ("https://wa.me/" + phone + "?text=" + msg) : ("https://wa.me/?text=" + msg);
-      setTimeout(function () {
-        window.location.href = waUrl;
-      }, 450);
     }
   }
 
@@ -2387,24 +2375,20 @@
       settings.owner = v; saveSettings();
     });
 
-    bindSeg("callAppSeg", "data-callapp", settings.callApp || "telegram", function (v) {
-      settings.callApp = v === "whatsapp" ? "whatsapp" : "telegram"; saveSettings();
-    });
-
-    var tgInp = el("tgUserInput");
-    if (tgInp) {
-      /** @type {HTMLInputElement} */ (tgInp).value = settings.tgUser || "";
-      tgInp.addEventListener("change", function () {
-        settings.tgUser = (/** @type {HTMLInputElement} */ (tgInp).value || "").trim();
+    var tgTokenInp = el("tgBotTokenInput");
+    if (tgTokenInp) {
+      /** @type {HTMLInputElement} */ (tgTokenInp).value = settings.tgBotToken || "";
+      tgTokenInp.addEventListener("change", function () {
+        settings.tgBotToken = (/** @type {HTMLInputElement} */ (tgTokenInp).value || "").trim();
         saveSettings();
       });
     }
 
-    var waInp = el("waPhoneInput");
-    if (waInp) {
-      /** @type {HTMLInputElement} */ (waInp).value = settings.waPhone || "";
-      waInp.addEventListener("change", function () {
-        settings.waPhone = (/** @type {HTMLInputElement} */ (waInp).value || "").trim();
+    var tgChatInp = el("tgChatIdInput");
+    if (tgChatInp) {
+      /** @type {HTMLInputElement} */ (tgChatInp).value = settings.tgChatId || "";
+      tgChatInp.addEventListener("change", function () {
+        settings.tgChatId = (/** @type {HTMLInputElement} */ (tgChatInp).value || "").trim();
         saveSettings();
       });
     }
