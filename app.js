@@ -9,19 +9,38 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.0.5";
-  var APP_BUILD = 109;
+  var APP_VERSION = "6.1.1";
+  var APP_BUILD = 111;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
 
   var CFG = window.DUMANALTI_CONFIG || {};
 
+  // Türkiye'de en çok tüketilen 10 bira markası
+  var BEER_BRANDS = [
+    { id: "efes_pilsen", label: "Efes Pilsen" },
+    { id: "efes_malt", label: "Efes Malt" },
+    { id: "tuborg_gold", label: "Tuborg Gold" },
+    { id: "tuborg_filtresiz", label: "Tuborg Filtresiz" },
+    { id: "bomonti", label: "Bomonti" },
+    { id: "carlsberg", label: "Carlsberg" },
+    { id: "miller", label: "Miller" },
+    { id: "beck_s", label: "Beck's" },
+    { id: "heineken", label: "Heineken" },
+    { id: "corona", label: "Corona" }
+  ];
+
+  var BEER_SIZES = [
+    { id: "50cl", label: "50 cl (Şişe)", factor: 1.0 },
+    { id: "33cl", label: "33 cl (Küçük)", factor: 0.66 }
+  ];
+
   // ---------- Çoklu kategori tanımları ----------
   var CATS = {
     sigo:   { label: "Sigo",   emoji: "🚬", table: CFG.table || "dumanalti_entries", cacheKey: "dumanalti.entries.v1", outboxKey: "dumanalti.outbox.v1", unit: "sigo", unitPlural: "sigo" },
     sigara: { label: "Sigara", emoji: "🚬", table: "dumanalti_sigara",               cacheKey: "dumanalti.sigara.v1", outboxKey: "dumanalti.sigara_outbox.v1", unit: "sigara", unitPlural: "sigara" },
-    bira:   { label: "Bira",   emoji: "🍺", table: "dumanalti_bira",                 cacheKey: "dumanalti.bira.v1",   outboxKey: "dumanalti.bira_outbox.v1",   unit: "bira",   unitPlural: "bira" }
+    bira:   { label: "Bira",   emoji: "🍺", table: "dumanalti_bira",                 cacheKey: "dumanalti.bira.v1",   outboxKey: "dumanalti.bira_outbox.v1",   unit: "şişe bira", unitPlural: "şişe bira" }
   };
   var CAT_ORDER = ["sigo", "sigara", "bira"];
   var activeCat = "sigo";
@@ -131,6 +150,9 @@
       if (elHep && elHep.parentElement) duoHep = elHep.parentElement;
     }
     if (duoHep) /** @type {HTMLElement} */ (duoHep).style.display = cat === "sigo" ? "" : "none";
+
+    var beerWrap = el("beerOptWrap");
+    if (beerWrap) beerWrap.classList.toggle("hidden", cat !== "bira");
 
     applyMascot();
     render();
@@ -593,8 +615,17 @@
     if (entries.length) {
       var last = entries[entries.length - 1];
       lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
-      var kindLabel = activeCat === "sigo" ? " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")" : "";
-      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + kindLabel + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
+      var extraText = "";
+      if (activeCat === "sigo") {
+        extraText = " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")";
+      } else if (activeCat === "bira" && last.tag) {
+        var parts = last.tag.split(":");
+        var brandObj = BEER_BRANDS.filter(function (b) { return b.id === parts[0]; })[0];
+        var brandLabel = brandObj ? brandObj.label : parts[0];
+        var sizeLabel = parts[1] || "";
+        extraText = " (" + brandLabel + (sizeLabel ? " · " + sizeLabel : "") + ")";
+      }
+      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + extraText + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
     } else {
       lastSmoke.textContent = "—";
     }
@@ -1648,9 +1679,10 @@
     var monthName = monthNames[now.getMonth()];
     if (title) title.textContent = monthName + " Ayı Özeti ✨";
 
+    var catUnit = (CATS[activeCat] || CATS.sigo).unit;
     if (monthList.length === 0) {
       grid.innerHTML = '<div class="wrapped-item" style="grid-column: span 2;"><span class="wrapped-item-title">Henüz bu ay kayıt yok</span></div>';
-      letter.textContent = "Bu ay henüz sigolarınızı kaydetmeye başlamadınız. İlk sigoyla özetiniz burada görünecek! 🌿";
+      letter.textContent = "Bu ay henüz kaydınız yok. İlk " + catUnit + " kaydıyla özetiniz burada görünücek! 🌿";
       return;
     }
 
@@ -1682,7 +1714,7 @@
         '<span class="wrapped-item-ico">🏆</span>' +
         '<span class="wrapped-item-title">Ayın Lideri</span>' +
         '<span class="wrapped-item-val">' + whoChamp + '</span>' +
-        '<span class="wrapped-item-sub">Toplam ' + total + ' sigo</span>' +
+        '<span class="wrapped-item-sub">Toplam ' + total + ' ' + catUnit + '</span>' +
       '</div>' +
       '<div class="wrapped-item">' +
         '<span class="wrapped-item-ico">👩‍❤️‍👨</span>' +
@@ -1700,10 +1732,14 @@
         '<span class="wrapped-item-ico">🌱</span>' +
         '<span class="wrapped-item-title">En Uzun Mola</span>' +
         '<span class="wrapped-item-val">' + maxGapStr + '</span>' +
-        '<span class="wrapped-item-sub">Dumansız rekor</span>' +
+        '<span class="wrapped-item-sub">En uzun ara</span>' +
       '</div>';
 
-    letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori oturma odası zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
+    if (activeCat === "sigo") {
+      letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori oturma odası zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
+    } else {
+      letter.innerHTML = '<strong>Özet Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak toplam ' + total + ' ' + catUnit + ' kaydettiniz. Favori saat aralığınız ' + peakHStr + ' olarak öne çıkıyor! ✨';
+    }
   }
 
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
@@ -1758,9 +1794,10 @@
     } catch (e) {}
   }
 
-  function addEntry(who, x, y, kind) {
+  function addEntry(who, x, y, kind, tag) {
     var k = kind || selectedAddKind || "sigo";
     var entry = { id: uuid(), who: who, kind: k, ts: Date.now() };
+    if (tag) entry.tag = tag;
     entries.push(entry);
     sortEntries();
     // Optimistic UI: önce kuyruğa al, sonra anında çiz (bekliyor işareti doğru görünsün)
@@ -2505,6 +2542,30 @@
       });
     });
 
+    var selectedBeerBrand = "efes_pilsen";
+    var selectedBeerSize = "50cl";
+
+    var beerSizeSeg = el("beerSizeSeg");
+    if (beerSizeSeg) {
+      beerSizeSeg.querySelectorAll(".seg-btn").forEach(function (b) {
+        b.addEventListener(TAP_EVT, function (ev) {
+          ev.stopPropagation();
+          var sz = b.getAttribute("data-size");
+          if (sz) {
+            selectedBeerSize = sz;
+            beerSizeSeg.querySelectorAll(".seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
+          }
+        });
+      });
+    }
+
+    var beerBrandSel = el("beerBrandSel");
+    if (beerBrandSel) {
+      beerBrandSel.addEventListener("change", function () {
+        selectedBeerBrand = /** @type {HTMLSelectElement} */ (beerBrandSel).value || "efes_pilsen";
+      });
+    }
+
     dial.querySelectorAll(".add-opt").forEach(function (bEl) {
       var b = /** @type {HTMLElement} */ (bEl);
       b.addEventListener(TAP_EVT, function () {
@@ -2514,7 +2575,8 @@
         b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
         var r = b.getBoundingClientRect();
         close();
-        addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind);
+        var extraTag = activeCat === "bira" ? (selectedBeerBrand + ":" + selectedBeerSize) : undefined;
+        addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind, extraTag);
       });
     });
 

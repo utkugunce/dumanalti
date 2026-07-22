@@ -446,6 +446,33 @@
         <button class="add-kind-btn active" data-kind="sigo" type="button">🚬 Sigo</button>
         <button class="add-kind-btn" data-kind="bong" type="button">🫧 Bong</button>
       </div>
+
+      <!-- Bira özel seçenekleri: Marka ve Hacim -->
+      <div id="beerOptWrap" class="beer-opt-wrap hidden">
+        <div class="beer-opt-row">
+          <label>Marka:</label>
+          <select id="beerBrandSel" class="beer-select">
+            <option value="efes_pilsen">🍺 Efes Pilsen</option>
+            <option value="efes_malt">🍺 Efes Malt</option>
+            <option value="tuborg_gold">🍺 Tuborg Gold</option>
+            <option value="tuborg_filtresiz">🍺 Tuborg Filtresiz</option>
+            <option value="bomonti">🍺 Bomonti</option>
+            <option value="carlsberg">🍺 Carlsberg</option>
+            <option value="miller">🍺 Miller</option>
+            <option value="beck_s">🍺 Beck's</option>
+            <option value="heineken">🍺 Heineken</option>
+            <option value="corona">🍺 Corona</option>
+          </select>
+        </div>
+        <div class="beer-opt-row">
+          <label>Boyut:</label>
+          <div class="seg" id="beerSizeSeg">
+            <button class="seg-btn active" data-size="50cl" type="button">50 cl</button>
+            <button class="seg-btn" data-size="33cl" type="button">33 cl</button>
+          </div>
+        </div>
+      </div>
+
       <button class="add-opt" data-who="hepberaber" aria-label="Hep beraber ekle"><img class="avatar" src="icons/avatar-hepberaber.svg" alt="Hep beraber" /><span>Hep beraber</span></button>
       <button class="add-opt" data-who="both" aria-label="Ortak ekle"><img class="avatar" src="icons/avatar-both.png" alt="Ortak" /><span>Ortak</span></button>
       <button class="add-opt" data-who="gozde" aria-label="Gözde ekle"><img class="avatar" src="icons/avatar-gozde.png" alt="Gözde" /><span>Gözde</span></button>

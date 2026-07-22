@@ -1130,6 +1130,44 @@ body[data-cat="bira"] .today-hero {
   text-align: right;
 }
 
+/* Beer options in add-dial */
+.beer-opt-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 14px;
+  margin-bottom: 6px;
+}
+.beer-opt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.beer-opt-row label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.beer-select {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+.beer-select option {
+  background: #1a1e24;
+  color: #fff;
+}
+
 /* Footer */
 .footer { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0 8px; }
 
