@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.11.1";
-  var APP_BUILD = 101;
+  var APP_VERSION = "5.11.2";
+  var APP_BUILD = 102;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -2087,9 +2087,13 @@
       var op = queue[i];
       var p;
       if (op.type === "insert") {
-        p = sb.from(TABLE).upsert(op.row, { onConflict: "id", ignoreDuplicates: true });
+        var dbRow = { id: op.row.id, who: op.row.who, ts: op.row.ts };
+        if (op.row.tag) dbRow.tag = op.row.tag;
+        p = sb.from(TABLE).upsert(dbRow, { onConflict: "id", ignoreDuplicates: true });
       } else if (op.type === "update") {
-        p = sb.from(TABLE).update(op.fields).eq("id", op.id);
+        var fields = Object.assign({}, op.fields);
+        delete fields.kind;
+        p = sb.from(TABLE).update(fields).eq("id", op.id);
       } else {
         p = sb.from(TABLE).delete().eq("id", op.id);
       }
@@ -2113,13 +2117,14 @@
 
   function syncFromRemote() {
     if (!sb || !navigator.onLine) return Promise.resolve();
-    return sb.from(TABLE).select("id,who,ts,kind").order("ts", { ascending: true }).then(function (res) {
+    return sb.from(TABLE).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
       if (res.error) { cloudError(res.error); return; }
       lastCloudError = null;
       if (!res.data) return;
       var map = {};
       res.data.forEach(function (r) {
-        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
+        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: "sigo" };
+        if (r.tag) o.tag = r.tag;
         map[r.id] = o;
       });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
