@@ -29,6 +29,7 @@ interface Settings {
   owner: "" | "utku" | "gozde";
   mascot: "on" | "off";
   sound: "on" | "off";
+  waPhone?: string;
 }
 
 /** Bulut yapılandırması (config.js). */

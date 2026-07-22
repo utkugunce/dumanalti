@@ -1582,5 +1582,18 @@ body {
   outline-offset: 1px;
 }
 
+.set-input {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  width: 140px;
+  text-align: right;
+}
+
+
 
 

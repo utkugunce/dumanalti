@@ -55,7 +55,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off" };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -153,6 +153,13 @@
         payload: { who: myLabel, ts: Date.now() }
       });
     }
+
+    var msg = encodeURIComponent(myLabel + ": Oturma odasına geliyom, sigo yansın! 🚬");
+    var phone = (settings.waPhone || "").replace(/[^0-9]/g, "");
+    var waUrl = phone ? ("https://wa.me/" + phone + "?text=" + msg) : ("https://wa.me/?text=" + msg);
+    setTimeout(function () {
+      window.location.href = waUrl;
+    }, 450);
   }
 
   function cloudError(err) {
@@ -193,6 +200,7 @@
         settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
         settings.mascot = s.mascot === "off" ? "off" : "on";
         settings.sound = s.sound === "on" ? "on" : "off";
+        settings.waPhone = typeof s.waPhone === "string" ? s.waPhone : "";
       }
     } catch (e) {}
   }
@@ -2357,6 +2365,15 @@
     bindSeg("ownerSeg", "data-owner", settings.owner, function (v) {
       settings.owner = v; saveSettings();
     });
+
+    var waInp = el("waPhoneInput");
+    if (waInp) {
+      /** @type {HTMLInputElement} */ (waInp).value = settings.waPhone || "";
+      waInp.addEventListener("change", function () {
+        settings.waPhone = (/** @type {HTMLInputElement} */ (waInp).value || "").trim();
+        saveSettings();
+      });
+    }
 
     // Zıvana görünürlüğü
     bindSeg("mascotSeg", "data-mascot", settings.mascot, function (v) {
