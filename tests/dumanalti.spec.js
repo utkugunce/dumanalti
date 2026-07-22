@@ -161,6 +161,26 @@ test.describe('Dumanaltı App Tests', () => {
       expect(counts.total).toBe(4);
     });
 
+    test('countKinds and entryKind correctly calculate sigo and bong breakdown', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const exports = window.DUMANALTI_TEST_EXPORTS;
+        const mockEntries = [
+          { id: '1', who: 'utku', kind: 'sigo', ts: Date.now() },
+          { id: '2', who: 'gozde', kind: 'bong', ts: Date.now() },
+          { id: '3', who: 'both', ts: Date.now() }, // legacy/implicit sigo
+          { id: '4', who: 'utku', kind: 'bong', ts: Date.now() }
+        ];
+        return {
+          counts: exports.countKinds(mockEntries),
+          kinds: mockEntries.map(exports.entryKind)
+        };
+      });
+
+      expect(result.counts.sigo).toBe(2);
+      expect(result.counts.bong).toBe(2);
+      expect(result.kinds).toEqual(['sigo', 'bong', 'sigo', 'bong']);
+    });
+
     test('badge calculations are correct', async ({ page }) => {
       const badges = await page.evaluate(() => {
         const exports = window.DUMANALTI_TEST_EXPORTS;
@@ -248,7 +268,7 @@ test.describe('Dumanaltı App Tests', () => {
 
       // Undo Toast verification
       await expect(page.locator('#undoBar')).not.toHaveClass(/hidden/);
-      await expect(page.locator('#undoText')).toContainText('Utku eklendi');
+      await expect(page.locator('#undoText')).toContainText('Utku (🚬 Sigo) eklendi');
 
       // Dispatch pointerdown directly to trigger undo event immediately and bypass click emulation overlays
       await page.dispatchEvent('#undoBtn', 'pointerdown');
@@ -257,6 +277,47 @@ test.describe('Dumanaltı App Tests', () => {
       // Verification after undo
       await expect(page.locator('#todayTotal')).toHaveText('0');
       await expect(page.locator('#todayUtku')).toHaveText('0');
+    });
+
+    test('adding a bong record updates counters and allows filtering by kind in stats view', async ({ page }) => {
+      // Open speed dial overlay
+      await page.click('#addFab');
+      await expect(page.locator('#addDial')).toHaveClass(/open/);
+
+      // Select Bong option
+      await page.click('#addKindSeg button[data-kind="bong"]');
+      await expect(page.locator('#addKindSeg button[data-kind="bong"]')).toHaveClass(/active/);
+
+      // Add "Gözde" Bong
+      await page.click('#addOptions button[data-who="gozde"]');
+      await expect(page.locator('#addDial')).not.toHaveClass(/open/);
+
+      // Check undo toast indicates Bong
+      await expect(page.locator('#undoBar')).not.toHaveClass(/hidden/);
+      await expect(page.locator('#undoText')).toContainText('Gözde (🫧 Bong) eklendi');
+
+      // Now add a Sigo record for Utku
+      await page.click('#addFab');
+      await page.click('#addKindSeg button[data-kind="sigo"]');
+      await page.click('#addOptions button[data-who="utku"]');
+
+      // Total today should be 2
+      await expect(page.locator('#todayTotal')).toHaveText('2');
+      await expect(page.locator('#todayHeroSub')).toContainText('1 sigo · 1 bong');
+
+      // Go to Stats view
+      await page.click('nav.tabbar button[data-tab="stats"]');
+
+      // Default kind filter is "all" -> total allTime should be 2
+      await expect(page.locator('#allTotal')).toHaveText('2');
+
+      // Filter stats by Sigo -> total should be 1
+      await page.click('#kindScopeBar button[data-kind-scope="sigo"]');
+      await expect(page.locator('#allTotal')).toHaveText('1');
+
+      // Filter stats by Bong -> total should be 1
+      await page.click('#kindScopeBar button[data-kind-scope="bong"]');
+      await expect(page.locator('#allTotal')).toHaveText('1');
     });
 
     test('theme switcher changes themes correctly', async ({ page }) => {

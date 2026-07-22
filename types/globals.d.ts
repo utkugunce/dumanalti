@@ -10,6 +10,8 @@ interface Entry {
   id: string;
   who: Who;
   ts: number;
+  kind?: string;
+  tag?: string;
 }
 
 /** Offline outbox işlemi: gönderilemeyen ekleme/güncelleme/silme. */

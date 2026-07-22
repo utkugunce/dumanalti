@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.4.0";
-  var APP_BUILD = 85;
+  var APP_VERSION = "5.5.0";
+  var APP_BUILD = 86;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -26,6 +26,22 @@
     both:  { label: "Ortak", emoji: "👩‍❤️‍👨", avatar: "icons/avatar-both.png", cls: "both-bg" },
     hepberaber: { label: "Hep beraber", emoji: "🎉", avatar: "icons/avatar-hepberaber.svg", cls: "hepberaber-bg" }
   };
+
+  var KINDS = {
+    sigo: { label: "Sigo", emoji: "🚬", cls: "kind-sigo" },
+    bong: { label: "Bong", emoji: "🫧", cls: "kind-bong" }
+  };
+
+  function entryKind(e) { return (e && e.kind) || "sigo"; }
+
+  function countKinds(list) {
+    var c = { sigo: 0, bong: 0 };
+    for (var i = 0; i < list.length; i++) {
+      var k = entryKind(list[i]);
+      c[k] = (c[k] || 0) + 1;
+    }
+    return c;
+  }
 
   // Ortak ve hep beraber içilenler ikisinin de kişisel sayacına işlenir
   function isShared(w) { return w === "both" || w === "hepberaber"; }
@@ -51,17 +67,24 @@
   var undoTimer = null;
   var comboCount = 0;
   var comboTimer = null;
+  var selectedAddKind = "sigo";
   var historyFilter = "all";
+  var historyKind = "all";
   var editingId = null; // Geçmişte düzenleme paneli açık olan kaydın id'si
   var statsScope = "all"; // İstatistik kişi filtresi: all | both | hepberaber | gozde | utku
+  var statsKind = "all"; // İstatistik tür filtresi: all | sigo | bong
   var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak/beraber içilenler dahil mi
 
   function scopedEntries() {
-    if (statsScope === "both") return entries.filter(function (e) { return e.who === "both"; });
-    if (statsScope === "hepberaber") return entries.filter(function (e) { return e.who === "hepberaber"; });
-    if (statsScope === "gozde") return entries.filter(function (e) { return e.who === "gozde" || (scopeIncludeBoth && isShared(e.who)); });
-    if (statsScope === "utku") return entries.filter(function (e) { return e.who === "utku" || (scopeIncludeBoth && isShared(e.who)); });
-    return entries;
+    var list = entries;
+    if (statsKind === "sigo") list = list.filter(function (e) { return entryKind(e) === "sigo"; });
+    else if (statsKind === "bong") list = list.filter(function (e) { return entryKind(e) === "bong"; });
+
+    if (statsScope === "both") return list.filter(function (e) { return e.who === "both"; });
+    if (statsScope === "hepberaber") return list.filter(function (e) { return e.who === "hepberaber"; });
+    if (statsScope === "gozde") return list.filter(function (e) { return e.who === "gozde" || (scopeIncludeBoth && isShared(e.who)); });
+    if (statsScope === "utku") return list.filter(function (e) { return e.who === "utku" || (scopeIncludeBoth && isShared(e.who)); });
+    return list;
   }
 
   var sb = null;        // Supabase client
@@ -223,14 +246,8 @@
   function render() {
     renderToday();
     renderLimit();
-    renderDuel();
-    renderStatCards();
-    renderChart();
+    renderStats();
     renderSince();
-    renderHourly();
-    renderShare();
-    renderDow();
-    renderCalendar();
     renderBadges();
     renderRecords();
     renderInsights();
@@ -243,8 +260,20 @@
     }
   }
 
+  function renderStats() {
+    renderDuel();
+    renderStatCards();
+    renderChart();
+    renderHourly();
+    renderShare();
+    renderDow();
+    renderCalendar();
+  }
+
   function renderToday() {
-    var t = countWho(todayEntries());
+    var tEnts = todayEntries();
+    var t = countWho(tEnts);
+    var tk = countKinds(tEnts);
     el("todayUtku").textContent = String(t.utku + t.both + t.hepberaber);
     el("todayGozde").textContent = String(t.gozde + t.both + t.hepberaber);
     el("todayBoth").textContent = String(t.both);
@@ -268,7 +297,9 @@
     if (diff > 0) { trend.classList.add("up"); trend.textContent = "▲ " + diff; }
     else if (diff < 0) { trend.classList.add("down"); trend.textContent = "▼ " + (-diff); }
     else { trend.textContent = "＝"; }
-    el("todayHeroSub").textContent = "toplam · dün bu saatte " + ySame;
+
+    var kindText = tk.sigo + " sigo · " + tk.bong + " bong";
+    el("todayHeroSub").textContent = "toplam (" + kindText + ") · dün bu saatte " + ySame;
 
     renderTodayFlow();
 
@@ -276,8 +307,9 @@
     lastSmoke.innerHTML = "";
     if (entries.length) {
       var last = entries[entries.length - 1];
+      var kInfo = KINDS[entryKind(last)] || KINDS.sigo;
       lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
-      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
+      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " (" + kInfo.emoji + " " + kInfo.label + ") · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
     } else {
       lastSmoke.textContent = "—";
     }
@@ -388,7 +420,7 @@
       } else {
         var totalLabel = document.createElement("span");
         totalLabel.className = "bar-total";
-        totalLabel.textContent = total;
+        totalLabel.textContent = String(total);
         col.appendChild(totalLabel);
 
         var stack = document.createElement("div");
@@ -508,7 +540,7 @@
     } else if (myToday > 0 && myAvg > 0 && myToday > myAvg) {
       spot = { tone: "warn", e: "⚠️", t: "Bugün ortalamanın üstündesin (" + myToday + " > " + myAvg.toFixed(1) + ")." };
     } else if (maxDay) {
-      var parts = maxDay.split("-");
+      var parts = String(maxDay).split("-");
       var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2);
       spot = { tone: "neutral", e: "🔥", t: "En yoğun gün " + dd + " · " + maxDayCount + " sigo." };
     }
@@ -582,6 +614,13 @@
     var who = document.createElement("span");
     who.className = "h-who";
     who.textContent = WHO[e.who].label + " içti";
+
+    var kInfo = KINDS[entryKind(e)] || KINDS.sigo;
+    var kindBadge = document.createElement("span");
+    kindBadge.className = "h-kind " + kInfo.cls;
+    kindBadge.textContent = kInfo.emoji + " " + kInfo.label;
+    who.appendChild(kindBadge);
+
     var time = document.createElement("span");
     time.className = "h-time";
     var tagStr = "";
@@ -611,11 +650,25 @@
     return row;
   }
 
-  // Düzenleme paneli: kişi seçimi (4 çip) + tarih/saat + kaydet/vazgeç
+  // Düzenleme paneli: tür (sigo/bong) + kişi seçimi (4 çip) + etiket + tarih/saat + kaydet/vazgeç
   function historyEditPanel(e) {
     var panel = document.createElement("div");
     panel.className = "hist-edit";
     var selectedWho = e.who;
+    var selectedKind = entryKind(e);
+
+    var kindChips = document.createElement("div");
+    kindChips.className = "hist-edit-who";
+    Object.keys(KINDS).forEach(function (k) {
+      var b = document.createElement("button");
+      b.className = "hist-chip" + (k === selectedKind ? " active" : "");
+      b.textContent = KINDS[k].emoji + " " + KINDS[k].label;
+      b.addEventListener("click", function () {
+        selectedKind = k;
+        kindChips.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === b); });
+      });
+      kindChips.appendChild(b);
+    });
 
     var chips = document.createElement("div");
     chips.className = "hist-edit-who";
@@ -648,7 +701,7 @@
       var ts = new Date(input.value).getTime();
       if (!input.value || isNaN(ts)) { alert("Geçerli bir tarih/saat seç."); return; }
       if (ts > Date.now()) { alert("Gelecekteki bir saat seçilemez."); return; }
-      updateEntry(e.id, selectedWho, ts);
+      updateEntry(e.id, selectedWho, ts, selectedKind);
     });
     var cancel = document.createElement("button");
     cancel.className = "ghost-btn small";
@@ -657,6 +710,7 @@
     btns.appendChild(save);
     btns.appendChild(cancel);
 
+    panel.appendChild(kindChips);
     panel.appendChild(chips);
     panel.appendChild(timeRow);
     panel.appendChild(btns);
@@ -686,7 +740,11 @@
       }
     }
 
-    var filtered = entries.filter(function (e) { return historyFilter === "all" || e.who === historyFilter; });
+    var filtered = entries.filter(function (e) {
+      var whoMatch = historyFilter === "all" || e.who === historyFilter;
+      var kindMatch = historyKind === "all" || entryKind(e) === historyKind;
+      return whoMatch && kindMatch;
+    });
     if (filtered.length === 0) {
       empty.classList.remove("hidden");
       empty.textContent = entries.length ? "Bu filtrede kayıt yok." : "Henüz kayıt yok. Sol alttaki + ile ekle 👆";
@@ -793,7 +851,7 @@
       var col = document.createElement("div");
       col.className = "hour-col";
       col.setAttribute("data-h", String(h));
-      col.setAttribute("data-count", counts[h]);
+      col.setAttribute("data-count", String(counts[h]));
       col.setAttribute("tabindex", "0");
       col.setAttribute("role", "img");
       col.setAttribute("aria-label", "Saat " + pad2(h) + ":00 · " + counts[h] + " sigo");
@@ -941,7 +999,7 @@
     list.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
     var maxDay = null, maxC = 0;
     Object.keys(byDay).forEach(function (k) { if (byDay[k] > maxC) { maxC = byDay[k]; maxDay = k; } });
-    var parts = maxDay.split("-");
+    var parts = (maxDay || "").split("-");
     var dd = ("0" + parts[2]).slice(-2) + "." + ("0" + parts[1]).slice(-2) + "." + parts[0];
 
     var maxGap = 0;
@@ -1283,8 +1341,9 @@
     } catch (e) {}
   }
 
-  function addEntry(who, x, y) {
-    var entry = { id: uuid(), who: who, ts: Date.now() };
+  function addEntry(who, x, y, kind) {
+    var k = kind || selectedAddKind || "sigo";
+    var entry = { id: uuid(), who: who, kind: k, ts: Date.now() };
     entries.push(entry);
     sortEntries();
     // Optimistic UI: önce kuyruğa al, sonra anında çiz (bekliyor işareti doğru görünsün)
@@ -1326,7 +1385,7 @@
     refreshStatus();
   }
 
-  // Bir kaydın alanlarını günceller (kişi/saat/etiket); buluta update olarak gider
+  // Bir kaydın alanlarını günceller (kişi/saat/etiket/tür); buluta update olarak gider
   function patchEntry(id, fields) {
     var idx = findIndexById(id);
     if (idx === -1) return;
@@ -1354,10 +1413,10 @@
     refreshStatus();
   }
 
-  // Geçmişten düzenleme: kişi + saat
-  function updateEntry(id, who, ts) {
+  // Geçmişten düzenleme: kişi + saat + tür
+  function updateEntry(id, who, ts, kind) {
     editingId = null;
-    patchEntry(id, { who: who, ts: ts });
+    patchEntry(id, { who: who, ts: ts, kind: kind || "sigo" });
     render();
   }
 
@@ -1367,7 +1426,8 @@
     var ut = el("undoText");
     ut.innerHTML = "";
     ut.appendChild(makeAvatar(who, "avatar-sm"));
-    ut.appendChild(document.createTextNode(" " + WHO[who].label + " eklendi"));
+    var kInfo = KINDS[entryKind(lastUndo)] || KINDS.sigo;
+    ut.appendChild(document.createTextNode(" " + WHO[who].label + " (" + kInfo.emoji + " " + kInfo.label + ") eklendi"));
 
     bar.classList.remove("hidden");
     clearTimeout(undoTimer);
@@ -1732,12 +1792,12 @@
 
   function syncFromRemote() {
     if (!sb || !navigator.onLine) return Promise.resolve();
-    return sb.from(TABLE).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
+    return sb.from(TABLE).select("id,who,ts,kind").order("ts", { ascending: true }).then(function (res) {
       if (res.error) { cloudError(res.error); return; }
       if (!res.data) return;
       var map = {};
       res.data.forEach(function (r) {
-        var o = { id: r.id, who: r.who, ts: Number(r.ts) };
+        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
         map[r.id] = o;
       });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
@@ -1764,7 +1824,8 @@
       .on("postgres_changes", { event: "INSERT", schema: "public", table: TABLE }, function (payload) {
         var r = payload.new;
         if (!r || findIndexById(r.id) !== -1) return;
-        var o = { id: r.id, who: r.who, ts: Number(r.ts) };
+        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
+        if (r.tag) o.tag = r.tag;
         entries.push(o);
         sortEntries();
         saveCache();
@@ -1776,6 +1837,8 @@
         if (idx === -1) return;
         entries[idx].who = r.who || entries[idx].who;
         entries[idx].ts = Number(r.ts) || entries[idx].ts;
+        entries[idx].tag = r.tag || undefined;
+        entries[idx].kind = r.kind || entries[idx].kind || "sigo";
         sortEntries();
         saveCache();
         render();
@@ -1821,7 +1884,7 @@
         incoming.forEach(function (e) {
           if (e && e.who && e.ts) {
             var id = e.id || uuid();
-            if (!map[id]) { var row = { id: id, who: e.who, ts: Number(e.ts) }; map[id] = row; added.push(row); }
+            if (!map[id]) { var row = { id: id, who: e.who, ts: Number(e.ts), kind: e.kind || "sigo" }; map[id] = row; added.push(row); }
           }
         });
         entries = Object.keys(map).map(function (k) { return map[k]; });
@@ -1936,6 +1999,18 @@
       ev.stopPropagation();
       dial.classList.contains("open") ? close() : open();
     });
+    var kindBtns = dial.querySelectorAll(".add-kind-btn");
+    kindBtns.forEach(function (b) {
+      b.addEventListener(TAP_EVT, function (ev) {
+        ev.stopPropagation();
+        var k = b.getAttribute("data-kind");
+        if (k && KINDS[k]) {
+          selectedAddKind = k;
+          kindBtns.forEach(function (btn) { btn.classList.toggle("active", btn === b); });
+        }
+      });
+    });
+
     dial.querySelectorAll(".add-opt").forEach(function (bEl) {
       var b = /** @type {HTMLElement} */ (bEl);
       b.addEventListener(TAP_EVT, function () {
@@ -1944,7 +2019,7 @@
         var who = b.getAttribute("data-who");
         var r = b.getBoundingClientRect();
         close();
-        addEntry(who, r.left + r.width / 2, r.top + r.height / 2);
+        addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind);
       });
     });
   }
@@ -1973,11 +2048,20 @@
     });
     showTab(localStorage.getItem(TAB_KEY) || "home");
 
-    // Geçmiş filtreleri
-    document.querySelectorAll(".hist-chip").forEach(function (chip) {
+    // Geçmiş kişi filtreleri
+    document.querySelectorAll("#histFilters .hist-chip").forEach(function (chip) {
       chip.addEventListener("click", function () {
         historyFilter = chip.getAttribute("data-f");
-        document.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
+        document.querySelectorAll("#histFilters .hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
+        renderHistory();
+      });
+    });
+
+    // Geçmiş tür filtreleri (Sigo vs Bong)
+    document.querySelectorAll("#histKindFilters .hist-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        historyKind = chip.getAttribute("data-kf");
+        document.querySelectorAll("#histKindFilters .hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
         renderHistory();
       });
     });
@@ -1990,6 +2074,15 @@
         var toggle = el("scopeToggle");
         if (toggle) toggle.classList.toggle("hidden", statsScope !== "gozde" && statsScope !== "utku");
         renderStats(); // tüm uygulamayı değil, sadece görünen istatistikleri çiz
+      });
+    });
+
+    // İstatistik tür filtreleri (Sigo vs Bong)
+    document.querySelectorAll(".kind-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        statsKind = chip.getAttribute("data-kind-scope");
+        document.querySelectorAll(".kind-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
+        renderStats();
       });
     });
 
@@ -2174,7 +2267,7 @@
     var mk = null, mc = 0;
     Object.keys(byDay).forEach(function (k) { if (byDay[k] > mc) { mc = byDay[k]; mk = k; } });
     if (!mk) return null;
-    var p = mk.split("-");
+    var p = String(mk).split("-");
     return { count: mc, label: ("0" + p[2]).slice(-2) + "." + ("0" + p[1]).slice(-2) };
   }
 
@@ -2503,6 +2596,8 @@
   if (typeof window !== "undefined") {
     window.DUMANALTI_TEST_EXPORTS = {
       isShared: isShared,
+      entryKind: entryKind,
+      countKinds: countKinds,
       logicalDate: logicalDate,
       startOfDay: startOfDay,
       dayKey: dayKey,
@@ -2531,6 +2626,11 @@
       setEntries: function (val) { entries = val; },
       outbox: function () { return outbox; },
       setOutbox: function (val) { outbox = val; },
+      selectedAddKind: function () { return selectedAddKind; },
+      setSelectedAddKind: function (k) { selectedAddKind = k; },
+      statsKind: function () { return statsKind; },
+      setStatsKind: function (k) { statsKind = k; },
+      setHistoryKind: function (k) { historyKind = k; },
       settings: settings,
       saveCache: saveCache,
       loadCache: loadCache,

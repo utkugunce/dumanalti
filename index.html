@@ -121,6 +121,13 @@
       <button class="scope-chip" data-scope="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
     </div>
 
+    <!-- Tür seçici (Sigo vs Bong) -->
+    <div class="kind-scope-bar" id="kindScopeBar">
+      <button class="kind-chip active" data-kind-scope="all">Tüm türler</button>
+      <button class="kind-chip" data-kind-scope="sigo">🚬 Sigo</button>
+      <button class="kind-chip" data-kind-scope="bong">🫧 Bong</button>
+    </div>
+
     <!-- Kişi seçiliyken: ortak sigoyu dahil et / etme -->
     <div class="scope-toggle hidden" id="scopeToggle">
       <div class="seg">
@@ -242,6 +249,11 @@
         <button class="hist-chip" data-f="gozde"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</button>
         <button class="hist-chip" data-f="both"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</button>
         <button class="hist-chip" data-f="hepberaber"><img class="avatar avatar-tiny" src="icons/avatar-hepberaber.svg" alt="" /> Hep beraber</button>
+      </div>
+      <div class="hist-kind-filters" id="histKindFilters">
+        <button class="hist-chip active" data-kf="all">Tüm türler</button>
+        <button class="hist-chip" data-kf="sigo">🚬 Sigo</button>
+        <button class="hist-chip" data-kf="bong">🫧 Bong</button>
       </div>
       <div id="historyList" class="history-list"></div>
       <p id="historyEmpty" class="empty">Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆</p>
@@ -378,12 +390,16 @@
   <!-- Global sigo ekleme: her sayfada açılan hızlı buton -->
   <div id="addDial" class="add-dial">
     <div id="addOptions" class="add-options">
+      <div id="addKindSeg" class="add-kind-seg" role="radiogroup" aria-label="Kayıt türü">
+        <button class="add-kind-btn active" data-kind="sigo" type="button">🚬 Sigo</button>
+        <button class="add-kind-btn" data-kind="bong" type="button">🫧 Bong</button>
+      </div>
       <button class="add-opt" data-who="hepberaber" aria-label="Hep beraber ekle"><img class="avatar" src="icons/avatar-hepberaber.svg" alt="Hep beraber" /><span>Hep beraber</span></button>
       <button class="add-opt" data-who="both" aria-label="Ortak ekle"><img class="avatar" src="icons/avatar-both.png" alt="Ortak" /><span>Ortak</span></button>
       <button class="add-opt" data-who="gozde" aria-label="Gözde ekle"><img class="avatar" src="icons/avatar-gozde.png" alt="Gözde" /><span>Gözde</span></button>
       <button class="add-opt" data-who="utku" aria-label="Utku ekle"><img class="avatar" src="icons/avatar-utku.png" alt="Utku" /><span>Utku</span></button>
     </div>
-    <button id="addFab" class="add-fab" aria-label="Sigo ekle">＋</button>
+    <button id="addFab" class="add-fab" aria-label="Kayıt ekle">＋</button>
   </div>
 
   <!-- Global geri-al + etiket toast'ı (tüm sayfalarda) -->
