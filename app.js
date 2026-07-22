@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "5.6.1";
-  var APP_BUILD = 92;
+  var APP_VERSION = "5.7.0";
+  var APP_BUILD = 93;
 
   var CACHE_KEY = "dumanalti.entries.v1";   // çevrimdışı okuma önbelleği
   var OUTBOX_KEY = "dumanalti.outbox.v1";    // gönderilemeyen işlemler
@@ -936,7 +936,7 @@
     }
     el("hourPeak").textContent = list.length ? "en yoğun " + pad2(peakH) + ":00" : "";
 
-    // Bara dokununca o saatte kaç sigo içildiğini balonda göster
+    // Bara dokununca o saatte kaç sigo içildiğini balonda / detayda göster
     var chartX = /** @type {any} */ (chart); // dinamik işaret alanı (expando)
     if (!chartX.hourTipBound) {
       chartX.hourTipBound = true;
@@ -949,26 +949,30 @@
   }
 
   function showHourTip(chart, col) {
-    var old = chart.querySelector(".hour-tip");
     var prevSel = chart.querySelector(".hour-bar.sel");
     if (prevSel) prevSel.classList.remove("sel");
-    var oldH = old ? old.getAttribute("data-h") : null;
-    if (old) old.remove();
-    if (!col || oldH === col.getAttribute("data-h")) return; // aynı bara ikinci dokunuş kapatır
+    var detail = el("hourDetail");
+    if (!col) {
+      if (detail) detail.textContent = "Saate dokunarak sigo sayısını gör 👆";
+      return;
+    }
 
     var h = parseInt(col.getAttribute("data-h"), 10);
-    var count = col.getAttribute("data-count");
-    col.querySelector(".hour-bar").classList.add("sel");
+    var count = parseInt(col.getAttribute("data-count"), 10);
+    var bar = col.querySelector(".hour-bar");
+    if (bar) bar.classList.add("sel");
 
-    var tip = document.createElement("div");
-    tip.className = "hour-tip";
-    tip.setAttribute("data-h", String(h));
-    tip.textContent = pad2(h) + ":00–" + pad2(h) + ":59 · " + count + " sigo";
-    chart.appendChild(tip);
-    // kolonun ortasına hizala, kenarlardan taşmasın
-    var x = col.offsetLeft + col.offsetWidth / 2 - tip.offsetWidth / 2;
-    x = Math.max(0, Math.min(chart.clientWidth - tip.offsetWidth, x));
-    tip.style.left = x + "px";
+    if (detail) {
+      if (count === 0) {
+        detail.textContent = pad2(h) + ":00–" + pad2(h) + ":59: Sigo kaydı yok 🍃";
+      } else {
+        var hEntries = scopedEntries().filter(function (e) {
+          return new Date(e.ts).getHours() === h;
+        });
+        var hCounts = countWho(hEntries);
+        detail.textContent = pad2(h) + ":00–" + pad2(h) + ":59: " + count + " sigo (" + breakdownText(hCounts) + ")";
+      }
+    }
   }
 
   function renderShare() {
@@ -1012,32 +1016,56 @@
     chart.innerHTML = "";
     var list = scopedEntries();
     var counts = [0, 0, 0, 0, 0, 0, 0]; // Pzt=0 .. Paz=6
-    list.forEach(function (e) { counts[(logicalDate(e.ts).getDay() + 6) % 7]++; });
+    var listByDay = [[], [], [], [], [], [], []];
+    list.forEach(function (e) {
+      var idx = (logicalDate(e.ts).getDay() + 6) % 7;
+      counts[idx]++;
+      listByDay[idx].push(e);
+    });
     var max = 1, peak = 0;
     for (var i = 0; i < 7; i++) { if (counts[i] > max) max = counts[i]; if (counts[i] > counts[peak]) peak = i; }
-    var labels = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-    for (i = 0; i < 7; i++) {
-      var col = document.createElement("div");
-      col.className = "dow-col";
-      var DOW_FULL_A = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-      col.setAttribute("tabindex", "0");
-      col.setAttribute("role", "img");
-      col.setAttribute("aria-label", DOW_FULL_A[i] + ": " + counts[i] + " sigo");
-      var v = document.createElement("span");
-      v.className = "dow-val";
-      v.textContent = counts[i] ? String(counts[i]) : "";
-      var bar = document.createElement("div");
-      bar.className = "dow-bar" + (i === peak && counts[peak] > 0 ? " peak" : "");
-      bar.style.height = (counts[i] === 0 ? 3 : Math.max(6, Math.round(counts[i] / max * 100))) + "%";
-      if (counts[i] > 0) bar.style.opacity = (0.4 + 0.6 * (counts[i] / max)).toFixed(2);
-      var l = document.createElement("span");
-      l.className = "dow-lab";
-      l.textContent = labels[i];
-      col.appendChild(v); col.appendChild(bar); col.appendChild(l);
-      chart.appendChild(col);
-    }
     var DOW_FULL = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-    el("dowPeak").textContent = list.length ? "en çok " + DOW_FULL[peak] : "";
+    var labels = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+    var detail = el("dowDetail");
+
+    function selectDow(idx) {
+      chart.querySelectorAll(".dow-col").forEach(function (c, k) {
+        c.classList.toggle("sel", k === idx);
+      });
+      if (!detail) return;
+      var dayName = DOW_FULL[idx];
+      var cnt = counts[idx];
+      if (cnt === 0) {
+        detail.textContent = dayName + ": Sigo kaydı yok 🍃";
+      } else {
+        var wCounts = countWho(listByDay[idx]);
+        detail.textContent = dayName + ": " + cnt + " sigo (" + breakdownText(wCounts) + ")";
+      }
+    }
+
+    for (i = 0; i < 7; i++) {
+      (function (dayIdx) {
+        var col = document.createElement("div");
+        col.className = "dow-col";
+        col.setAttribute("tabindex", "0");
+        col.setAttribute("role", "img");
+        col.setAttribute("aria-label", DOW_FULL[dayIdx] + ": " + counts[dayIdx] + " sigo");
+        var v = document.createElement("span");
+        v.className = "dow-val";
+        v.textContent = counts[dayIdx] ? String(counts[dayIdx]) : "";
+        var bar = document.createElement("div");
+        bar.className = "dow-bar" + (dayIdx === peak && counts[peak] > 0 ? " peak" : "");
+        bar.style.height = (counts[dayIdx] === 0 ? 3 : Math.max(6, Math.round(counts[dayIdx] / max * 100))) + "%";
+        if (counts[dayIdx] > 0) bar.style.opacity = (0.4 + 0.6 * (counts[dayIdx] / max)).toFixed(2);
+        var l = document.createElement("span");
+        l.className = "dow-lab";
+        l.textContent = labels[dayIdx];
+        col.appendChild(v); col.appendChild(bar); col.appendChild(l);
+        col.addEventListener(TAP_EVT, function () { selectDow(dayIdx); });
+        chart.appendChild(col);
+      })(i);
+    }
+    el("dowPeak").textContent = list.length ? "en yoğun " + DOW_FULL[peak] : "";
   }
 
   function fmtCoarse(ms) {
@@ -1122,10 +1150,33 @@
     el("calTitle").textContent = MONTHS[month] + " " + year;
 
     var perDay = {};
+    var dayEntriesMap = {};
     scopedEntries().forEach(function (e) {
       var d = logicalDate(e.ts);
-      if (d.getFullYear() === year && d.getMonth() === month) perDay[d.getDate()] = (perDay[d.getDate()] || 0) + 1;
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        var dayNum = d.getDate();
+        perDay[dayNum] = (perDay[dayNum] || 0) + 1;
+        if (!dayEntriesMap[dayNum]) dayEntriesMap[dayNum] = [];
+        dayEntriesMap[dayNum].push(e);
+      }
     });
+
+    var detail = el("calDetail");
+    function selectDay(dayNum) {
+      grid.querySelectorAll(".cal-cell").forEach(function (c) {
+        c.classList.remove("selected");
+      });
+      var cellEl = grid.querySelector('.cal-cell[data-day="' + dayNum + '"]');
+      if (cellEl) cellEl.classList.add("selected");
+      if (!detail) return;
+      var c = perDay[dayNum] || 0;
+      if (c === 0) {
+        detail.textContent = dayNum + " " + MONTHS[month] + ": Sigo kaydı yok 🍃";
+      } else {
+        var wCounts = countWho(dayEntriesMap[dayNum] || []);
+        detail.textContent = dayNum + " " + MONTHS[month] + ": " + c + " sigo (" + breakdownText(wCounts) + ")";
+      }
+    }
 
     var offset = (new Date(year, month, 1).getDay() + 6) % 7; // Pzt=0
     var daysIn = new Date(year, month + 1, 0).getDate();
@@ -1135,13 +1186,17 @@
       grid.appendChild(blank);
     }
     for (var day = 1; day <= daysIn; day++) {
-      var c = perDay[day] || 0;
-      var lvl = c === 0 ? 0 : c <= 2 ? 1 : c <= 4 ? 2 : c <= 6 ? 3 : 4;
-      var cell = document.createElement("span");
-      cell.className = "cal-cell l" + lvl + (day === now.getDate() ? " today" : "");
-      cell.title = day + " " + MONTHS[month] + " · " + c + " sigo";
-      cell.textContent = String(day);
-      grid.appendChild(cell);
+      (function (dNum) {
+        var c = perDay[dNum] || 0;
+        var lvl = c === 0 ? 0 : c <= 2 ? 1 : c <= 4 ? 2 : c <= 6 ? 3 : 4;
+        var cell = document.createElement("span");
+        cell.className = "cal-cell l" + lvl + (dNum === now.getDate() ? " today" : "");
+        cell.setAttribute("data-day", String(dNum));
+        cell.title = dNum + " " + MONTHS[month] + " · " + c + " sigo";
+        cell.textContent = String(dNum);
+        cell.addEventListener(TAP_EVT, function () { selectDay(dNum); });
+        grid.appendChild(cell);
+      })(day);
     }
   }
 
