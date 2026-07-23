@@ -128,6 +128,9 @@ body[data-cat="bira"] .today-hero {
   min-height: 100vh;
   min-height: 100dvh;
 }
+body[data-active-tab="portal"] .app {
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+}
 
 /* Görünüm dikey boşluğu doldursun; boş alan varsa aşağıdaki kartlara dağıtılır.
    Kısa ekranda boş alan olmadığından kartlar büyümez (kompakt düzen korunur). */
@@ -404,6 +407,7 @@ body[data-active-tab="portal"] .assistant {
   align-items: center;
   gap: 12px;
   font-size: 13px;
+  margin-top: auto;
 }
 .pla-time {
   font-weight: 700;
