@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.2.1";
-  var APP_BUILD = 115;
+  var APP_VERSION = "6.3.0";
+  var APP_BUILD = 116;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -45,8 +45,6 @@
   };
   var CAT_ORDER = ["sigo", "sigara", "bira"];
   var activeCat = "sigo";
-  var isCatSwitching = false;
-  var catSwitchTimer = null;
 
   // Her kategorinin kendi veri deposu
   var catStore = {};
@@ -121,21 +119,6 @@
     outbox = catStore[cat].outbox;
     // Body data-cat özniteliğini güncelle (CSS tema vurgu renkleri için)
     document.body.setAttribute("data-cat", cat);
-    // Segment bar güncelle
-    document.querySelectorAll(".cat-btn").forEach(function (b) {
-      b.classList.toggle("active", b.getAttribute("data-cat") === cat);
-    });
-    // Swiper'ı doğru sayfaya kaydır
-    var swiper = el("catSwiper");
-    if (swiper) {
-      var idx = CAT_ORDER.indexOf(cat);
-      if (Math.round(swiper.scrollLeft / swiper.offsetWidth) !== idx) {
-        isCatSwitching = true;
-        swiper.scrollTo({ left: idx * swiper.offsetWidth, behavior: "smooth" });
-        clearTimeout(catSwitchTimer);
-        catSwitchTimer = setTimeout(function () { isCatSwitching = false; }, 500);
-      }
-    }
     // Sigo/bong tür seçicisini sadece sigo kategorisinde göster
     var kindSeg = el("addKindSeg");
     if (kindSeg) kindSeg.style.display = cat === "sigo" ? "" : "none";
@@ -2570,12 +2553,10 @@
   var closeAddDial = function () {}; // bindAddDial içinde atanır
   function showTab(name) {
     closeAddDial();
-    ["home", "stats", "history", "settings"].forEach(function (n) {
+    ["portal", "home", "stats", "history", "settings"].forEach(function (n) {
       var v = el("view-" + n);
       if (v) v.classList.toggle("hidden", n !== name);
     });
-    var catBar = el("catBar");
-    if (catBar) catBar.classList.toggle("hidden", name === "settings");
     document.querySelectorAll(".tab").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === name);
     });
@@ -2690,33 +2671,18 @@
         showTab(btn.getAttribute("data-tab"));
       });
     });
-    showTab(localStorage.getItem(TAB_KEY) || "home");
+    showTab(localStorage.getItem(TAB_KEY) || "portal");
 
-    // Kategori seçici düğmeleri (Sigo / Sigara / Bira)
-    document.querySelectorAll(".cat-btn").forEach(function (btn) {
+    // Portal kartlarına tıklanınca o kategoriye git ve Anasayfa (Bugün) sekmesini aç
+    document.querySelectorAll(".portal-card").forEach(function (btn) {
       btn.addEventListener(TAP_EVT, function () {
         var cat = btn.getAttribute("data-cat");
-        if (cat) switchCat(cat);
+        if (cat) {
+          switchCat(cat);
+          showTab("home");
+        }
       });
     });
-
-    // Kaydırmalı anasayfa geçişi (Swipe)
-    var swiper = el("catSwiper");
-    if (swiper) {
-      var scrollTimer = null;
-      swiper.addEventListener("scroll", function () {
-        if (isCatSwitching) return;
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(function () {
-          if (isCatSwitching) return;
-          var width = swiper.offsetWidth;
-          if (!width) return;
-          var idx = Math.round(swiper.scrollLeft / width);
-          var cat = CAT_ORDER[idx];
-          if (cat && cat !== activeCat) switchCat(cat);
-        }, 100);
-      }, { passive: true });
-    }
 
     // Geçmiş kişi filtreleri
     document.querySelectorAll("#histFilters .hist-chip").forEach(function (chip) {

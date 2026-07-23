@@ -30,16 +30,31 @@
       <button id="themeToggle" class="icon-btn" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
     </header>
 
-    <!-- Category selector bar for Home view -->
-    <div class="cat-bar" id="catBar">
-      <button class="cat-btn active" data-cat="sigo">🚬 Sigo</button>
-      <button class="cat-btn" data-cat="sigara">🚬 Sigara</button>
-      <button class="cat-btn" data-cat="bira">🍺 Bira</button>
-    </div>
+    <main id="view-portal" class="view">
+      <div class="portal-banner">
+        <h2>Hoşgeldin!</h2>
+        <p>Bugün neleri takip ediyoruz?</p>
+      </div>
+      <div class="portal-grid">
+        <button class="portal-card sigo-card" data-cat="sigo">
+          <span class="portal-ico">🚬</span>
+          <span class="portal-title">Dumanaltı Sigo</span>
+          <span class="portal-sub">Sarma & Filtre</span>
+        </button>
+        <button class="portal-card sigara-card" data-cat="sigara">
+          <span class="portal-ico">🚬</span>
+          <span class="portal-title">Dumanaltı Sigara</span>
+          <span class="portal-sub">Paket Sigara</span>
+        </button>
+        <button class="portal-card bira-card" data-cat="bira">
+          <span class="portal-ico">🍺</span>
+          <span class="portal-title">Dumanaltı Bira</span>
+          <span class="portal-sub">Buz gibi</span>
+        </button>
+      </div>
+    </main>
 
-    <main id="view-home" class="view">
-      <div class="cat-swiper" id="catSwiper">
-        <div class="cat-page" data-cat="sigo">
+    <main id="view-home" class="view hidden">
     <!-- Today summary -->
     <section class="card today-card">
       <div class="card-head">
@@ -120,8 +135,6 @@
         <span class="chev" aria-hidden="true">▾</span>
       </button>
       <div id="insightBody" class="insight-body"></div>
-      </div><!-- /.cat-page sigo -->
-      </div><!-- /#catSwiper -->
     </main>
 
     <main id="view-stats" class="view hidden">
@@ -504,7 +517,8 @@
   </div>
 
   <nav class="tabbar" role="tablist">
-    <button class="tab active" data-tab="home" role="tab"><span class="tab-ico">🏠</span><span class="tab-lbl">Anasayfa</span></button>
+    <button class="tab active" data-tab="portal" role="tab"><span class="tab-ico">🏪</span><span class="tab-lbl">Market</span></button>
+    <button class="tab" data-tab="home" role="tab"><span class="tab-ico">🏠</span><span class="tab-lbl">Bugün</span></button>
     <button class="tab" data-tab="stats" role="tab"><span class="tab-ico">📊</span><span class="tab-lbl">İstatistik</span></button>
     <button class="tab" data-tab="history" role="tab"><span class="tab-ico">🕑</span><span class="tab-lbl">Geçmiş</span></button>
     <button class="tab" data-tab="settings" role="tab"><span class="tab-ico">⚙️</span><span class="tab-lbl">Ayarlar</span></button>
