@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.5.2";
-  var APP_BUILD = 120;
+  var APP_VERSION = "6.6.0";
+  var APP_BUILD = 121;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -553,15 +553,7 @@
     }
   }
 
-  function renderStats() {
-    renderDuel();
-    renderStatCards();
-    renderChart();
-    renderHourly();
-    renderShare();
-    renderDow();
-    renderCalendar();
-  }
+
 
   function renderToday() {
     var tEnts = todayEntries();
@@ -2010,6 +2002,243 @@
     }
   }
 
+  function renderHeatmap() {
+    var chart = el("heatmapChart");
+    if (!chart) return;
+    chart.innerHTML = "";
+    if (typeof d3 === "undefined") return;
+
+    var scoped = scopedEntries();
+    var now = Date.now();
+    var eow = startOfDay(now).getTime() + 86400000;
+    var sow = eow - 7 * 86400000;
+    var last7 = scoped.filter(function(e) { return e.ts >= sow && e.ts < eow; });
+
+    // Y axis: Days 0..6 (0 is today-6, 6 is today)
+    // X axis: Hours 0..23
+    var matrix = [];
+    for (var d = 0; d < 7; d++) {
+      var dateObj = new Date(sow + d * 86400000);
+      for (var h = 0; h < 24; h++) {
+        matrix.push({ dayIndex: d, hour: h, count: 0, dateObj: dateObj });
+      }
+    }
+
+    last7.forEach(function(e) {
+      var dIndex = Math.floor((e.ts - sow) / 86400000);
+      var hr = new Date(e.ts).getHours();
+      if (dIndex >= 0 && dIndex < 7) {
+        var idx = dIndex * 24 + hr;
+        if (matrix[idx]) matrix[idx].count++;
+      }
+    });
+
+    var maxCount = d3.max(matrix, function(d) { return d.count; }) || 1;
+    var colorScale = d3.scaleSequential(d3.interpolateGreens).domain([0, maxCount]);
+
+    var margin = { top: 20, right: 10, bottom: 20, left: 40 };
+    var width = chart.clientWidth || 300;
+    var innerWidth = width - margin.left - margin.right;
+    var innerHeight = 140 - margin.top - margin.bottom;
+
+    var svg = d3.select(chart).append("svg")
+      .attr("width", width)
+      .attr("height", 140);
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.scaleBand().range([0, innerWidth]).domain(d3.range(24)).padding(0.1);
+    var y = d3.scaleBand().range([innerHeight, 0]).domain(d3.range(7)).padding(0.1);
+
+    // Y Axis labels
+    g.selectAll(".h-day-label")
+      .data(d3.range(7))
+      .enter().append("text")
+      .attr("class", "h-day-label")
+      .attr("x", -5)
+      .attr("y", function(d) { return y(d) + y.bandwidth() / 2; })
+      .attr("dy", "0.32em")
+      .style("text-anchor", "end")
+      .style("font-size", "10px")
+      .style("fill", "var(--muted)")
+      .text(function(d) {
+        var dateObj = new Date(sow + d * 86400000);
+        return d === 6 ? "Bugün" : DAY_NAMES[dateObj.getDay()];
+      });
+
+    // X Axis labels (every 6 hours)
+    g.selectAll(".h-hour-label")
+      .data([0, 6, 12, 18, 23])
+      .enter().append("text")
+      .attr("class", "h-hour-label")
+      .attr("x", function(d) { return x(d) + x.bandwidth() / 2; })
+      .attr("y", innerHeight + 12)
+      .style("text-anchor", "middle")
+      .style("font-size", "9px")
+      .style("fill", "var(--muted)")
+      .text(function(d) { return pad2(d); });
+
+    var tooltip = d3.select("#d3Tooltip");
+
+    g.selectAll(".heat-cell")
+      .data(matrix)
+      .enter().append("rect")
+      .attr("class", "heat-cell")
+      .attr("x", function(d) { return x(d.hour); })
+      .attr("y", function(d) { return y(d.dayIndex); })
+      .attr("width", x.bandwidth())
+      .attr("height", y.bandwidth())
+      .style("fill", function(d) { return d.count === 0 ? "var(--bg-elev-2)" : colorScale(d.count); })
+      .on("mouseover touchstart", function(event, d) {
+        var dayName = d.dayIndex === 6 ? "Bugün" : DAY_NAMES[d.dateObj.getDay()];
+        tooltip.html('<div class="d3-tooltip-title">' + dayName + '</div>' +
+                     '<div class="d3-tooltip-row"><span>Saat:</span><span class="d3-tooltip-val">' + pad2(d.hour) + ':00</span></div>' +
+                     '<div class="d3-tooltip-row"><span>Miktar:</span><span class="d3-tooltip-val">' + d.count + ' sigo</span></div>')
+               .classed("visible", true);
+      })
+      .on("mousemove touchmove", function(event) {
+        tooltip.style("left", (event.pageX) + "px")
+               .style("top", (event.pageY - 40) + "px");
+      })
+      .on("mouseout touchend", function(event) {
+        tooltip.classed("visible", false);
+      });
+  }
+
+  function renderTrendChart() {
+    var chart = el("trendLineChart");
+    if (!chart) return;
+    chart.innerHTML = "";
+    if (typeof d3 === "undefined") return;
+
+    var scoped = scopedEntries();
+    var now = Date.now();
+    var eow = startOfDay(now).getTime() + 86400000;
+    var sow = eow - 30 * 86400000; // last 30 days
+    var list = scoped.filter(function(e) { return e.ts >= sow && e.ts < eow; });
+
+    var days = [];
+    for (var i = 0; i < 30; i++) {
+      var d = new Date(sow + i * 86400000);
+      days.push({
+        date: d,
+        count: 0,
+        label: ("0" + d.getDate()).slice(-2) + "." + ("0" + (d.getMonth() + 1)).slice(-2)
+      });
+    }
+
+    list.forEach(function(e) {
+      var idx = Math.floor((e.ts - sow) / 86400000);
+      if (idx >= 0 && idx < 30) days[idx].count++;
+    });
+
+    var maxTotal = d3.max(days, function(d) { return d.count; }) || 1;
+
+    var margin = { top: 20, right: 15, bottom: 20, left: 25 };
+    var width = chart.clientWidth || 300;
+    var innerWidth = width - margin.left - margin.right;
+    var innerHeight = 140 - margin.top - margin.bottom;
+
+    var svg = d3.select(chart).append("svg")
+      .attr("width", width)
+      .attr("height", 140);
+      
+    var defs = svg.append("defs");
+    var gradient = defs.append("linearGradient")
+      .attr("id", "trend-gradient")
+      .attr("x1", "0%").attr("y1", "0%")
+      .attr("x2", "0%").attr("y2", "100%");
+    gradient.append("stop").attr("offset", "0%").attr("stop-color", "var(--accent)").attr("stop-opacity", 0.4);
+    gradient.append("stop").attr("offset", "100%").attr("stop-color", "var(--accent)").attr("stop-opacity", 0);
+
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.scalePoint().range([0, innerWidth]).domain(days.map(function(d) { return d.label; }));
+    var y = d3.scaleLinear().range([innerHeight, 0]).domain([0, maxTotal * 1.1]); // 10% headroom
+
+    var line = d3.line()
+      .x(function(d) { return x(d.label); })
+      .y(function(d) { return y(d.count); })
+      .curve(d3.curveMonotoneX);
+
+    var area = d3.area()
+      .x(function(d) { return x(d.label); })
+      .y0(innerHeight)
+      .y1(function(d) { return y(d.count); })
+      .curve(d3.curveMonotoneX);
+
+    // Area
+    g.append("path")
+      .datum(days)
+      .attr("class", "trend-area")
+      .attr("d", area);
+
+    // Line
+    var path = g.append("path")
+      .datum(days)
+      .attr("class", "trend-line")
+      .attr("d", line);
+      
+    var totalLength = path.node().getTotalLength();
+    path.attr("stroke-dasharray", totalLength + " " + totalLength)
+      .attr("stroke-dashoffset", totalLength)
+      .transition()
+      .duration(1500)
+      .ease(d3.easeCubicOut)
+      .attr("stroke-dashoffset", 0);
+
+    // X Axis sparse labels
+    var tickFilter = function(d, i) { return i === 0 || i === 14 || i === 29; };
+    g.selectAll(".t-x-label")
+      .data(days.filter(tickFilter))
+      .enter().append("text")
+      .attr("class", "t-x-label")
+      .attr("x", function(d) { return x(d.label); })
+      .attr("y", innerHeight + 14)
+      .style("text-anchor", function(d, i) { return i === 0 ? "start" : (i === 2 ? "end" : "middle"); })
+      .style("font-size", "10px")
+      .style("fill", "var(--muted)")
+      .text(function(d) { return d.label; });
+
+    // Y Axis sparse labels
+    g.selectAll(".t-y-label")
+      .data([0, Math.round(maxTotal / 2), maxTotal])
+      .enter().append("text")
+      .attr("class", "t-y-label")
+      .attr("x", -5)
+      .attr("y", function(d) { return y(d); })
+      .attr("dy", "0.32em")
+      .style("text-anchor", "end")
+      .style("font-size", "10px")
+      .style("fill", "var(--muted)")
+      .text(function(d) { return d; });
+
+    var tooltip = d3.select("#d3Tooltip");
+
+    // Interaction dots
+    g.selectAll(".trend-dot")
+      .data(days)
+      .enter().append("circle")
+      .attr("class", "trend-dot")
+      .attr("cx", function(d) { return x(d.label); })
+      .attr("cy", function(d) { return y(d.count); })
+      .attr("r", 0) // animate in
+      .on("mouseover touchstart", function(event, d) {
+        tooltip.html('<div class="d3-tooltip-title">' + d.label + '</div>' +
+                     '<div class="d3-tooltip-row"><span>Toplam:</span><span class="d3-tooltip-val">' + d.count + '</span></div>')
+               .classed("visible", true);
+        d3.select(this).attr("r", 5);
+      })
+      .on("mousemove touchmove", function(event) {
+        tooltip.style("left", (event.pageX) + "px")
+               .style("top", (event.pageY - 30) + "px");
+      })
+      .on("mouseout touchend", function(event) {
+        tooltip.classed("visible", false);
+        d3.select(this).attr("r", 3);
+      })
+      .transition().delay(1000).duration(500).attr("r", 3);
+  }
+
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
   function renderStats() {
     renderDuel();
@@ -2018,6 +2247,8 @@
     renderBadges();
     renderChart();
     renderHourly();
+    renderHeatmap();
+    renderTrendChart();
     renderShare();
     renderDow();
     renderCalendar();
