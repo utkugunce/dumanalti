@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.5.1";
-  var APP_BUILD = 119;
+  var APP_VERSION = "6.5.2";
+  var APP_BUILD = 120;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -826,14 +826,19 @@
       .style("fill", function(d) { return colorScale[d.key]; });
 
     barGroups.selectAll("rect")
-      .data(function(d) { return d; })
+      .data(function(d) { return d.filter(function(v) { return v[1] > v[0]; }); })
       .enter()
       .append("rect")
       .attr("x", function(d) { return x(d.data.label); })
       .attr("width", x.bandwidth())
+      .attr("y", innerHeight)
+      .attr("height", 0)
+      .attr("rx", 2)
+      .transition()
+      .duration(600)
+      .ease(d3.easeCubicOut)
       .attr("y", function(d) { return y(d[1]); })
-      .attr("height", function(d) { return Math.max(0, y(d[0]) - y(d[1])); })
-      .attr("rx", 3);
+      .attr("height", function(d) { return Math.max(0, y(d[0]) - y(d[1])); });
 
     // Total Labels on top of bars
     g.selectAll(".total-label")
@@ -1420,18 +1425,23 @@
       .text(function(d) { return d; });
 
     // Bars
-    g.selectAll(".hour-bar")
+    g.selectAll(".hour-bar-rect")
       .data(hours)
       .enter()
       .append("rect")
-      .attr("class", "hour-bar")
+      .attr("class", "hour-bar-rect")
       .attr("x", function(d) { return x(d); })
       .attr("width", x.bandwidth())
-      .attr("y", function(d) { return counts[d] === 0 ? innerHeight - 2 : y(counts[d]); })
-      .attr("height", function(d) { return counts[d] === 0 ? 2 : Math.max(4, innerHeight - y(counts[d])); })
       .attr("rx", 1.5)
       .style("fill", function(d) { return d === peakH && counts[d] > 0 ? "var(--accent)" : "var(--bg-elev-2)"; })
-      .style("opacity", function(d) { return counts[d] > 0 ? (0.4 + 0.6 * (counts[d] / max)).toFixed(2) : "1"; });
+      .style("opacity", function(d) { return counts[d] > 0 ? (0.4 + 0.6 * (counts[d] / max)).toFixed(2) : "1"; })
+      .attr("y", innerHeight)
+      .attr("height", 0)
+      .transition()
+      .duration(600)
+      .ease(d3.easeCubicOut)
+      .attr("y", function(d) { return counts[d] === 0 ? innerHeight - 2 : y(counts[d]); })
+      .attr("height", function(d) { return counts[d] === 0 ? 2 : Math.max(4, innerHeight - y(counts[d])); });
 
     // Invisible rects for tooltip interaction
     g.selectAll(".interaction-rect")
@@ -1477,14 +1487,14 @@
           .classed("visible", true);
 
         // Highlight the bar
-        g.selectAll(".hour-bar").style("opacity", function(bd) {
+        g.selectAll(".hour-bar-rect").style("opacity", function(bd) {
           if (bd === d) return 1;
           return counts[bd] > 0 ? (0.2 + 0.3 * (counts[bd] / max)).toFixed(2) : "0.5";
         });
       })
       .on("mouseout touchend", function(event) {
         tooltip.classed("visible", false);
-        g.selectAll(".hour-bar").style("opacity", function(bd) {
+        g.selectAll(".hour-bar-rect").style("opacity", function(bd) {
           return counts[bd] > 0 ? (0.4 + 0.6 * (counts[bd] / max)).toFixed(2) : "1";
         });
       });
