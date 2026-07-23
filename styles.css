@@ -327,6 +327,33 @@ body[data-active-tab="portal"] .assistant {
   padding: 4px 8px;
   border-radius: 8px;
 }
+
+/* Make 3rd card (Bira) span full width and layout horizontally for symmetry */
+.portal-card:nth-child(3) {
+  grid-column: span 2;
+  flex-direction: row;
+  align-items: center;
+}
+.portal-card:nth-child(3) .portal-ico {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
+.portal-text-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.portal-card:nth-child(3) .portal-title {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.portal-card:nth-child(3) .portal-sub {
+  margin-bottom: 0;
+}
+.portal-card:nth-child(3) .portal-count {
+  margin-top: 0;
+  margin-left: auto;
+}
 .portal-duel {
   background: rgba(255, 215, 0, 0.1);
   border: 1px solid rgba(255, 215, 0, 0.2);
