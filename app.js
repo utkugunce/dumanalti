@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.5.0";
-  var APP_BUILD = 118;
+  var APP_VERSION = "6.5.1";
+  var APP_BUILD = 119;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -741,11 +741,12 @@
 
   function renderChart() {
     var chart = el("chart");
+    if (!chart) return;
     chart.innerHTML = "";
-    var days = [];
-    var maxTotal = 1;
     var scoped = scopedEntries();
 
+    var days = [];
+    var maxTotal = 1;
     for (var i = 6; i >= 0; i--) {
       var d = startOfDay(Date.now());
       d.setDate(d.getDate() - i);
@@ -753,56 +754,150 @@
       var dayList = scoped.filter(function (e) { return dayKey(e.ts) === key; });
       var c = countWho(dayList);
       if (c.total > maxTotal) maxTotal = c.total;
-      days.push({ date: d, counts: c, isToday: i === 0 });
+      days.push({
+        date: d,
+        counts: c,
+        isToday: i === 0,
+        label: i === 0 ? "Bugün" : DAY_NAMES[d.getDay()],
+        fullLabel: i === 0 ? "Bugün" : ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"][d.getDay()]
+      });
     }
 
-    var CHART_DOW_FULL = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-    days.forEach(function (day) {
-      var col = document.createElement("div");
-      col.className = "chart-col" + (day.isToday ? " is-today" : "");
+    if (typeof d3 === "undefined") return; // Fallback if D3 fails to load
 
-      var total = day.counts.total;
-      // Erişilebilirlik: ekran okuyucu her sütunu ayrı ayrı okuyabilsin
-      var dayName = day.isToday ? "Bugün" : CHART_DOW_FULL[day.date.getDay()];
-      col.setAttribute("tabindex", "0");
-      col.setAttribute("role", "img");
-      col.setAttribute("aria-label", dayName + ": toplam " + total + " sigo");
-      if (total === 0) {
-        var empty = document.createElement("div");
-        empty.className = "bar-empty";
-        col.appendChild(empty);
-      } else {
-        var totalLabel = document.createElement("span");
-        totalLabel.className = "bar-total";
-        totalLabel.textContent = String(total);
-        col.appendChild(totalLabel);
+    var width = chart.clientWidth || 300;
+    var height = 140;
+    var margin = { top: 20, right: 0, bottom: 20, left: 0 };
+    var innerWidth = width - margin.left - margin.right;
+    var innerHeight = height - margin.top - margin.bottom;
 
-        var stack = document.createElement("div");
-        stack.className = "bar-stack";
-        var maxPx = 110;
-        var h = Math.max(6, Math.round((total / maxTotal) * maxPx));
-        stack.style.height = h + "px";
-        // Yoğunluk: yoğun günler daha canlı, hafif günler soluk
-        stack.style.opacity = (0.5 + 0.5 * (total / maxTotal)).toFixed(2);
+    var svg = d3.select(chart).append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", "0 0 " + width + " " + height)
+      .attr("preserveAspectRatio", "xMidYMid meet");
 
-        ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {
-          if (day.counts[w] > 0) {
-            var seg = document.createElement("div");
-            seg.className = "bar-seg " + WHO[w].cls;
-            seg.style.height = (day.counts[w] / total * 100) + "%";
-            stack.appendChild(seg);
+    var g = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.scaleBand()
+      .range([0, innerWidth])
+      .padding(0.4)
+      .domain(days.map(function(d) { return d.label; }));
+
+    var y = d3.scaleLinear()
+      .range([innerHeight, 0])
+      .domain([0, maxTotal]);
+
+    var colorScale = {
+      "utku": "var(--utku)",
+      "gozde": "var(--gozde)",
+      "both": "var(--both)",
+      "hepberaber": "var(--hepberaber)"
+    };
+
+    var stack = d3.stack().keys(["utku", "gozde", "both", "hepberaber"]);
+    var series = stack(days.map(function(d) { return Object.assign({}, d.counts, { label: d.label }); }));
+
+    var tooltip = d3.select("#d3Tooltip");
+
+    // X Axis Labels
+    g.append("g")
+      .attr("transform", "translate(0," + (innerHeight + 5) + ")")
+      .selectAll("text")
+      .data(days)
+      .enter()
+      .append("text")
+      .attr("x", function(d) { return x(d.label) + x.bandwidth() / 2; })
+      .attr("y", 0)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "middle")
+      .style("font-size", "10px")
+      .style("fill", function(d) { return d.isToday ? "var(--accent)" : "var(--muted)"; })
+      .style("font-weight", function(d) { return d.isToday ? "700" : "400"; })
+      .text(function(d) { return d.label; });
+
+    // Bars
+    var barGroups = g.selectAll("g.layer")
+      .data(series)
+      .enter()
+      .append("g")
+      .classed("layer", true)
+      .style("fill", function(d) { return colorScale[d.key]; });
+
+    barGroups.selectAll("rect")
+      .data(function(d) { return d; })
+      .enter()
+      .append("rect")
+      .attr("x", function(d) { return x(d.data.label); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d[1]); })
+      .attr("height", function(d) { return Math.max(0, y(d[0]) - y(d[1])); })
+      .attr("rx", 3);
+
+    // Total Labels on top of bars
+    g.selectAll(".total-label")
+      .data(days.filter(function(d) { return d.counts.total > 0; }))
+      .enter()
+      .append("text")
+      .attr("class", "total-label")
+      .attr("x", function(d) { return x(d.label) + x.bandwidth() / 2; })
+      .attr("y", function(d) { return y(d.counts.total) - 4; })
+      .attr("text-anchor", "middle")
+      .style("font-size", "11px")
+      .style("font-weight", "700")
+      .style("fill", "var(--text)")
+      .text(function(d) { return d.counts.total; });
+
+    // Empty bars for 0 counts
+    g.selectAll(".empty-bar")
+      .data(days.filter(function(d) { return d.counts.total === 0; }))
+      .enter()
+      .append("rect")
+      .attr("class", "empty-bar")
+      .attr("x", function(d) { return x(d.label); })
+      .attr("width", x.bandwidth())
+      .attr("y", innerHeight - 3)
+      .attr("height", 3)
+      .attr("rx", 1.5)
+      .style("fill", "var(--bg-elev-2)");
+
+    // Invisible rects for tooltip interaction (full height for easier tapping)
+    g.selectAll(".interaction-rect")
+      .data(days)
+      .enter()
+      .append("rect")
+      .attr("class", "interaction-rect")
+      .attr("x", function(d) { return x(d.label) - x.paddingInner() * x.step() / 2; })
+      .attr("width", x.step())
+      .attr("y", 0)
+      .attr("height", innerHeight)
+      .style("fill", "transparent")
+      .style("cursor", "pointer")
+      .on("mouseover touchstart", function(event, d) {
+        if (event.cancelable) event.preventDefault();
+        var html = "<div class='d3-tooltip-title'>" + d.fullLabel + " (" + d.counts.total + " sigo)</div>";
+        ["utku", "gozde", "both", "hepberaber"].forEach(function(key) {
+          if (d.counts[key] > 0) {
+            html += "<div class='d3-tooltip-row'>" +
+                    "<span class='d3-tooltip-label'><i class='dot " + key + "-bg'></i>" + WHO[key].label + "</span>" +
+                    "<span class='d3-tooltip-val'>" + d.counts[key] + "</span></div>";
           }
         });
-        col.appendChild(stack);
-      }
-
-      var label = document.createElement("span");
-      label.className = "bar-label";
-      label.textContent = day.isToday ? "Bugün" : DAY_NAMES[day.date.getDay()];
-      col.appendChild(label);
-
-      chart.appendChild(col);
-    });
+        if (d.counts.total === 0) {
+          html += "<div class='d3-tooltip-row'><span class='d3-tooltip-label'>Henüz içilmedi</span></div>";
+        }
+        tooltip.html(html);
+        var bb = this.getBoundingClientRect();
+        var tbb = tooltip.node().getBoundingClientRect();
+        tooltip
+          .style("left", (bb.left + bb.width / 2) + "px")
+          .style("top", (bb.top - tbb.height - 5) + "px")
+          .classed("visible", true);
+      })
+      .on("mouseout touchend", function(event) {
+        tooltip.classed("visible", false);
+      });
   }
 
   // 🔎 Bilgiler: metin listesi yerine görsel mini-pano
@@ -1269,73 +1364,130 @@
     var counts = [];
     for (var h = 0; h < 24; h++) counts[h] = 0;
     list.forEach(function (e) { counts[new Date(e.ts).getHours()]++; });
+    
     var max = 1, peakH = 0;
     for (h = 0; h < 24; h++) {
       if (counts[h] > max) max = counts[h];
       if (counts[h] > counts[peakH]) peakH = h;
     }
-    for (h = 0; h < 24; h++) {
-      var col = document.createElement("div");
-      col.className = "hour-col";
-      col.setAttribute("data-h", String(h));
-      col.setAttribute("data-count", String(counts[h]));
-      col.setAttribute("tabindex", "0");
-      col.setAttribute("role", "img");
-      col.setAttribute("aria-label", "Saat " + pad2(h) + ":00 · " + counts[h] + " sigo");
-      var bar = document.createElement("div");
-      bar.className = "hour-bar" + (h === peakH && counts[peakH] > 0 ? " peak" : "");
-      bar.style.height = (counts[h] === 0 ? 2 : Math.max(4, Math.round(counts[h] / max * 100))) + "%";
-      // Yoğunluk: çok içilen saat daha koyu/canlı, az içilen soluk
-      if (counts[h] > 0) bar.style.opacity = (0.4 + 0.6 * (counts[h] / max)).toFixed(2);
-      bar.title = pad2(h) + ":00 · " + counts[h];
-      col.appendChild(bar);
-      if (h % 6 === 0) {
-        var lab = document.createElement("span");
-        lab.className = "hour-lab";
-        lab.textContent = String(h);
-        col.appendChild(lab);
-      }
-      chart.appendChild(col);
-    }
     el("hourPeak").textContent = list.length ? "en yoğun " + pad2(peakH) + ":00" : "";
 
-    // Bara dokununca o saatte kaç sigo içildiğini balonda / detayda göster
-    var chartX = /** @type {any} */ (chart); // dinamik işaret alanı (expando)
-    if (!chartX.hourTipBound) {
-      chartX.hourTipBound = true;
-      chart.addEventListener("click", function (ev) {
-        var tgt = /** @type {Element} */ (ev.target);
-        var c = tgt.closest ? tgt.closest(".hour-col") : null;
-        showHourTip(chart, c);
-      });
-    }
-  }
+    if (typeof d3 === "undefined") return;
 
-  function showHourTip(chart, col) {
-    var prevSel = chart.querySelector(".hour-bar.sel");
-    if (prevSel) prevSel.classList.remove("sel");
+    var width = chart.clientWidth || 300;
+    var height = 140;
+    var margin = { top: 20, right: 0, bottom: 20, left: 0 };
+    var innerWidth = width - margin.left - margin.right;
+    var innerHeight = height - margin.top - margin.bottom;
+
+    var svg = d3.select(chart).append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", "0 0 " + width + " " + height)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+
+    var g = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var hours = d3.range(24);
+    
+    var x = d3.scaleBand()
+      .range([0, innerWidth])
+      .padding(0.2)
+      .domain(hours);
+
+    var y = d3.scaleLinear()
+      .range([innerHeight, 0])
+      .domain([0, max]);
+
+    var tooltip = d3.select("#d3Tooltip");
     var detail = el("hourDetail");
-    if (!col) {
-      if (detail) detail.textContent = "Saate dokunarak sigo sayısını gör 👆";
-      return;
-    }
+    if (detail) detail.textContent = "Saate dokunarak sigo sayısını gör 👆";
 
-    var h = parseInt(col.getAttribute("data-h"), 10);
-    var count = parseInt(col.getAttribute("data-count"), 10);
-    var bar = col.querySelector(".hour-bar");
-    if (bar) bar.classList.add("sel");
+    // X Axis Labels (every 6 hours)
+    g.append("g")
+      .attr("transform", "translate(0," + (innerHeight + 5) + ")")
+      .selectAll("text")
+      .data(hours.filter(function(h) { return h % 6 === 0; }))
+      .enter()
+      .append("text")
+      .attr("x", function(d) { return x(d) + x.bandwidth() / 2; })
+      .attr("y", 0)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "middle")
+      .style("font-size", "10px")
+      .style("fill", "var(--muted)")
+      .text(function(d) { return d; });
 
-    if (detail) {
-      if (count === 0) {
-        detail.textContent = pad2(h) + ":00–" + pad2(h) + ":59: Sigo kaydı yok 🍃";
-      } else {
-        var hEntries = scopedEntries().filter(function (e) {
-          return new Date(e.ts).getHours() === h;
+    // Bars
+    g.selectAll(".hour-bar")
+      .data(hours)
+      .enter()
+      .append("rect")
+      .attr("class", "hour-bar")
+      .attr("x", function(d) { return x(d); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return counts[d] === 0 ? innerHeight - 2 : y(counts[d]); })
+      .attr("height", function(d) { return counts[d] === 0 ? 2 : Math.max(4, innerHeight - y(counts[d])); })
+      .attr("rx", 1.5)
+      .style("fill", function(d) { return d === peakH && counts[d] > 0 ? "var(--accent)" : "var(--bg-elev-2)"; })
+      .style("opacity", function(d) { return counts[d] > 0 ? (0.4 + 0.6 * (counts[d] / max)).toFixed(2) : "1"; });
+
+    // Invisible rects for tooltip interaction
+    g.selectAll(".interaction-rect")
+      .data(hours)
+      .enter()
+      .append("rect")
+      .attr("class", "interaction-rect")
+      .attr("x", function(d) { return x(d) - x.paddingInner() * x.step() / 2; })
+      .attr("width", x.step())
+      .attr("y", 0)
+      .attr("height", innerHeight)
+      .style("fill", "transparent")
+      .style("cursor", "pointer")
+      .on("mouseover touchstart", function(event, d) {
+        if (event.cancelable) event.preventDefault();
+        
+        // Update detail text below chart
+        if (detail) {
+          if (counts[d] === 0) {
+            detail.textContent = pad2(d) + ":00–" + pad2(d) + ":59: Sigo kaydı yok 🍃";
+          } else {
+            var hEntries = scopedEntries().filter(function (e) { return new Date(e.ts).getHours() === d; });
+            var hCounts = countWho(hEntries);
+            detail.textContent = pad2(d) + ":00–" + pad2(d) + ":59: " + counts[d] + " sigo (" + breakdownText(hCounts) + ")";
+          }
+        }
+
+        // Show D3 tooltip
+        var html = "<div class='d3-tooltip-title'>" + pad2(d) + ":00 - " + pad2(d) + ":59</div>";
+        if (counts[d] > 0) {
+          html += "<div class='d3-tooltip-row'>" +
+                  "<span class='d3-tooltip-label'>Toplam Sigo</span>" +
+                  "<span class='d3-tooltip-val'>" + counts[d] + "</span></div>";
+        } else {
+          html += "<div class='d3-tooltip-row'><span class='d3-tooltip-label'>Kayıt yok</span></div>";
+        }
+        tooltip.html(html);
+        var bb = this.getBoundingClientRect();
+        var tbb = tooltip.node().getBoundingClientRect();
+        tooltip
+          .style("left", (bb.left + bb.width / 2) + "px")
+          .style("top", (bb.top - tbb.height - 5) + "px")
+          .classed("visible", true);
+
+        // Highlight the bar
+        g.selectAll(".hour-bar").style("opacity", function(bd) {
+          if (bd === d) return 1;
+          return counts[bd] > 0 ? (0.2 + 0.3 * (counts[bd] / max)).toFixed(2) : "0.5";
         });
-        var hCounts = countWho(hEntries);
-        detail.textContent = pad2(h) + ":00–" + pad2(h) + ":59: " + count + " sigo (" + breakdownText(hCounts) + ")";
-      }
-    }
+      })
+      .on("mouseout touchend", function(event) {
+        tooltip.classed("visible", false);
+        g.selectAll(".hour-bar").style("opacity", function(bd) {
+          return counts[bd] > 0 ? (0.4 + 0.6 * (counts[bd] / max)).toFixed(2) : "1";
+        });
+      });
   }
 
   function renderShare() {

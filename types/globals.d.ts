@@ -2,6 +2,8 @@
 // Bu dosya yalnızca `tsc --noEmit` (npm run typecheck) tarafından kullanılır;
 // tarayıcıya hiçbir şey gönderilmez.
 
+declare var d3: any;
+
 /** Kayıt türü: kişiler + ortak/hep beraber. */
 type Who = "utku" | "gozde" | "both" | "hepberaber";
 

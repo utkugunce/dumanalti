@@ -1,4 +1,4 @@
-var CACHE = "dumanalti-v118";
+var CACHE = "dumanalti-v119";
 var ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,8 @@ var ASSETS = [
   "./icons/avatar-utku.png",
   "./icons/avatar-gozde.png",
   "./icons/avatar-both.png",
-  "./icons/avatar-hepberaber.svg"
+  "./icons/avatar-hepberaber.svg",
+  "https://d3js.org/d3.v7.min.js"
 ];
 
 self.addEventListener("install", function (event) {
