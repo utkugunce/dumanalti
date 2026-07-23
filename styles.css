@@ -399,8 +399,8 @@ body[data-active-tab="portal"] .assistant {
 }
 
 .portal-last-action {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 16px;
   display: flex;
@@ -413,7 +413,7 @@ body[data-active-tab="portal"] .assistant {
   font-weight: 700;
   color: var(--muted);
   font-size: 11px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(128, 128, 128, 0.15);
   padding: 4px 6px;
   border-radius: 6px;
 }
@@ -432,6 +432,14 @@ body[data-active-tab="portal"] {
 .sigo-card .portal-title { color: #4fbf7a; }
 .sigara-card .portal-title { color: #60a5fa; }
 .bira-card .portal-title { color: #f7a072; }
+
+[data-theme="light"] .sigo-card { background: linear-gradient(160deg, rgba(34, 195, 154, 0.12), var(--bg-elev)); border-color: rgba(34, 195, 154, 0.25); }
+[data-theme="light"] .sigara-card { background: linear-gradient(160deg, rgba(58, 134, 255, 0.12), var(--bg-elev)); border-color: rgba(58, 134, 255, 0.25); }
+[data-theme="light"] .bira-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.12), var(--bg-elev)); border-color: rgba(247, 160, 114, 0.25); }
+[data-theme="light"] .sigo-card .portal-title { color: #15803d; }
+[data-theme="light"] .sigara-card .portal-title { color: #1d4ed8; }
+[data-theme="light"] .bira-card .portal-title { color: #c2410c; }
+[data-theme="light"] .duel-text { color: #d49500; }
 .cat-page {
   flex: 0 0 100%;
   width: 100%;
