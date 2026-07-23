@@ -191,6 +191,12 @@ body[data-active-tab="portal"] .tabbar {
   opacity: 0;
   pointer-events: none;
 }
+body[data-active-tab="portal"] .add-dial,
+body[data-active-tab="portal"] .assistant {
+  transform: translateY(150%);
+  opacity: 0;
+  pointer-events: none;
+}
 
 [data-theme="light"] .tabbar {
   background: rgba(255, 255, 255, 0.55);
