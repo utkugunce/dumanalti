@@ -31,6 +31,16 @@
     </header>
 
     <main id="view-portal" class="view">
+      <div class="portal-header">
+        <div class="portal-time-wrap">
+          <div id="portalTime" class="portal-time">--:--</div>
+          <div id="portalDate" class="portal-date">-- -- ----</div>
+        </div>
+        <div id="portalWeather" class="portal-weather">
+          <span id="weatherIcon" class="weather-icon">☁️</span>
+          <span id="weatherTemp" class="weather-temp">--°</span>
+        </div>
+      </div>
       <div class="portal-banner">
         <h2>Hoşgeldin!</h2>
         <p>Bugün neleri takip ediyoruz?</p>
@@ -40,16 +50,19 @@
           <span class="portal-ico">🚬</span>
           <span class="portal-title">Dumanaltı Sigo</span>
           <span class="portal-sub">Sarma & Filtre</span>
+          <span class="portal-count" id="portalSigoCount">Bugün: 0</span>
         </button>
         <button class="portal-card sigara-card" data-cat="sigara">
           <span class="portal-ico">🚬</span>
           <span class="portal-title">Dumanaltı Sigara</span>
           <span class="portal-sub">Paket Sigara</span>
+          <span class="portal-count" id="portalSigaraCount">Bugün: 0</span>
         </button>
         <button class="portal-card bira-card" data-cat="bira">
           <span class="portal-ico">🍺</span>
           <span class="portal-title">Dumanaltı Bira</span>
           <span class="portal-sub">Buz gibi</span>
+          <span class="portal-count" id="portalBiraCount">Bugün: 0</span>
         </button>
       </div>
     </main>

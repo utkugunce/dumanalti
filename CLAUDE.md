@@ -15,7 +15,7 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v6.3.0 · derleme 116 · SW cache `dumanalti-v116`** — buradan devam et.
+Güncel sürüm sayacı: **v6.4.0 · derleme 117 · SW cache `dumanalti-v117`** — buradan devam et.
 
 ## Düzen ve platform
 

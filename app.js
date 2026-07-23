@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.3.0";
-  var APP_BUILD = 116;
+  var APP_VERSION = "6.4.0";
+  var APP_BUILD = 117;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -544,6 +544,7 @@
     renderRecords();
     renderInsights();
     renderHistory();
+    renderPortalSummaries();
     refreshAsst();
     if (el("setCount")) el("setCount").textContent = String(entries.length);
     if (el("profileSub")) {
@@ -618,8 +619,20 @@
       }
       lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + extraText + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
     } else {
-      lastSmoke.textContent = "—";
+      lastSmoke.textContent = "Henüz kayıt yok";
     }
+  }
+
+  function renderPortalSummaries() {
+    var now = Date.now();
+    ["sigo", "sigara", "bira"].forEach(function (cat) {
+      if (!catStore[cat]) return;
+      var elCount = el("portal" + cat.charAt(0).toUpperCase() + cat.slice(1) + "Count");
+      if (elCount) {
+        var todayCount = catStore[cat].entries.filter(function (e) { return isSameDay(e.ts, now); }).length;
+        elCount.textContent = "Bugün: " + todayCount;
+      }
+    });
   }
 
   // Günün akışı: mantıksal gün şeridi (04:00 → ertesi 04:00) üzerinde her sigo
@@ -2560,6 +2573,7 @@
     document.querySelectorAll(".tab").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === name);
     });
+    document.body.setAttribute("data-active-tab", name);
     try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
     window.scrollTo(0, 0);
   }
@@ -3262,6 +3276,77 @@
     addEntry(who);
   }
 
+  function fetchWeather() {
+    var CACHE_KEY = "dumanalti.weather";
+    var CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+    var cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        var data = JSON.parse(cached);
+        if (Date.now() - data.ts < CACHE_TTL) {
+          updateWeatherUI(data.temp, data.code);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    function getWeather(lat, lon) {
+      var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true";
+      fetch(url).then(function (res) { return res.json(); }).then(function (data) {
+        if (data && data.current_weather) {
+          var w = data.current_weather;
+          updateWeatherUI(w.temperature, w.weathercode);
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ temp: w.temperature, code: w.weathercode, ts: Date.now() }));
+        }
+      }).catch(function () {});
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function (pos) { getWeather(pos.coords.latitude, pos.coords.longitude); },
+        function () { getWeather(41.01, 28.97); }, // Fallback Istanbul
+        { timeout: 5000 }
+      );
+    } else {
+      getWeather(41.01, 28.97); // Fallback Istanbul
+    }
+  }
+
+  function updateWeatherUI(temp, code) {
+    var elTemp = el("weatherTemp");
+    var elIcon = el("weatherIcon");
+    if (elTemp) elTemp.textContent = Math.round(temp) + "°";
+    if (elIcon) {
+      // WMO Weather interpretation codes
+      var icon = "☁️";
+      if (code === 0) icon = "☀️";
+      else if (code >= 1 && code <= 3) icon = "⛅";
+      else if (code >= 45 && code <= 48) icon = "🌫️";
+      else if (code >= 51 && code <= 67) icon = "🌧️";
+      else if (code >= 71 && code <= 77) icon = "❄️";
+      else if (code >= 80 && code <= 82) icon = "🌦️";
+      else if (code >= 95 && code <= 99) icon = "⛈️";
+      elIcon.textContent = icon;
+    }
+  }
+
+  function initPortalWidgets() {
+    function tick() {
+      var now = new Date();
+      var elTime = el("portalTime");
+      var elDate = el("portalDate");
+      if (elTime) elTime.textContent = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+      if (elDate) {
+        var days = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+        var months = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+        elDate.textContent = now.getDate() + " " + months[now.getMonth()] + " " + now.getFullYear() + ", " + days[now.getDay()];
+      }
+    }
+    tick();
+    setInterval(tick, 60000); // update every minute
+    fetchWeather();
+  }
+
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
   // Auto modda sistem teması değişince anında uygula
   if (window.matchMedia) {
@@ -3276,6 +3361,7 @@
   document.body.setAttribute("data-cat", activeCat);
   bind();
   render();
+  initPortalWidgets();
   handleQuickAction();
   refreshStatus();
   initCloud();

@@ -184,6 +184,12 @@ body[data-cat="bira"] .today-hero {
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.28);
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+}
+body[data-active-tab="portal"] .tabbar {
+  transform: translate(-50%, 150%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 [data-theme="light"] .tabbar {
@@ -234,6 +240,29 @@ body[data-cat="bira"] .today-hero {
 .icon-btn:active { transform: scale(0.92); }
 
 /* Super App Portal Styles */
+.portal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+.portal-time-wrap { display: flex; flex-direction: column; }
+.portal-time { font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.portal-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.portal-weather {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elev);
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.weather-icon { font-size: 20px; }
+.weather-temp { font-size: 16px; font-weight: 700; }
+
 .portal-banner {
   background: linear-gradient(135deg, rgba(34, 195, 154, 0.15), rgba(58, 134, 255, 0.1));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -282,6 +311,15 @@ body[data-cat="bira"] .today-hero {
 .portal-sub {
   font-size: 11px;
   color: var(--muted);
+  margin-bottom: 8px;
+}
+.portal-count {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 4px 8px;
+  border-radius: 8px;
 }
 .sigo-card { background: linear-gradient(160deg, rgba(34, 195, 154, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(34, 195, 154, 0.2); }
 .sigara-card { background: linear-gradient(160deg, rgba(58, 134, 255, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(58, 134, 255, 0.2); }
