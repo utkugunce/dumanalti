@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.4.0";
-  var APP_BUILD = 117;
+  var APP_VERSION = "6.5.0";
+  var APP_BUILD = 118;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -625,14 +625,48 @@
 
   function renderPortalSummaries() {
     var now = Date.now();
+    var allEntries = [];
     ["sigo", "sigara", "bira"].forEach(function (cat) {
       if (!catStore[cat]) return;
+      allEntries = allEntries.concat(catStore[cat].entries.map(function(e) { e._cat = cat; return e; }));
       var elCount = el("portal" + cat.charAt(0).toUpperCase() + cat.slice(1) + "Count");
       if (elCount) {
         var todayCount = catStore[cat].entries.filter(function (e) { return isSameDay(e.ts, now); }).length;
         elCount.textContent = "Bugün: " + todayCount;
       }
     });
+
+    var pDuel = el("portalDuel");
+    var pDuelText = el("portalDuelText");
+    if (pDuel && pDuelText && catStore.sigo) {
+      var wStart = startOfWeek(now).getTime();
+      var wSigo = catStore.sigo.entries.filter(function (e) { return e.ts >= wStart; });
+      var wC = countWho(wSigo);
+      var wU = wC.utku + wC.both + wC.hepberaber;
+      var wG = wC.gozde + wC.both + wC.hepberaber;
+      if (wU > wG) {
+        pDuelText.innerHTML = "Sigo'da <b>Utku</b> (" + wU + ") önde gidiyor!";
+      } else if (wG > wU) {
+        pDuelText.innerHTML = "Sigo'da <b>Gözde</b> (" + wG + ") önde gidiyor!";
+      } else {
+        pDuelText.innerHTML = "Sigo'da bu hafta <b>Berabere!</b> (" + wU + " - " + wG + ")";
+      }
+      pDuel.classList.remove("hidden");
+    }
+
+    var plaTime = el("portalLastAction").querySelector(".pla-time");
+    var plaDesc = el("portalLastAction").querySelector(".pla-desc");
+    if (allEntries.length > 0) {
+      allEntries.sort(function(a, b) { return b.ts - a.ts; });
+      var last = allEntries[0];
+      var catName = last._cat === "sigo" ? "Sigo" : last._cat === "sigara" ? "Sigara" : "Bira";
+      plaTime.textContent = formatTime(last.ts);
+      plaDesc.innerHTML = "<b>" + WHO[last.who].label + "</b> az önce bir " + catName + " yaktı (" + relativeTime(last.ts) + ")";
+      if (last._cat === "bira") plaDesc.innerHTML = "<b>" + WHO[last.who].label + "</b> az önce bir " + catName + " açtı (" + relativeTime(last.ts) + ")";
+    } else {
+      plaTime.textContent = "--:--";
+      plaDesc.textContent = "Henüz bir aktivite yok.";
+    }
   }
 
   // Günün akışı: mantıksal gün şeridi (04:00 → ertesi 04:00) üzerinde her sigo
@@ -3312,7 +3346,68 @@
     }
   }
 
+  var currentTemp = null;
+  var currentCode = null;
+
+  function updatePortalZivana() {
+    var tipEl = el("portalZivanaTip");
+    if (!tipEl) return;
+    var hour = new Date().getHours();
+    var msg = "Bugün nasıl hissediyoruz?";
+    if (currentTemp !== null) {
+      if (currentTemp > 28) msg = "Hava " + Math.round(currentTemp) + "°C! Buz gibi bir Bira harika gider 🍺";
+      else if (currentTemp < 10) msg = "Dışarısı " + Math.round(currentTemp) + "°C, çok soğuk! Sigo'yu içeride mi sarsak? 🥶";
+      else if (currentCode >= 51 && currentCode <= 67) msg = "Yağmur yağıyor 🌧️ Tam cam kenarı Sigo havası!";
+      else if (hour < 12) msg = "Günaydın! Sabahın ilk sigarası yandı mı? 🌅";
+      else if (hour > 22) msg = "Gece uzun... Dumanaltı mesaisi devam ediyor 🌙";
+      else msg = "Günün keyfini çıkar! Hava mis gibi " + Math.round(currentTemp) + "°C.";
+    } else {
+      if (hour < 12) msg = "Günaydın! Sabahın ilk sigarası yandı mı? 🌅";
+      else if (hour > 22) msg = "Gece uzun... Dumanaltı mesaisi devam ediyor 🌙";
+      else msg = "Zıvana düşünüyor... Bugün ne içsek?";
+    }
+    tipEl.textContent = msg;
+  }
+
+  function fetchWeather() {
+    var CACHE_KEY = "dumanalti.weather";
+    var CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+    var cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        var data = JSON.parse(cached);
+        if (Date.now() - data.ts < CACHE_TTL) {
+          updateWeatherUI(data.temp, data.code);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    function getWeather(lat, lon) {
+      var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true";
+      fetch(url).then(function (res) { return res.json(); }).then(function (data) {
+        if (data && data.current_weather) {
+          var w = data.current_weather;
+          updateWeatherUI(w.temperature, w.weathercode);
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ temp: w.temperature, code: w.weathercode, ts: Date.now() }));
+        }
+      }).catch(function () {});
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function (pos) { getWeather(pos.coords.latitude, pos.coords.longitude); },
+        function () { getWeather(41.01, 28.97); }, // Fallback Istanbul
+        { timeout: 5000 }
+      );
+    } else {
+      getWeather(41.01, 28.97); // Fallback Istanbul
+    }
+  }
+
   function updateWeatherUI(temp, code) {
+    currentTemp = temp;
+    currentCode = code;
     var elTemp = el("weatherTemp");
     var elIcon = el("weatherIcon");
     if (elTemp) elTemp.textContent = Math.round(temp) + "°";
@@ -3328,6 +3423,7 @@
       else if (code >= 95 && code <= 99) icon = "⛈️";
       elIcon.textContent = icon;
     }
+    updatePortalZivana();
   }
 
   function initPortalWidgets() {

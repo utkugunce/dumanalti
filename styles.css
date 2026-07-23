@@ -327,6 +327,74 @@ body[data-active-tab="portal"] .assistant {
   padding: 4px 8px;
   border-radius: 8px;
 }
+.portal-duel {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.duel-ico { font-size: 18px; }
+.duel-text { font-size: 13px; font-weight: 600; color: #f4d03f; }
+
+.portal-zivana {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+  animation: floatZivana 4s ease-in-out infinite;
+}
+.portal-zivana-face {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 4px 12px rgba(31,180,143,0.3));
+}
+.portal-zivana-bubble {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+@keyframes floatZivana {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.portal-last-action {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.pla-time {
+  font-weight: 700;
+  color: var(--muted);
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.pla-desc {
+  color: var(--text);
+  flex: 1;
+}
+
+body[data-active-tab="portal"] {
+  background: radial-gradient(circle at 50% 0%, rgba(31,180,143,0.08) 0%, transparent 60%), var(--bg);
+}
+
 .sigo-card { background: linear-gradient(160deg, rgba(34, 195, 154, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(34, 195, 154, 0.2); }
 .sigara-card { background: linear-gradient(160deg, rgba(58, 134, 255, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(58, 134, 255, 0.2); }
 .bira-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(247, 160, 114, 0.2); }

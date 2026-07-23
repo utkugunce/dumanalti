@@ -45,6 +45,10 @@
         <h2>Hoşgeldin!</h2>
         <p>Bugün neleri takip ediyoruz?</p>
       </div>
+      <div class="portal-duel hidden" id="portalDuel">
+        <span class="duel-ico">🏆</span>
+        <span class="duel-text" id="portalDuelText">Haftalık düello durumu...</span>
+      </div>
       <div class="portal-grid">
         <button class="portal-card sigo-card" data-cat="sigo">
           <span class="portal-ico">🚬</span>
@@ -64,6 +68,18 @@
           <span class="portal-sub">Buz gibi</span>
           <span class="portal-count" id="portalBiraCount">Bugün: 0</span>
         </button>
+      </div>
+      
+      <div class="portal-zivana">
+        <img class="portal-zivana-face" src="icons/mascot.svg" alt="Zıvana" />
+        <div class="portal-zivana-bubble">
+          <span id="portalZivanaTip">Zıvana düşünüyor...</span>
+        </div>
+      </div>
+
+      <div class="portal-last-action" id="portalLastAction">
+        <span class="pla-time">--:--</span>
+        <span class="pla-desc">Son aktivite bekleniyor...</span>
       </div>
     </main>
 
@@ -530,7 +546,7 @@
   </div>
 
   <nav class="tabbar" role="tablist">
-    <button class="tab active" data-tab="portal" role="tab"><span class="tab-ico">🏪</span><span class="tab-lbl">Market</span></button>
+    <button class="tab active" data-tab="portal" role="tab"><span class="tab-ico">🌟</span><span class="tab-lbl">Portal</span></button>
     <button class="tab" data-tab="home" role="tab"><span class="tab-ico">🏠</span><span class="tab-lbl">Bugün</span></button>
     <button class="tab" data-tab="stats" role="tab"><span class="tab-ico">📊</span><span class="tab-lbl">İstatistik</span></button>
     <button class="tab" data-tab="history" role="tab"><span class="tab-ico">🕑</span><span class="tab-lbl">Geçmiş</span></button>
