@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.7.2";
-  var APP_BUILD = 129;
+  var APP_VERSION = "6.7.3";
+  var APP_BUILD = 130;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -1629,16 +1629,40 @@
     if (statsScope !== "all") return;
     var c = countWho(entries);
     var total = c.total || 1;
-    bar.innerHTML = "";
-    ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {
-      if (c[w] > 0) {
-        var seg = document.createElement("div");
-        seg.className = "share-seg " + WHO[w].cls;
-        seg.style.width = (c[w] / total * 100) + "%";
-        seg.title = WHO[w].label + " " + c[w];
-        bar.appendChild(seg);
-      }
-    });
+    var data = ["utku", "gozde", "both", "hepberaber"]
+      .filter(function(w) { return c[w] > 0; })
+      .map(function(w) { return { key: w, count: c[w] }; });
+
+    if (typeof d3 !== "undefined") {
+      var d3bar = d3.select(bar);
+      var segs = d3bar.selectAll(".share-seg")
+        .data(data, function(d) { return d.key; });
+
+      segs.enter()
+        .append("div")
+        .attr("class", function(d) { return "share-seg " + WHO[d.key].cls; })
+        .style("width", "0%")
+        .attr("title", function(d) { return WHO[d.key].label + " " + d.count; })
+        .merge(segs)
+        .attr("title", function(d) { return WHO[d.key].label + " " + d.count; })
+        .transition()
+        .duration(600)
+        .ease(d3.easeCubicOut)
+        .style("width", function(d) { return (d.count / total * 100) + "%"; });
+
+      segs.exit().transition().duration(600).style("width", "0%").remove();
+    } else {
+      bar.innerHTML = "";
+      data.forEach(function (d) {
+        if (d.count > 0) {
+          var seg = document.createElement("div");
+          seg.className = "share-seg " + WHO[d.key].cls;
+          seg.style.width = (d.count / total * 100) + "%";
+          seg.title = WHO[d.key].label + " " + d.count;
+          bar.appendChild(seg);
+        }
+      });
+    }
     var leg = el("shareLegend");
     leg.innerHTML = "";
     ["utku", "gozde", "both", "hepberaber"].forEach(function (w) {

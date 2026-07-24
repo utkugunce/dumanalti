@@ -1137,7 +1137,7 @@ body[data-active-tab="portal"] {
   overflow: hidden;
   background: var(--bg-elev-2);
 }
-.share-seg { height: 100%; transition: width 0.4s ease; }
+.share-seg { height: 100%; }
 .share-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 13px; color: var(--muted); }
 .share-leg-item { display: flex; align-items: center; gap: 5px; }
 
