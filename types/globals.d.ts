@@ -56,3 +56,4 @@ interface Window {
   /** Testler için içe aktarılan fonksiyonlar (tests/ tarafından okunur). */
   DUMANALTI_TEST_EXPORTS?: Record<string, any>;
 }
+declare var L: any;

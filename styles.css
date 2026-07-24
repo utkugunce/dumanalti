@@ -775,6 +775,25 @@ body[data-active-tab="portal"] {
 
 /* Bilgiler açılır-kapanır */
 .collapse-head { width: 100%; background: none; border: none; padding: 0; margin: 0 0 6px; font-family: inherit; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: space-between; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+/* Map Feature CSS */
+.map-card {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.map-head {
+  padding: 16px;
+  margin: 0;
+  background: var(--bg-elev);
+}
+#mapContainer {
+  flex: 1;
+  min-height: 400px;
+  width: 100%;
+}
 .collapse-head .chev { color: var(--muted); font-size: 13px; transition: transform 0.25s; }
 .insights.collapsed .chev { transform: rotate(-90deg); }
 .insights.collapsed .insight-body { display: none; }
@@ -889,8 +908,8 @@ body[data-active-tab="portal"] {
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
   transform: translate(-50%, -10px);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 .d3-tooltip.visible {
   opacity: 1;

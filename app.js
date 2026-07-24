@@ -1504,7 +1504,7 @@
       }
     });
 
-    var maxCount = 1, peakBlock = null;
+    var maxCount = 0, peakBlock = blocks[0];
     blocks.forEach(function(b) {
       if (b.count > maxCount) {
         maxCount = b.count;
@@ -1530,7 +1530,7 @@
     setTimeout(function() {
       var fills = chart.querySelectorAll('.tod-fill');
       for(var i=0; i<fills.length; i++) {
-        fills[i].style.width = fills[i].getAttribute('data-w') + "%";
+        (/** @type {HTMLElement} */ (fills[i])).style.width = fills[i].getAttribute('data-w') + "%";
       }
     }, 50);
   }
