@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.7.5";
-  var APP_BUILD = 132;
+  var APP_VERSION = "6.8.0";
+  var APP_BUILD = 133;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -2871,6 +2871,8 @@
       if (op.type === "insert") {
         var dbRow = { id: op.row.id, who: op.row.who, ts: op.row.ts };
         if (op.row.tag) dbRow.tag = op.row.tag;
+        if (op.row.lat !== undefined) dbRow.lat = op.row.lat;
+        if (op.row.lng !== undefined) dbRow.lng = op.row.lng;
         p = sb.from(tableName).upsert(dbRow, { onConflict: "id", ignoreDuplicates: true });
       } else if (op.type === "update") {
         var fields = Object.assign({}, op.fields);
@@ -2902,14 +2904,16 @@
     var tableName = CATS[cat].table;
     var catOutbox = catStore[cat].outbox;
     if (!sb || !navigator.onLine) return Promise.resolve();
-    return sb.from(tableName).select("id,who,ts").order("ts", { ascending: true }).then(function (res) {
+    return sb.from(tableName).select("*").order("ts", { ascending: true }).then(function (res) {
       if (res.error) { cloudError(res.error); return; }
       lastCloudError = null;
       if (!res.data) return;
       var map = {};
       res.data.forEach(function (r) {
-        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: "sigo" };
+        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
         if (r.tag) o.tag = r.tag;
+        if (r.lat !== undefined && r.lat !== null) o.lat = r.lat;
+        if (r.lng !== undefined && r.lng !== null) o.lng = r.lng;
         map[r.id] = o;
       });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
@@ -2956,6 +2960,8 @@
         if (!r || catFindIndex(r.id) !== -1) return;
         var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
         if (r.tag) o.tag = r.tag;
+        if (r.lat !== undefined && r.lat !== null) o.lat = r.lat;
+        if (r.lng !== undefined && r.lng !== null) o.lng = r.lng;
         catStore[cat].entries.push(o);
         catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
         saveCatCache(cat);
@@ -3129,7 +3135,7 @@
   var closeAddDial = function () {}; // bindAddDial içinde atanır
   function showTab(name) {
     closeAddDial();
-    ["portal", "home", "stats", "history", "settings"].forEach(function (n) {
+    ["portal", "home", "stats", "history", "map", "settings"].forEach(function (n) {
       var v = el("view-" + n);
       if (v) v.classList.toggle("hidden", n !== name);
     });
@@ -3139,6 +3145,61 @@
     document.body.setAttribute("data-active-tab", name);
     try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
     window.scrollTo(0, 0);
+    
+    if (name === "map") {
+      setTimeout(renderMap, 50);
+    }
+  }
+
+  var leafletMap = null;
+  var mapMarkers = [];
+
+  function renderMap() {
+    var container = el("mapContainer");
+    if (!container) return;
+    
+    var hasCoords = entries.filter(function(e) { return typeof e.lat === "number" && typeof e.lng === "number"; });
+    
+    if (hasCoords.length === 0) {
+      container.innerHTML = "<div style='padding: 20px; text-align: center; color: var(--muted);'>Henüz konum içeren bir kayıt yok. Yeni kayıt eklerken konum izni verirseniz burada görünür.</div>";
+      return;
+    }
+    
+    if (!leafletMap) {
+      if (typeof L === "undefined") return;
+      var last = hasCoords[hasCoords.length - 1];
+      container.innerHTML = ""; // Clear "henüz kayıt yok" text
+      leafletMap = L.map("mapContainer").setView([last.lat, last.lng], 14);
+      
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(leafletMap);
+    }
+    
+    mapMarkers.forEach(function(m) { leafletMap.removeLayer(m); });
+    mapMarkers = [];
+    
+    hasCoords.forEach(function(e) {
+      var marker = L.circleMarker([e.lat, e.lng], {
+        radius: 6,
+        fillColor: (e.who === "utku" ? "#10b981" : (e.who === "gozde" ? "#f43f5e" : (e.who === "both" ? "#8b5cf6" : "#f59e0b"))),
+        color: "#1e1e2d", // dark background color for stroke
+        weight: 1.5,
+        opacity: 1,
+        fillOpacity: 0.8
+      }).addTo(leafletMap);
+      
+      var dt = new Date(e.ts);
+      var whoStr = e.who === "both" ? "Ortak" : (e.who === "hepberaber" ? "Hep Beraber" : (e.who === "utku" ? "Utku" : "Gözde"));
+      marker.bindPopup("<b>" + whoStr + "</b><br>" + dt.toLocaleDateString() + " " + pad2(dt.getHours()) + ":" + pad2(dt.getMinutes()));
+      mapMarkers.push(marker);
+    });
+    
+    setTimeout(function() {
+      if (leafletMap) leafletMap.invalidateSize();
+    }, 100);
   }
 
   // Genişleyen global sigo-ekle butonu (tüm sayfalarda)

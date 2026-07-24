@@ -14,6 +14,8 @@ interface Entry {
   ts: number;
   kind?: string;
   tag?: string;
+  lat?: number;
+  lng?: number;
 }
 
 /** Offline outbox işlemi: gönderilemeyen ekleme/güncelleme/silme. */

@@ -11,6 +11,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Dumanaltı" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -463,6 +465,16 @@
     </section>
 
     </main>
+
+    <main id="view-map" class="view hidden">
+      <section class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 100%;">
+        <div class="card-head" style="padding: 16px; margin: 0; background: var(--bg-elev);">
+          <h2>🗺️ Konum Haritası</h2>
+          <span class="muted">Nerelerde sigo içildi?</span>
+        </div>
+        <div id="mapContainer" style="flex: 1; min-height: 400px; width: 100%;"></div>
+      </section>
+    </main>
   </div>
 
   <!-- Zıvana: yardımcı asistan maskot -->
@@ -561,6 +573,7 @@
     <button class="tab" data-tab="home" role="tab"><span class="tab-ico">🏠</span><span class="tab-lbl">Bugün</span></button>
     <button class="tab" data-tab="stats" role="tab"><span class="tab-ico">📊</span><span class="tab-lbl">İstatistik</span></button>
     <button class="tab" data-tab="history" role="tab"><span class="tab-ico">🕑</span><span class="tab-lbl">Geçmiş</span></button>
+    <button class="tab" data-tab="map" role="tab"><span class="tab-ico">🗺️</span><span class="tab-lbl">Harita</span></button>
     <button class="tab" data-tab="settings" role="tab"><span class="tab-ico">⚙️</span><span class="tab-lbl">Ayarlar</span></button>
   </nav>
 
