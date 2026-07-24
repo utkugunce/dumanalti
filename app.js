@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.7.1";
-  var APP_BUILD = 128;
+  var APP_VERSION = "6.7.2";
+  var APP_BUILD = 129;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -1332,7 +1332,7 @@
     // Actually, comparison usually implies ignoring the current 'who' filter to show both.
     // Wait, if the user is looking at 'Utku' scope, showing Utku vs Gözde might be weird or intended.
     // Let's use the unfiltered global `entries` but filter by time/kind.
-    var currentKind = selectedKindScope || "all";
+    var currentKind = statsKind || "all";
     var filtered = entries.filter(function(e) {
       if (currentKind !== "all" && e.kind !== currentKind) return false;
       return true;
