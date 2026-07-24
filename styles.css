@@ -1922,3 +1922,31 @@ body[data-active-tab="portal"] {
 
 
 
+
+/* Trend Chart */
+.trend-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.trend-area {
+  fill: url(#trend-gradient);
+}
+.trend-dot {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 2;
+  transition: r 0.2s;
+}
+.trend-dot:hover { r: 5; }
+
+/* Heatmap Chart */
+.heat-cell {
+  transition: fill 0.3s, stroke 0.3s;
+}
+.heat-cell:hover {
+  stroke: var(--text);
+}
+

@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.6.1";
-  var APP_BUILD = 122;
+  var APP_VERSION = "6.6.2";
+  var APP_BUILD = 123;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -2118,13 +2118,14 @@
     var sow = eow - 30 * 86400000; // last 30 days
     var list = scoped.filter(function(e) { return e.ts >= sow && e.ts < eow; });
 
+    var MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var days = [];
     for (var i = 0; i < 30; i++) {
       var d = new Date(sow + i * 86400000);
       days.push({
         date: d,
         count: 0,
-        label: ("0" + d.getDate()).slice(-2) + "." + ("0" + (d.getMonth() + 1)).slice(-2)
+        label: ("0" + d.getDate()).slice(-2) + " " + MONTH_NAMES[d.getMonth()]
       });
     }
 
@@ -2155,18 +2156,54 @@
     var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     var x = d3.scalePoint().range([0, innerWidth]).domain(days.map(function(d) { return d.label; }));
-    var y = d3.scaleLinear().range([innerHeight, 0]).domain([0, maxTotal * 1.1]); // 10% headroom
+    var yMax = maxTotal * 1.1; // 10% headroom
+    var y = d3.scaleLinear().range([innerHeight, 0]).domain([0, yMax]); 
 
     var line = d3.line()
       .x(function(d) { return x(d.label); })
       .y(function(d) { return y(d.count); })
-      .curve(d3.curveMonotoneX);
+      .curve(d3.curveLinear);
 
     var area = d3.area()
       .x(function(d) { return x(d.label); })
       .y0(innerHeight)
       .y1(function(d) { return y(d.count); })
-      .curve(d3.curveMonotoneX);
+      .curve(d3.curveLinear);
+
+    // Draw Gridlines & Axes first so they stay behind
+    var yTicks = y.ticks(4);
+    
+    // Horizontal dotted grid lines
+    g.selectAll(".y-grid-line")
+      .data(yTicks)
+      .enter().append("line")
+      .attr("class", "grid-line")
+      .attr("x1", 0)
+      .attr("x2", innerWidth)
+      .attr("y1", function(d) { return y(d); })
+      .attr("y2", function(d) { return y(d); })
+      .style("stroke", "var(--border)")
+      .style("stroke-dasharray", "3,3")
+      .style("stroke-width", "1px");
+
+    // Vertical dotted Y axis line
+    g.append("line")
+      .attr("x1", 0)
+      .attr("x2", 0)
+      .attr("y1", 0)
+      .attr("y2", innerHeight)
+      .style("stroke", "var(--border)")
+      .style("stroke-dasharray", "3,3")
+      .style("stroke-width", "1px");
+
+    // Solid X Axis line at bottom
+    g.append("line")
+      .attr("x1", 0)
+      .attr("x2", innerWidth)
+      .attr("y1", innerHeight)
+      .attr("y2", innerHeight)
+      .style("stroke", "var(--border)")
+      .style("stroke-width", "1px");
 
     // Area
     g.append("path")
@@ -2188,31 +2225,44 @@
       .ease(d3.easeCubicOut)
       .attr("stroke-dashoffset", 0);
 
-    // X Axis sparse labels
-    var tickFilter = function(d, i) { return i === 0 || i === 14 || i === 29; };
-    g.selectAll(".t-x-label")
-      .data(days.filter(tickFilter))
-      .enter().append("text")
-      .attr("class", "t-x-label")
-      .attr("x", function(d) { return x(d.label); })
-      .attr("y", innerHeight + 14)
-      .style("text-anchor", function(d, i) { return i === 0 ? "start" : (i === 2 ? "end" : "middle"); })
-      .style("font-size", "10px")
-      .style("fill", "var(--muted)")
-      .text(function(d) { return d.label; });
-
-    // Y Axis sparse labels
+    // Y Axis labels
     g.selectAll(".t-y-label")
-      .data([0, Math.round(maxTotal / 2), maxTotal])
+      .data(yTicks)
       .enter().append("text")
       .attr("class", "t-y-label")
-      .attr("x", -5)
+      .attr("x", -8)
       .attr("y", function(d) { return y(d); })
       .attr("dy", "0.32em")
       .style("text-anchor", "end")
       .style("font-size", "10px")
       .style("fill", "var(--muted)")
       .text(function(d) { return d; });
+
+    // X Axis ticks & labels
+    var xTickIndices = [0, 7, 14, 21, 29];
+    var xTickData = days.filter(function(d, i) { return xTickIndices.indexOf(i) !== -1; });
+
+    g.selectAll(".t-x-tick")
+      .data(xTickData)
+      .enter().append("line")
+      .attr("class", "t-x-tick")
+      .attr("x1", function(d) { return x(d.label); })
+      .attr("x2", function(d) { return x(d.label); })
+      .attr("y1", innerHeight)
+      .attr("y2", innerHeight + 5)
+      .style("stroke", "var(--border)")
+      .style("stroke-width", "1px");
+
+    g.selectAll(".t-x-label")
+      .data(xTickData)
+      .enter().append("text")
+      .attr("class", "t-x-label")
+      .attr("x", function(d) { return x(d.label); })
+      .attr("y", innerHeight + 16)
+      .style("text-anchor", "middle")
+      .style("font-size", "10px")
+      .style("fill", "var(--muted)")
+      .text(function(d) { return d.label; });
 
     var tooltip = d3.select("#d3Tooltip");
 
