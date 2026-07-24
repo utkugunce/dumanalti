@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.7.3";
-  var APP_BUILD = 130;
+  var APP_VERSION = "6.7.4";
+  var APP_BUILD = 131;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -787,7 +787,7 @@
       .style("fill", function(d) { return colorScale[d.key]; });
 
     barGroups.selectAll("rect")
-      .data(function(d) { return d.filter(function(v) { return v[1] > v[0]; }); })
+      .data(function(d) { return d; })
       .enter()
       .append("rect")
       .attr("x", function(d) { return x(d.data.label); })
@@ -799,7 +799,8 @@
       .duration(600)
       .ease(d3.easeCubicOut)
       .attr("y", function(d) { return y(d[1]); })
-      .attr("height", function(d) { return Math.max(0, y(d[0]) - y(d[1])); });
+      .attr("height", function(d) { return Math.max(0, y(d[0]) - y(d[1])); })
+      .attr("visibility", function(d) { return d[1] > d[0] ? "visible" : "hidden"; });
 
     // Total Labels on top of bars
     g.selectAll(".total-label")
@@ -1347,8 +1348,8 @@
       var dayList = filtered.filter(function (e) { return dayKey(e.ts) === key; });
       var c = countWho(dayList);
       
-      var uCount = c.utku || 0;
-      var gCount = c.gozde || 0;
+      var uCount = (c.utku || 0) + (c.both || 0) + (c.hepberaber || 0);
+      var gCount = (c.gozde || 0) + (c.both || 0) + (c.hepberaber || 0);
       if (uCount > maxTotal) maxTotal = uCount;
       if (gCount > maxTotal) maxTotal = gCount;
       
