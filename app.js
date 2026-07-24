@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.6.2";
-  var APP_BUILD = 123;
+  var APP_VERSION = "6.6.3";
+  var APP_BUILD = 124;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -2289,6 +2289,22 @@
         d3.select(this).attr("r", 3);
       })
       .transition().delay(1000).duration(500).attr("r", 3);
+
+    // Draw max value(s) above peaks
+    var peaks = days.filter(function(d) { return d.count === maxTotal && maxTotal > 0; });
+    g.selectAll(".trend-peak-label")
+      .data(peaks)
+      .enter().append("text")
+      .attr("class", "trend-peak-label")
+      .attr("x", function(d) { return x(d.label); })
+      .attr("y", function(d) { return y(d.count) - 10; })
+      .style("text-anchor", "middle")
+      .style("font-size", "11px")
+      .style("font-weight", "800")
+      .style("fill", "var(--text)")
+      .text(function(d) { return d.count; })
+      .attr("opacity", 0)
+      .transition().delay(1500).duration(500).attr("opacity", 1);
   }
 
   // İstatistik sekmesinin bileşenleri: kişi filtresi değişince yalnız bunlar çizilir
