@@ -1,4 +1,4 @@
-var CACHE = "dumanalti-v125";
+var CACHE = "dumanalti-v126";
 var ASSETS = [
   "./",
   "./index.html",

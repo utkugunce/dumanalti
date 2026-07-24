@@ -821,7 +821,7 @@ body[data-active-tab="portal"] {
 .hepberaber-bg { background: var(--hepberaber); }
 
 /* Chart and D3 Tooltip */
-.chart, .hour-chart {
+.chart {
   width: 100%;
   height: 140px;
   position: relative;
@@ -829,11 +829,21 @@ body[data-active-tab="portal"] {
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
 }
-.chart::-webkit-scrollbar, .hour-chart::-webkit-scrollbar {
+.chart::-webkit-scrollbar {
   display: none; /* Hide scrollbar for cleaner look */
 }
-.chart svg, .hour-chart svg {
+.chart svg {
   min-width: 420px;
+  height: 100%;
+  overflow: visible;
+}
+.hour-chart {
+  width: 100%;
+  height: 140px;
+  position: relative;
+}
+.hour-chart svg {
+  width: 100%;
   height: 100%;
   overflow: visible;
 }
