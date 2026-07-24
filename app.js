@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.7.4";
-  var APP_BUILD = 131;
+  var APP_VERSION = "6.7.5";
+  var APP_BUILD = 132;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -1483,143 +1483,56 @@
       });
   }
 
-  function renderHourly() {
-    var chart = el("hourChart");
+  function renderTod() {
+    var chart = el("todChart");
     if (!chart) return;
-    chart.innerHTML = "";
     var list = scopedEntries();
-    var counts = [];
-    for (var h = 0; h < 24; h++) counts[h] = 0;
-    list.forEach(function (e) { counts[new Date(e.ts).getHours()]++; });
+    var blocks = [
+      { id: "sabah", label: "🌅 Sabah", hours: [6,7,8,9,10,11], count: 0 },
+      { id: "ogle", label: "☀️ Öğle", hours: [12,13,14,15,16,17], count: 0 },
+      { id: "aksam", label: "🌆 Akşam", hours: [18,19,20,21,22,23], count: 0 },
+      { id: "gece", label: "🌙 Gece", hours: [0,1,2,3,4,5], count: 0 }
+    ];
     
-    var max = 1, peakH = 0;
-    for (h = 0; h < 24; h++) {
-      if (counts[h] > max) max = counts[h];
-      if (counts[h] > counts[peakH]) peakH = h;
+    list.forEach(function (e) { 
+      var h = new Date(e.ts).getHours();
+      for (var i=0; i<4; i++) {
+        if (blocks[i].hours.indexOf(h) !== -1) {
+          blocks[i].count++;
+          break;
+        }
+      }
+    });
+
+    var maxCount = 1, peakBlock = null;
+    blocks.forEach(function(b) {
+      if (b.count > maxCount) {
+        maxCount = b.count;
+        peakBlock = b;
+      }
+    });
+    
+    if (el("todPeak")) {
+      el("todPeak").textContent = peakBlock && list.length ? "en yoğun: " + peakBlock.label.split(" ")[1] : "";
     }
-    el("hourPeak").textContent = list.length ? "en yoğun " + pad2(peakH) + ":00" : "";
-
-    if (typeof d3 === "undefined") return;
-
-    var width = chart.clientWidth || 300;
-    var height = 140;
-    var margin = { top: 20, right: 0, bottom: 20, left: 0 };
-    var innerWidth = width - margin.left - margin.right;
-    var innerHeight = height - margin.top - margin.bottom;
-
-    var svg = d3.select(chart).append("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", "0 0 " + width + " " + height)
-      .attr("preserveAspectRatio", "xMidYMid meet");
-
-    var g = svg.append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    var hours = d3.range(24);
     
-    var x = d3.scaleBand()
-      .range([0, innerWidth])
-      .padding(0.2)
-      .domain(hours);
-
-    var y = d3.scaleLinear()
-      .range([innerHeight, 0])
-      .domain([0, max]);
-
-    var tooltip = d3.select("#d3Tooltip");
-    var detail = el("hourDetail");
-    if (detail) detail.textContent = "Saate dokunarak sigo sayısını gör 👆";
-
-    // X Axis Labels (every 6 hours)
-    g.append("g")
-      .attr("transform", "translate(0," + (innerHeight + 5) + ")")
-      .selectAll("text")
-      .data(hours.filter(function(h) { return h % 6 === 0; }))
-      .enter()
-      .append("text")
-      .attr("x", function(d) { return x(d) + x.bandwidth() / 2; })
-      .attr("y", 0)
-      .attr("dy", "0.71em")
-      .attr("text-anchor", "middle")
-      .style("font-size", "10px")
-      .style("fill", "var(--muted)")
-      .text(function(d) { return d; });
-
-    // Bars
-    g.selectAll(".hour-bar-rect")
-      .data(hours)
-      .enter()
-      .append("rect")
-      .attr("class", "hour-bar-rect")
-      .attr("x", function(d) { return x(d); })
-      .attr("width", x.bandwidth())
-      .attr("rx", 1.5)
-      .style("fill", function(d) { return d === peakH && counts[d] > 0 ? "var(--accent)" : "var(--bg-elev-2)"; })
-      .style("opacity", function(d) { return counts[d] > 0 ? (0.4 + 0.6 * (counts[d] / max)).toFixed(2) : "1"; })
-      .attr("y", innerHeight)
-      .attr("height", 0)
-      .transition()
-      .duration(600)
-      .ease(d3.easeCubicOut)
-      .attr("y", function(d) { return counts[d] === 0 ? innerHeight - 2 : y(counts[d]); })
-      .attr("height", function(d) { return counts[d] === 0 ? 2 : Math.max(4, innerHeight - y(counts[d])); });
-
-    // Invisible rects for tooltip interaction
-    g.selectAll(".interaction-rect")
-      .data(hours)
-      .enter()
-      .append("rect")
-      .attr("class", "interaction-rect")
-      .attr("x", function(d) { return x(d) - x.paddingInner() * x.step() / 2; })
-      .attr("width", x.step())
-      .attr("y", 0)
-      .attr("height", innerHeight)
-      .style("fill", "transparent")
-      .style("cursor", "pointer")
-      .on("mouseover touchstart", function(event, d) {
-        if (event.cancelable) event.preventDefault();
-        
-        // Update detail text below chart
-        if (detail) {
-          if (counts[d] === 0) {
-            detail.textContent = pad2(d) + ":00–" + pad2(d) + ":59: Sigo kaydı yok 🍃";
-          } else {
-            var hEntries = scopedEntries().filter(function (e) { return new Date(e.ts).getHours() === d; });
-            var hCounts = countWho(hEntries);
-            detail.textContent = pad2(d) + ":00–" + pad2(d) + ":59: " + counts[d] + " sigo (" + breakdownText(hCounts) + ")";
-          }
-        }
-
-        // Show D3 tooltip
-        var html = "<div class='d3-tooltip-title'>" + pad2(d) + ":00 - " + pad2(d) + ":59</div>";
-        if (counts[d] > 0) {
-          html += "<div class='d3-tooltip-row'>" +
-                  "<span class='d3-tooltip-label'>Toplam Sigo</span>" +
-                  "<span class='d3-tooltip-val'>" + counts[d] + "</span></div>";
-        } else {
-          html += "<div class='d3-tooltip-row'><span class='d3-tooltip-label'>Kayıt yok</span></div>";
-        }
-        tooltip.html(html);
-        var bb = this.getBoundingClientRect();
-        var tbb = tooltip.node().getBoundingClientRect();
-        tooltip
-          .style("left", (bb.left + bb.width / 2) + "px")
-          .style("top", (bb.top - tbb.height - 5) + "px")
-          .classed("visible", true);
-
-        // Highlight the bar
-        g.selectAll(".hour-bar-rect").style("opacity", function(bd) {
-          if (bd === d) return 1;
-          return counts[bd] > 0 ? (0.2 + 0.3 * (counts[bd] / max)).toFixed(2) : "0.5";
-        });
-      })
-      .on("mouseout touchend", function(event) {
-        tooltip.classed("visible", false);
-        g.selectAll(".hour-bar-rect").style("opacity", function(bd) {
-          return counts[bd] > 0 ? (0.4 + 0.6 * (counts[bd] / max)).toFixed(2) : "1";
-        });
-      });
+    var html = "";
+    blocks.forEach(function(b) {
+      var w = list.length > 0 ? Math.max(2, (b.count / maxCount) * 100) : 2;
+      html += '<div class="tod-row">' +
+              '<div class="tod-label" title="' + b.label.split(" ")[1] + '">' + b.label.split(" ")[0] + ' ' + b.label.split(" ")[1].substring(0,3) + '</div>' +
+              '<div class="tod-track"><div class="tod-fill" style="width: 0%" data-w="' + w + '"></div></div>' +
+              '<div class="tod-val">' + b.count + '</div>' +
+              '</div>';
+    });
+    chart.innerHTML = html;
+    
+    setTimeout(function() {
+      var fills = chart.querySelectorAll('.tod-fill');
+      for(var i=0; i<fills.length; i++) {
+        fills[i].style.width = fills[i].getAttribute('data-w') + "%";
+      }
+    }, 50);
   }
 
   function renderShare() {
@@ -2469,7 +2382,7 @@
     renderBadges();
     renderChart();
     renderWeeklyComparison();
-    renderHourly();
+    renderTod();
     renderHeatmap();
     renderTrendChart();
     renderShare();
