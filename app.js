@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.6.5";
-  var APP_BUILD = 126;
+  var APP_VERSION = "6.7.0";
+  var APP_BUILD = 127;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -1353,6 +1353,166 @@
     });
   }
 
+  function renderWeeklyComparison() {
+    var chart = el("weeklyComparisonChart");
+    if (!chart) return;
+    chart.innerHTML = "";
+    if (typeof d3 === "undefined") return;
+
+    var scoped = scopedEntries(); // uses current filter, but we should use ALL entries and filter by who for comparison
+    // Actually, comparison usually implies ignoring the current 'who' filter to show both.
+    // Wait, if the user is looking at 'Utku' scope, showing Utku vs Gözde might be weird or intended.
+    // Let's use the unfiltered global `entries` but filter by time/kind.
+    var currentKind = selectedKindScope || "all";
+    var filtered = entries.filter(function(e) {
+      if (currentKind !== "all" && e.kind !== currentKind) return false;
+      return true;
+    });
+
+    var days = [];
+    var maxTotal = 1;
+    for (var i = 6; i >= 0; i--) {
+      var d = startOfDay(Date.now());
+      d.setDate(d.getDate() - i);
+      var key = dayKey(d);
+      var dayList = filtered.filter(function (e) { return dayKey(e.ts) === key; });
+      var c = countWho(dayList);
+      
+      var uCount = c.utku || 0;
+      var gCount = c.gozde || 0;
+      if (uCount > maxTotal) maxTotal = uCount;
+      if (gCount > maxTotal) maxTotal = gCount;
+      
+      days.push({
+        date: d,
+        label: i === 0 ? "Bugün" : DAY_NAMES[d.getDay()],
+        fullLabel: i === 0 ? "Bugün" : ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"][d.getDay()],
+        utku: uCount,
+        gozde: gCount
+      });
+    }
+
+    var width = chart.clientWidth || 300;
+    var height = 140;
+    var margin = { top: 20, right: 0, bottom: 20, left: 0 };
+    var innerWidth = width - margin.left - margin.right;
+    var innerHeight = height - margin.top - margin.bottom;
+
+    var svg = d3.select(chart).append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", "0 0 " + width + " " + height)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+
+    var g = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x0 = d3.scaleBand()
+      .rangeRound([0, innerWidth])
+      .paddingInner(0.2)
+      .domain(days.map(function(d) { return d.label; }));
+
+    var x1 = d3.scaleBand()
+      .padding(0.1)
+      .domain(["utku", "gozde"])
+      .rangeRound([0, x0.bandwidth()]);
+
+    var y = d3.scaleLinear()
+      .rangeRound([innerHeight, 0])
+      .domain([0, maxTotal]);
+
+    var colors = {
+      utku: "var(--utku)",
+      gozde: "var(--gozde)"
+    };
+
+    var tooltip = d3.select("#d3Tooltip");
+    var detail = el("comparisonDetail");
+    if (detail) detail.textContent = "Çubuklara dokunarak sayıları gör 👆";
+
+    // X Axis Labels
+    g.append("g")
+      .attr("transform", "translate(0," + (innerHeight + 5) + ")")
+      .selectAll("text")
+      .data(days)
+      .enter()
+      .append("text")
+      .attr("x", function(d) { return x0(d.label) + x0.bandwidth() / 2; })
+      .attr("y", 0)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "middle")
+      .style("font-size", "10px")
+      .style("fill", "var(--muted)")
+      .text(function(d) { return d.label; });
+
+    // Day Groups
+    var dayGroup = g.selectAll(".day-group")
+      .data(days)
+      .enter().append("g")
+      .attr("class", "day-group")
+      .attr("transform", function(d) { return "translate(" + x0(d.label) + ",0)"; });
+
+    // Utku bars
+    dayGroup.append("rect")
+      .attr("class", "bar-utku")
+      .attr("x", function(d) { return x1("utku"); })
+      .attr("width", x1.bandwidth())
+      .attr("rx", 3)
+      .style("fill", colors.utku)
+      .attr("y", innerHeight)
+      .attr("height", 0)
+      .transition()
+      .duration(600)
+      .ease(d3.easeCubicOut)
+      .attr("y", function(d) { return d.utku === 0 ? innerHeight - 2 : y(d.utku); })
+      .attr("height", function(d) { return d.utku === 0 ? 2 : Math.max(4, innerHeight - y(d.utku)); });
+
+    // Gozde bars
+    dayGroup.append("rect")
+      .attr("class", "bar-gozde")
+      .attr("x", function(d) { return x1("gozde"); })
+      .attr("width", x1.bandwidth())
+      .attr("rx", 3)
+      .style("fill", colors.gozde)
+      .attr("y", innerHeight)
+      .attr("height", 0)
+      .transition()
+      .duration(600)
+      .ease(d3.easeCubicOut)
+      .attr("y", function(d) { return d.gozde === 0 ? innerHeight - 2 : y(d.gozde); })
+      .attr("height", function(d) { return d.gozde === 0 ? 2 : Math.max(4, innerHeight - y(d.gozde)); });
+
+    // Interaction overlays
+    dayGroup.append("rect")
+      .attr("class", "interaction-rect")
+      .attr("x", 0)
+      .attr("width", x0.bandwidth())
+      .attr("y", 0)
+      .attr("height", innerHeight)
+      .style("fill", "transparent")
+      .on("mouseover touchstart", function(event, d) {
+        if (detail) {
+          detail.innerHTML = '<strong>' + d.fullLabel + '</strong>: ' +
+            '<span style="color:var(--utku)">' + d.utku + ' Utku</span> - ' +
+            '<span style="color:var(--gozde)">' + d.gozde + ' Gözde</span>';
+        }
+        tooltip.html('<div class="d3-tooltip-title">' + d.fullLabel + '</div>' +
+                     '<div class="d3-tooltip-row"><span class="d3-tooltip-label"><i class="dot" style="background:var(--utku)"></i>Utku:</span><span class="d3-tooltip-val">' + d.utku + '</span></div>' +
+                     '<div class="d3-tooltip-row"><span class="d3-tooltip-label"><i class="dot" style="background:var(--gozde)"></i>Gözde:</span><span class="d3-tooltip-val">' + d.gozde + '</span></div>')
+               .classed("visible", true);
+        d3.select(this.parentNode).selectAll("rect:not(.interaction-rect)").style("filter", "brightness(1.2)");
+      })
+      .on("mousemove touchmove", function(event) {
+        tooltip.style("left", (event.pageX) + "px")
+               .style("top", (event.pageY - 40) + "px");
+      })
+      .on("mouseout touchend", function(event) {
+        if (detail) detail.textContent = "Çubuklara dokunarak sayıları gör 👆";
+        tooltip.classed("visible", false);
+        d3.select(this.parentNode).selectAll("rect:not(.interaction-rect)").style("filter", "none");
+      });
+  }
+
   function renderHourly() {
     var chart = el("hourChart");
     if (!chart) return;
@@ -2162,13 +2322,13 @@
     var line = d3.line()
       .x(function(d) { return x(d.label); })
       .y(function(d) { return y(d.count); })
-      .curve(d3.curveLinear);
+      .curve(d3.curveMonotoneX);
 
     var area = d3.area()
       .x(function(d) { return x(d.label); })
       .y0(innerHeight)
       .y1(function(d) { return y(d.count); })
-      .curve(d3.curveLinear);
+      .curve(d3.curveMonotoneX);
 
     // Draw Gridlines & Axes first so they stay behind
     var yTicks = y.ticks(4);
@@ -2314,6 +2474,7 @@
     renderStatCards();
     renderBadges();
     renderChart();
+    renderWeeklyComparison();
     renderHourly();
     renderHeatmap();
     renderTrendChart();
