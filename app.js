@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.6.0";
-  var APP_BUILD = 121;
+  var APP_VERSION = "6.6.1";
+  var APP_BUILD = 122;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -2010,72 +2010,74 @@
 
     var scoped = scopedEntries();
     var now = Date.now();
-    var eow = startOfDay(now).getTime() + 86400000;
-    var sow = eow - 7 * 86400000;
-    var last7 = scoped.filter(function(e) { return e.ts >= sow && e.ts < eow; });
+    var sow = now - 7 * 86400000;
+    var last7 = scoped.filter(function(e) { return e.ts >= sow; });
 
-    // Y axis: Days 0..6 (0 is today-6, 6 is today)
-    // X axis: Hours 0..23
+    // Y axis: Days 0..6 (Mon..Sun)
+    var DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+    var getDayIndex = function(ts) { 
+      var d = new Date(ts).getDay(); // 0=Sun, 1=Mon ... 6=Sat
+      return d === 0 ? 6 : d - 1;
+    };
+
     var matrix = [];
     for (var d = 0; d < 7; d++) {
-      var dateObj = new Date(sow + d * 86400000);
       for (var h = 0; h < 24; h++) {
-        matrix.push({ dayIndex: d, hour: h, count: 0, dateObj: dateObj });
+        matrix.push({ dayIndex: d, hour: h, count: 0 });
       }
     }
 
     last7.forEach(function(e) {
-      var dIndex = Math.floor((e.ts - sow) / 86400000);
       var hr = new Date(e.ts).getHours();
-      if (dIndex >= 0 && dIndex < 7) {
-        var idx = dIndex * 24 + hr;
-        if (matrix[idx]) matrix[idx].count++;
-      }
+      var dIndex = getDayIndex(e.ts);
+      var idx = dIndex * 24 + hr;
+      if (matrix[idx]) matrix[idx].count++;
     });
 
     var maxCount = d3.max(matrix, function(d) { return d.count; }) || 1;
-    var colorScale = d3.scaleSequential(d3.interpolateGreens).domain([0, maxCount]);
+    var colorScale = d3.scaleSequential(d3.interpolateGreens).domain([0, maxCount * 1.2]); // Yüksek değerlerin fosforlu olmasını hafiflet
 
-    var margin = { top: 20, right: 10, bottom: 20, left: 40 };
-    var width = chart.clientWidth || 300;
-    var innerWidth = width - margin.left - margin.right;
-    var innerHeight = 140 - margin.top - margin.bottom;
+    var margin = { top: 15, right: 10, bottom: 20, left: 30 };
+    var cellSize = 11;
+    var cellGap = 3;
+    var cellStep = cellSize + cellGap;
+
+    var innerWidth = 24 * cellStep;
+    var innerHeight = 7 * cellStep;
+
+    var width = innerWidth + margin.left + margin.right;
+    var height = innerHeight + margin.top + margin.bottom;
 
     var svg = d3.select(chart).append("svg")
       .attr("width", width)
-      .attr("height", 140);
+      .attr("height", height);
     var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var x = d3.scaleBand().range([0, innerWidth]).domain(d3.range(24)).padding(0.1);
-    var y = d3.scaleBand().range([innerHeight, 0]).domain(d3.range(7)).padding(0.1);
-
-    // Y Axis labels
+    // Y axis labels
     g.selectAll(".h-day-label")
       .data(d3.range(7))
       .enter().append("text")
       .attr("class", "h-day-label")
-      .attr("x", -5)
-      .attr("y", function(d) { return y(d) + y.bandwidth() / 2; })
+      .attr("x", -6)
+      .attr("y", function(d) { return d * cellStep + cellSize / 2; })
       .attr("dy", "0.32em")
       .style("text-anchor", "end")
       .style("font-size", "10px")
       .style("fill", "var(--muted)")
-      .text(function(d) {
-        var dateObj = new Date(sow + d * 86400000);
-        return d === 6 ? "Bugün" : DAY_NAMES[dateObj.getDay()];
-      });
+      .text(function(d) { return DAY_LABELS[d]; });
 
-    // X Axis labels (every 6 hours)
+    // X axis labels
+    var xTicks = [0, 6, 12, 18];
     g.selectAll(".h-hour-label")
-      .data([0, 6, 12, 18, 23])
+      .data(xTicks)
       .enter().append("text")
       .attr("class", "h-hour-label")
-      .attr("x", function(d) { return x(d) + x.bandwidth() / 2; })
-      .attr("y", innerHeight + 12)
-      .style("text-anchor", "middle")
-      .style("font-size", "9px")
+      .attr("x", function(d) { return d * cellStep; })
+      .attr("y", innerHeight + 14)
+      .style("text-anchor", "start")
+      .style("font-size", "10px")
       .style("fill", "var(--muted)")
-      .text(function(d) { return pad2(d); });
+      .text(function(d) { return d; });
 
     var tooltip = d3.select("#d3Tooltip");
 
@@ -2083,14 +2085,14 @@
       .data(matrix)
       .enter().append("rect")
       .attr("class", "heat-cell")
-      .attr("x", function(d) { return x(d.hour); })
-      .attr("y", function(d) { return y(d.dayIndex); })
-      .attr("width", x.bandwidth())
-      .attr("height", y.bandwidth())
-      .style("fill", function(d) { return d.count === 0 ? "var(--bg-elev-2)" : colorScale(d.count); })
+      .attr("x", function(d) { return d.hour * cellStep; })
+      .attr("y", function(d) { return d.dayIndex * cellStep; })
+      .attr("width", cellSize)
+      .attr("height", cellSize)
+      .attr("rx", 2)
+      .style("fill", function(d) { return d.count === 0 ? "rgba(255, 255, 255, 0.04)" : colorScale(d.count); })
       .on("mouseover touchstart", function(event, d) {
-        var dayName = d.dayIndex === 6 ? "Bugün" : DAY_NAMES[d.dateObj.getDay()];
-        tooltip.html('<div class="d3-tooltip-title">' + dayName + '</div>' +
+        tooltip.html('<div class="d3-tooltip-title">' + DAY_LABELS[d.dayIndex] + '</div>' +
                      '<div class="d3-tooltip-row"><span>Saat:</span><span class="d3-tooltip-val">' + pad2(d.hour) + ':00</span></div>' +
                      '<div class="d3-tooltip-row"><span>Miktar:</span><span class="d3-tooltip-val">' + d.count + ' sigo</span></div>')
                .classed("visible", true);
