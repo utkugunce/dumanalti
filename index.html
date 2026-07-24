@@ -64,13 +64,13 @@
           <span class="portal-sub">Paket Sigara</span>
           <span class="portal-count" id="portalSigaraCount">Bugün: 0</span>
         </button>
-        <button class="portal-card bira-card" data-cat="bira">
-          <span class="portal-ico">🍺</span>
+        <button class="portal-card icki-card" data-cat="icki">
+          <span class="portal-ico">🥂</span>
           <div class="portal-text-group">
-            <div class="portal-title">Bira</div>
-            <div class="portal-sub">Buz gibi</div>
+            <div class="portal-title">İçki</div>
+            <div class="portal-sub">Kadehler havaya</div>
           </div>
-          <span class="portal-count" id="portalBiraCount">Bugün: 0</span>
+          <span class="portal-count" id="portalIckiCount">Bugün: 0</span>
         </button>
       </div>
       
@@ -504,9 +504,19 @@
   <!-- Global sigo ekleme: her sayfada açılan hızlı buton -->
   <div id="addDial" class="add-dial">
     <div id="addOptions" class="add-options">
-      <div id="addKindSeg" class="add-kind-seg" role="group" aria-label="Kayıt türü">
+      <div id="sigoKindSeg" class="add-kind-seg" role="group" aria-label="Kayıt türü">
         <button class="add-kind-btn active" data-kind="sigo" type="button">🚬 Sigo</button>
         <button class="add-kind-btn" data-kind="bong" type="button">🫧 Bong</button>
+      </div>
+
+      <div id="ickiKindSeg" class="add-kind-seg hidden" role="group" aria-label="İçki türü">
+        <button class="add-kind-btn active" data-kind="bira" type="button">🍺 Bira</button>
+        <button class="add-kind-btn" data-kind="cin" type="button">🍸 Cin</button>
+        <button class="add-kind-btn" data-kind="sarap" type="button">🍷 Şarap</button>
+        <button class="add-kind-btn" data-kind="viski" type="button">🥃 Viski</button>
+        <button class="add-kind-btn" data-kind="raki" type="button">🥛 Rakı</button>
+        <button class="add-kind-btn" data-kind="kokteyl" type="button">🍹 Kokteyl</button>
+        <button class="add-kind-btn" data-kind="diger" type="button">🥂 Diğer</button>
       </div>
 
       <!-- Bira özel seçenekleri: Marka ve Hacim -->
@@ -532,6 +542,20 @@
           <div class="seg" id="beerSizeSeg">
             <button class="seg-btn active" data-size="50cl" type="button">50 cl</button>
             <button class="seg-btn" data-size="33cl" type="button">33 cl</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diğer içkiler: Bardak/Kadeh seçimi -->
+      <div id="glassOptWrap" class="beer-opt-wrap hidden">
+        <div class="beer-opt-row">
+          <label>Miktar:</label>
+          <div class="seg" id="glassSizeSeg">
+            <button class="seg-btn active" data-glass="1" type="button">1</button>
+            <button class="seg-btn" data-glass="2" type="button">2</button>
+            <button class="seg-btn" data-glass="3" type="button">3</button>
+            <button class="seg-btn" data-glass="4" type="button">4</button>
+            <button class="seg-btn" data-glass="5" type="button">5</button>
           </div>
         </div>
       </div>

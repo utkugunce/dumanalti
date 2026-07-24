@@ -428,17 +428,17 @@ body[data-active-tab="portal"] {
 
 .sigo-card { background: linear-gradient(160deg, rgba(34, 195, 154, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(34, 195, 154, 0.2); }
 .sigara-card { background: linear-gradient(160deg, rgba(58, 134, 255, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(58, 134, 255, 0.2); }
-.bira-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(247, 160, 114, 0.2); }
+.icki-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(247, 160, 114, 0.2); }
 .sigo-card .portal-title { color: #4fbf7a; }
 .sigara-card .portal-title { color: #60a5fa; }
-.bira-card .portal-title { color: #f7a072; }
+.icki-card .portal-title { color: #f7a072; }
 
 [data-theme="light"] .sigo-card { background: linear-gradient(160deg, rgba(34, 195, 154, 0.12), var(--bg-elev)); border-color: rgba(34, 195, 154, 0.25); }
 [data-theme="light"] .sigara-card { background: linear-gradient(160deg, rgba(58, 134, 255, 0.12), var(--bg-elev)); border-color: rgba(58, 134, 255, 0.25); }
-[data-theme="light"] .bira-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.12), var(--bg-elev)); border-color: rgba(247, 160, 114, 0.25); }
+[data-theme="light"] .icki-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.12), var(--bg-elev)); border-color: rgba(247, 160, 114, 0.25); }
 [data-theme="light"] .sigo-card .portal-title { color: #15803d; }
 [data-theme="light"] .sigara-card .portal-title { color: #1d4ed8; }
-[data-theme="light"] .bira-card .portal-title { color: #c2410c; }
+[data-theme="light"] .icki-card .portal-title { color: #c2410c; }
 [data-theme="light"] .duel-text { color: #d49500; }
 .cat-page {
   flex: 0 0 100%;
