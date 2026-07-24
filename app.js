@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.7.0";
-  var APP_BUILD = 127;
+  var APP_VERSION = "6.7.1";
+  var APP_BUILD = 128;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -87,7 +87,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "", callApp: "telegram", tgUser: "", tgBotToken: "", tgChatId: "", ntfyTopic: "" };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "", callApp: "telegram", tgUser: "", tgBotToken: "", tgChatId: "" };
 
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
@@ -244,16 +244,6 @@
     var text = "Hadi sigo içelim!";
     var token = (settings.tgBotToken || "").trim();
     var chatId = (settings.tgChatId || "").trim();
-    var ntfyTopic = (settings.ntfyTopic || "").trim();
-
-    if (ntfyTopic) {
-      try {
-        fetch("https://ntfy.sh/" + encodeURIComponent(ntfyTopic), {
-          method: "POST",
-          body: myLabel + ": " + text
-        }).catch(function () {});
-      } catch (e) {}
-    }
 
     if (token && chatId) {
       var url = "https://api.telegram.org/bot" + encodeURIComponent(token) +
@@ -275,11 +265,9 @@
       return;
     }
 
-    if (!ntfyTopic) {
-      showNoticeToast("📢 Bildirim için Ayarlar'dan Telegram Bot veya ntfy konusunu girin!");
-      var fallbackUrl = "https://t.me/share/url?text=" + encodeURIComponent(text);
-      setTimeout(function () { window.location.href = fallbackUrl; }, 1200);
-    }
+    showNoticeToast("📢 Bildirim için Ayarlar'dan Telegram Bot Token girin!");
+    var fallbackUrl = "https://t.me/share/url?text=" + encodeURIComponent(text);
+    setTimeout(function () { window.location.href = fallbackUrl; }, 1200);
   }
 
   function testTgBot() {
@@ -307,25 +295,6 @@
       });
   }
 
-  function testNtfy() {
-    var topic = (settings.ntfyTopic || "").trim();
-    if (!topic) {
-      alert("Lütfen önce ntfy Konu Adı girin (Örn: dumanalti-utku-gozde).");
-      return;
-    }
-    fetch("https://ntfy.sh/" + encodeURIComponent(topic), {
-      method: "POST",
-      body: "🧪 Dumanaltı test bildirimi başarılı!"
-    }).then(function (res) {
-      if (res.ok) {
-        alert("✅ BAŞARILI! ntfy bildirimi gönderildi. Gözde'nin telefonundaki ntfy uygulamasını kontrol edin.");
-      } else {
-        alert("❌ HATA: ntfy durumu " + res.status);
-      }
-    }).catch(function (err) {
-      alert("❌ HATA: " + err.message);
-    });
-  }
 
   function cloudError(err) {
     var msg = (err && (err.message || err.error_description || err.details)) || String(err);
@@ -420,7 +389,7 @@
         settings.tgUser = typeof s.tgUser === "string" ? s.tgUser : "";
         settings.tgBotToken = typeof s.tgBotToken === "string" ? s.tgBotToken : "";
         settings.tgChatId = typeof s.tgChatId === "string" ? s.tgChatId : "";
-        settings.ntfyTopic = typeof s.ntfyTopic === "string" ? s.ntfyTopic : "";
+
       }
     } catch (e) {}
   }
@@ -3457,16 +3426,6 @@
 
     if (el("testTgBotBtn")) el("testTgBotBtn").addEventListener("click", testTgBot);
 
-    var ntfyInp = el("ntfyTopicInput");
-    if (ntfyInp) {
-      /** @type {HTMLInputElement} */ (ntfyInp).value = settings.ntfyTopic || "";
-      ntfyInp.addEventListener("change", function () {
-        settings.ntfyTopic = (/** @type {HTMLInputElement} */ (ntfyInp).value || "").trim();
-        saveSettings();
-      });
-    }
-
-    if (el("testNtfyBtn")) el("testNtfyBtn").addEventListener("click", testNtfy);
 
     // Zıvana görünürlüğü
     bindSeg("mascotSeg", "data-mascot", settings.mascot, function (v) {
@@ -3476,10 +3435,6 @@
     if (el("syncNowBtn")) el("syncNowBtn").addEventListener(TAP_EVT, syncNow);
     if (el("exportCsvBtn")) el("exportCsvBtn").addEventListener("click", exportCsv);
 
-    // Hızlı ekleme bağlantısı kopyala
-    document.querySelectorAll("[data-quick]").forEach(function (b) {
-      b.addEventListener("click", function () { copyQuickLink(b.getAttribute("data-quick"), b); });
-    });
 
     bindAssistant();
     bindAddDial();
