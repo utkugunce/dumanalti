@@ -1706,6 +1706,11 @@ body[data-active-tab="portal"] {
   background: rgba(20, 24, 22, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.add-kind-seg::-webkit-scrollbar { display: none; }
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
@@ -1717,7 +1722,8 @@ body[data-active-tab="portal"] {
 .add-dial.open .add-kind-seg { opacity: 1; transform: none; transition-delay: 0s; }
 
 .add-kind-btn {
-  flex: 1; padding: 7px 14px; border: none; border-radius: 999px;
+  flex: 1 0 auto; padding: 7px 14px; border: none; border-radius: 999px;
+  white-space: nowrap;
   background: transparent; color: var(--text-sub);
   font-family: inherit; font-size: 13px; font-weight: 700;
   cursor: pointer; transition: all 0.2s ease;
