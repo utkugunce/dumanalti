@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.9.2";
-  var APP_BUILD = 136;
+  var APP_VERSION = "6.9.3";
+  var APP_BUILD = 137;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -135,6 +135,11 @@
     
     if (sigoSeg) sigoSeg.style.display = cat === "sigo" ? "" : "none";
     if (ickiSeg) ickiSeg.classList.toggle("hidden", cat !== "icki");
+
+    var kBar = el("kindScopeBar");
+    if (kBar) kBar.style.display = cat === "sigo" ? "" : "none";
+    var hkFilters = el("histKindFilters");
+    if (hkFilters) hkFilters.style.display = cat === "sigo" ? "" : "none";
 
     // Ortak ve Hep beraber seçeneklerini sadece Sigo kategorisinde göster (Sigara ve İçki için sadece Utku ve Gözde)
     document.querySelectorAll(".add-opt[data-who='both'], .add-opt[data-who='hepberaber']").forEach(function (b) {
