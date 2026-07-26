@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "6.9.0";
-  var APP_BUILD = 134;
+  var APP_VERSION = "6.9.1";
+  var APP_BUILD = 135;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -129,9 +129,13 @@
     outbox = catStore[cat].outbox;
     // Body data-cat özniteliğini güncelle (CSS tema vurgu renkleri için)
     document.body.setAttribute("data-cat", cat);
-    // Sigo/bong tür seçicisini sadece sigo kategorisinde göster
-    var kindSeg = el("addKindSeg");
-    if (kindSeg) kindSeg.style.display = cat === "sigo" ? "" : "none";
+    // Sigo/bong vs İçki tür seçicisi
+    var sigoSeg = el("sigoKindSeg");
+    var ickiSeg = el("ickiKindSeg");
+    
+    if (sigoSeg) sigoSeg.style.display = cat === "sigo" ? "" : "none";
+    if (ickiSeg) ickiSeg.classList.toggle("hidden", cat !== "icki");
+
     // Ortak ve Hep beraber seçeneklerini sadece Sigo kategorisinde göster (Sigara ve İçki için sadece Utku ve Gözde)
     document.querySelectorAll(".add-opt[data-who='both'], .add-opt[data-who='hepberaber']").forEach(function (b) {
       /** @type {HTMLElement} */ (b).style.display = cat === "sigo" ? "" : "none";
@@ -152,10 +156,28 @@
     }
     if (duoHep) /** @type {HTMLElement} */ (duoHep).style.display = cat === "sigo" ? "" : "none";
 
+    // Seçili ekleme türünü de zorla düzelt (sigo/bong vs bira/cin)
+    if (cat === "icki" && (!selectedAddKind || !DRINK_TYPES[selectedAddKind])) {
+      selectedAddKind = "bira";
+      if (ickiSeg) {
+        ickiSeg.querySelectorAll(".add-kind-btn").forEach(function (btn) {
+          btn.classList.toggle("active", btn.getAttribute("data-kind") === "bira");
+        });
+      }
+    } else if (cat === "sigo" && (!selectedAddKind || !KINDS[selectedAddKind])) {
+      selectedAddKind = "sigo";
+      if (sigoSeg) {
+        sigoSeg.querySelectorAll(".add-kind-btn").forEach(function (btn) {
+          btn.classList.toggle("active", btn.getAttribute("data-kind") === "sigo");
+        });
+      }
+    }
+
     var beerWrap = el("beerOptWrap");
-    if (beerWrap) beerWrap.classList.toggle("hidden", cat !== "icki");
+    if (beerWrap) beerWrap.classList.toggle("hidden", cat !== "icki" || selectedAddKind !== "bira");
     var glassWrap = el("glassOptWrap");
-    if (glassWrap) glassWrap.classList.toggle("hidden", cat !== "icki");
+    if (glassWrap) glassWrap.classList.toggle("hidden", cat !== "icki" || selectedAddKind === "bira");
+
 
     applyMascot();
     render();
