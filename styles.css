@@ -1709,8 +1709,6 @@ body[data-active-tab="portal"] {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-}
-.add-kind-seg::-webkit-scrollbar { display: none; }
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
@@ -1718,6 +1716,7 @@ body[data-active-tab="portal"] {
   transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
   margin-bottom: 2px;
 }
+.add-kind-seg::-webkit-scrollbar { display: none; }
 [data-theme="light"] .add-kind-seg { background: rgba(255, 255, 255, 0.95); }
 .add-dial.open .add-kind-seg { opacity: 1; transform: none; transition-delay: 0s; }
 
