@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.0.0";
-  var APP_BUILD = 139;
+  var APP_VERSION = "7.1.0";
+  var APP_BUILD = 140;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -205,8 +205,8 @@
   var cloudReady = false;
   var lastCloudError = null;
   var lastSyncAt = 0;
-  var realtimeChannel = null;
   var onlineUsers = {};
+  var lastKnownLocation = null;
 
   function playChime() {
     try {
@@ -272,8 +272,9 @@
   function sendBalkonCall() {
     var myLabel = settings.owner === "utku" ? "Utku" : (settings.owner === "gozde" ? "Gözde" : "Partnerin");
     showCallToast(myLabel);
-    if (realtimeChannel) {
-      realtimeChannel.send({
+    var callChannel = realtimeChannels.sigo || realtimeChannels[activeCat];
+    if (callChannel) {
+      callChannel.send({
         type: "broadcast",
         event: "balkon_call",
         payload: { who: myLabel, ts: Date.now() }
@@ -345,8 +346,10 @@
   function refreshStatus() {
     var info = el("syncInfo");
     if (!info) return;
+    var totalOutbox = 0;
+    CAT_ORDER.forEach(function (c) { totalOutbox += catStore[c].outbox.length; });
     if (!navigator.onLine) {
-      info.textContent = "Durum: Çevrimdışı (İnternet yok) 📴";
+      info.textContent = "Durum: Çevrimdışı (İnternet yok" + (totalOutbox ? " · " + totalOutbox + " işlem bekliyor" : "") + ") 📴";
       return;
     }
     if (!sb) {
@@ -357,8 +360,6 @@
       info.textContent = "Durum: Bulut hatası (" + lastCloudError + ") ⚠️";
       return;
     }
-    var totalOutbox = 0;
-    CAT_ORDER.forEach(function (c) { totalOutbox += catStore[c].outbox.length; });
     if (totalOutbox > 0) {
       info.textContent = "Durum: " + totalOutbox + " kayıt senkronlanmayı bekliyor... ⏳";
       return;
@@ -377,7 +378,10 @@
       var cfg = CATS[c];
       try {
         var raw = localStorage.getItem(cfg.cacheKey);
-        catStore[c].entries = raw ? JSON.parse(raw) : [];
+        var parsedEntries = raw ? JSON.parse(raw) : [];
+        catStore[c].entries = Array.isArray(parsedEntries) ? parsedEntries.map(function (e) {
+          return normalizeEntry(e, c, false);
+        }).filter(function (e) { return !!e; }) : [];
         if (!Array.isArray(catStore[c].entries)) catStore[c].entries = [];
         catStore[c].entries.sort(function (a, b) { return a.ts - b.ts; });
       } catch (e) { catStore[c].entries = []; }
@@ -434,6 +438,28 @@
   }
   function saveSettings() {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+  }
+
+  // Yerel dosya, cache ve buluttan gelen kayıtları tek güvenli biçime dönüştür.
+  function normalizeEntry(raw, cat, allowNewId) {
+    if (!raw || typeof raw !== "object" || !WHO[raw.who]) return null;
+    var ts = Number(raw.ts);
+    if (!isFinite(ts) || ts <= 0) return null;
+    var validId = typeof raw.id === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(raw.id);
+    if (!validId && !allowNewId) return null;
+    var fallbackKind = cat === "icki" ? "bira" : (cat === "sigara" ? "sigara" : "sigo");
+    var kind = fallbackKind;
+    if (cat === "sigo" && KINDS[raw.kind]) kind = raw.kind;
+    else if (cat === "icki" && DRINK_TYPES[raw.kind]) kind = raw.kind;
+    else if (cat === "sigara" && typeof raw.kind === "string" && raw.kind.length <= 40) kind = raw.kind;
+    var row = { id: validId ? raw.id : uuid(), who: raw.who, ts: ts, kind: kind };
+    if (typeof raw.tag === "string" && raw.tag.length <= 120) row.tag = raw.tag;
+    var lat = Number(raw.lat), lng = Number(raw.lng);
+    if (isFinite(lat) && isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      row.lat = lat;
+      row.lng = lng;
+    }
+    return row;
   }
 
   function sortEntries() {
@@ -1078,11 +1104,21 @@
         var brandObj = BEER_BRANDS.filter(function (b) { return b.id === parts[0]; })[0];
         var brandLbl = brandObj ? brandObj.label : parts[0];
         var sizeLbl = parts[1] || "50cl";
-        who.innerHTML = WHO[e.who].label + ' <span class="muted">(' + brandLbl + ', ' + sizeLbl + ')</span> içti';
+        who.textContent = WHO[e.who].label + " ";
+        var beerDetail = document.createElement("span");
+        beerDetail.className = "muted";
+        beerDetail.textContent = "(" + brandLbl + ", " + sizeLbl + ")";
+        who.appendChild(beerDetail);
+        who.appendChild(document.createTextNode(" içti"));
       } else {
         var qty = e.tag || "1";
         var drinkLbl = DRINK_TYPES[drinkKind].label;
-        who.innerHTML = WHO[e.who].label + ' <span class="muted">(' + qty + ' bardak/kadeh ' + drinkLbl + ')</span> içti';
+        who.textContent = WHO[e.who].label + " ";
+        var drinkDetail = document.createElement("span");
+        drinkDetail.className = "muted";
+        drinkDetail.textContent = "(" + qty + " bardak/kadeh " + drinkLbl + ")";
+        who.appendChild(drinkDetail);
+        who.appendChild(document.createTextNode(" içti"));
       }
     } else if (activeCat === "sigo") {
       var kInfo = KINDS[entryKind(e)] || KINDS.sigo;
@@ -2004,31 +2040,6 @@
 
   // ---------- Status ----------
   var lastSyncAt = 0;
-  function setStatus(text, state) {
-    var node = el("cloudStatus");
-    if (node) {
-      // Metin gizli; açıklama dokununca/hover'da title olarak görünür
-      node.title = text;
-      node.setAttribute("aria-label", text);
-      node.className = "cloud-status status-" + (state || "offline");
-    }
-    // Ayarlar'daki ayrıntılı satır
-    var info = el("syncInfo");
-    if (info) {
-      var extra = "";
-      if (state === "online" && lastSyncAt) extra = " · son: " + formatTime(lastSyncAt);
-      else if (outbox.length) extra = " · " + outbox.length + " işlem bekliyor";
-      info.textContent = "Durum: " + text + extra;
-    }
-  }
-  function refreshStatus() {
-    if (!sb) { setStatus("📴 Yerel mod", "offline"); return; }
-    if (!navigator.onLine) { setStatus("📴 Çevrimdışı", "offline"); return; }
-    if (lastCloudError) { setStatus("⚠️ Bulut hatası · " + outbox.length + " bekliyor", "error"); return; }
-    if (outbox.length) { setStatus("⏳ " + outbox.length + " bekliyor…", "syncing"); return; }
-    setStatus(cloudReady ? "☁️ Senkron" : "☁️ Bağlanıyor…", cloudReady ? "online" : "syncing");
-  }
-
   // ---------- Actions ----------
   var renderDeferTimer = null;
 
@@ -2476,6 +2487,10 @@
     var k = kind || selectedAddKind || "sigo";
     var entry = { id: uuid(), who: who, kind: k, ts: Date.now() };
     if (tag) entry.tag = tag;
+    if (lastKnownLocation) {
+      entry.lat = lastKnownLocation.lat;
+      entry.lng = lastKnownLocation.lng;
+    }
     entries.push(entry);
     sortEntries();
     // Optimistic UI: önce kuyruğa al, sonra anında çiz (bekliyor işareti doğru görünsün)
@@ -2899,6 +2914,42 @@
     window.addEventListener("offline", refreshStatus);
   }
 
+  function isMissingColumnResult(res) {
+    var err = res && res.error;
+    return !!(err && (err.code === "42703" || err.code === "PGRST204") && /column|schema cache/i.test(err.message || ""));
+  }
+
+  function legacyDbRow(cat, row) {
+    var dbRow = { id: row.id, who: row.who, ts: row.ts };
+    // Mevcut üretim şemasında yalnız sigo tablosunda bu alanlar var.
+    if (cat === "sigo") {
+      if (row.tag) dbRow.tag = row.tag;
+      if (row.lat !== undefined) dbRow.lat = row.lat;
+      if (row.lng !== undefined) dbRow.lng = row.lng;
+    }
+    return dbRow;
+  }
+
+  function legacyUpdateFields(cat, fields) {
+    var safe = {};
+    ["who", "ts"].forEach(function (key) {
+      if (fields[key] !== undefined) safe[key] = fields[key];
+    });
+    if (cat === "sigo") {
+      ["tag", "lat", "lng"].forEach(function (key) {
+        if (fields[key] !== undefined) safe[key] = fields[key];
+      });
+    }
+    return safe;
+  }
+
+  function withSchemaFallback(primary, fallback) {
+    return Promise.resolve(primary).then(function (res) {
+      if (isMissingColumnResult(res)) return fallback();
+      return res;
+    });
+  }
+
   function flushOutbox(cat) {
     if (!cat) cat = activeCat;
     var catOutbox = catStore[cat].outbox;
@@ -2912,15 +2963,20 @@
       var op = queue[i];
       var p;
       if (op.type === "insert") {
-        var dbRow = { id: op.row.id, who: op.row.who, ts: op.row.ts };
+        var dbRow = { id: op.row.id, who: op.row.who, ts: op.row.ts, kind: op.row.kind || "sigo" };
         if (op.row.tag) dbRow.tag = op.row.tag;
         if (op.row.lat !== undefined) dbRow.lat = op.row.lat;
         if (op.row.lng !== undefined) dbRow.lng = op.row.lng;
-        p = sb.from(tableName).upsert(dbRow, { onConflict: "id", ignoreDuplicates: true });
+        p = withSchemaFallback(
+          sb.from(tableName).upsert(dbRow, { onConflict: "id", ignoreDuplicates: true }),
+          function () { return sb.from(tableName).upsert(legacyDbRow(cat, op.row), { onConflict: "id", ignoreDuplicates: true }); }
+        );
       } else if (op.type === "update") {
         var fields = Object.assign({}, op.fields);
-        delete fields.kind;
-        p = sb.from(tableName).update(fields).eq("id", op.id);
+        p = withSchemaFallback(
+          sb.from(tableName).update(fields).eq("id", op.id),
+          function () { return sb.from(tableName).update(legacyUpdateFields(cat, fields)).eq("id", op.id); }
+        );
       } else {
         p = sb.from(tableName).delete().eq("id", op.id);
       }
@@ -2953,11 +3009,8 @@
       if (!res.data) return;
       var map = {};
       res.data.forEach(function (r) {
-        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
-        if (r.tag) o.tag = r.tag;
-        if (r.lat !== undefined && r.lat !== null) o.lat = r.lat;
-        if (r.lng !== undefined && r.lng !== null) o.lng = r.lng;
-        map[r.id] = o;
+        var o = normalizeEntry(r, cat, false);
+        if (o) map[o.id] = o;
       });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
       catOutbox.forEach(function (op) {
@@ -3001,10 +3054,8 @@
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tableName }, function (payload) {
         var r = payload.new;
         if (!r || catFindIndex(r.id) !== -1) return;
-        var o = { id: r.id, who: r.who, ts: Number(r.ts), kind: r.kind || "sigo" };
-        if (r.tag) o.tag = r.tag;
-        if (r.lat !== undefined && r.lat !== null) o.lat = r.lat;
-        if (r.lng !== undefined && r.lng !== null) o.lng = r.lng;
+        var o = normalizeEntry(r, cat, false);
+        if (!o) return;
         catStore[cat].entries.push(o);
         catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
         saveCatCache(cat);
@@ -3014,10 +3065,9 @@
         var r = payload.new;
         var idx = r ? catFindIndex(r.id) : -1;
         if (idx === -1) return;
-        catStore[cat].entries[idx].who = r.who || catStore[cat].entries[idx].who;
-        catStore[cat].entries[idx].ts = Number(r.ts) || catStore[cat].entries[idx].ts;
-        catStore[cat].entries[idx].tag = r.tag || undefined;
-        catStore[cat].entries[idx].kind = r.kind || catStore[cat].entries[idx].kind || "sigo";
+        var updated = normalizeEntry(r, cat, false);
+        if (!updated) return;
+        catStore[cat].entries[idx] = updated;
         catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
         saveCatCache(cat);
         if (cat === activeCat) render();
@@ -3060,11 +3110,16 @@
 
   // ---------- Data tools ----------
   function exportData() {
-    var blob = new Blob([JSON.stringify({ app: "dumanalti", version: 1, exportedAt: new Date().toISOString(), entries: entries }, null, 2)], { type: "application/json" });
+    var categories = {};
+    CAT_ORDER.forEach(function (cat) {
+      categories[cat] = catStore[cat].entries.slice();
+    });
+    var payload = { app: "dumanalti", version: 2, exportedAt: new Date().toISOString(), categories: categories };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "dumanalti-" + dayKey(Date.now()) + ".json";
+    a.download = "dumanalti-tam-yedek-" + dayKey(Date.now()) + ".json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -3074,26 +3129,39 @@
     reader.onload = function () {
       try {
         var data = JSON.parse(/** @type {string} */ (reader.result));
-        var incoming = Array.isArray(data) ? data : data.entries;
-        if (!Array.isArray(incoming)) throw new Error("Geçersiz dosya");
-        var map = {};
-        entries.forEach(function (e) { map[e.id] = e; });
-        var added = [];
-        incoming.forEach(function (e) {
-          if (e && e.who && e.ts) {
-            var id = e.id || uuid();
-            if (!map[id]) { var row = { id: id, who: e.who, ts: Number(e.ts), kind: e.kind || "sigo" }; map[id] = row; added.push(row); }
-          }
+        var incomingByCat = {};
+        if (data && data.version >= 2 && data.categories && typeof data.categories === "object") {
+          CAT_ORDER.forEach(function (cat) { incomingByCat[cat] = data.categories[cat] || []; });
+        } else {
+          var legacy = Array.isArray(data) ? data : data && data.entries;
+          if (!Array.isArray(legacy)) throw new Error("Geçersiz veya desteklenmeyen yedek dosyası");
+          incomingByCat[activeCat] = legacy;
+        }
+        var addedCount = 0, invalidCount = 0;
+        CAT_ORDER.forEach(function (cat) {
+          var incoming = incomingByCat[cat];
+          if (!Array.isArray(incoming)) return;
+          var map = {};
+          catStore[cat].entries.forEach(function (e) { map[e.id] = e; });
+          incoming.forEach(function (raw) {
+            var row = normalizeEntry(raw, cat, true);
+            if (!row) { invalidCount++; return; }
+            if (!map[row.id]) {
+              map[row.id] = row;
+              catStore[cat].outbox.push({ type: "insert", row: row });
+              addedCount++;
+            }
+          });
+          catStore[cat].entries = Object.keys(map).map(function (id) { return map[id]; });
+          catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
+          saveCatCache(cat);
+          saveCatOutbox(cat);
         });
-        entries = Object.keys(map).map(function (k) { return map[k]; });
-        sortEntries();
-        saveCache();
+        entries = catStore[activeCat].entries;
+        outbox = catStore[activeCat].outbox;
         render();
-        // yeni kayıtları buluta gönder
-        added.forEach(function (row) { outbox.push({ type: "insert", row: row }); });
-        saveOutbox();
-        flushOutbox();
-        alert("İçe aktarıldı. Toplam " + entries.length + " kayıt.");
+        Promise.all(CAT_ORDER.map(function (cat) { return flushOutbox(cat); }));
+        alert("Tam yedek içe aktarıldı. " + addedCount + " yeni kayıt eklendi" + (invalidCount ? ", " + invalidCount + " geçersiz kayıt atlandı." : "."));
       } catch (e) {
         alert("Dosya okunamadı: " + e.message);
       }
@@ -3107,19 +3175,38 @@
       if (typed != null) alert("Sıfırlama iptal edildi.");
       return;
     }
+    var deleteCount = 0;
     CAT_ORDER.forEach(function (c) {
+      var pendingInsertIds = {};
+      catStore[c].outbox.forEach(function (op) {
+        if (op.type === "insert" && op.row) pendingInsertIds[op.row.id] = true;
+      });
+      var deleteOps = [];
+      catStore[c].entries.forEach(function (entry) {
+        if (!pendingInsertIds[entry.id]) {
+          deleteOps.push({ type: "delete", id: entry.id });
+          deleteCount++;
+        }
+      });
       catStore[c].entries = [];
-      catStore[c].outbox = [];
+      catStore[c].outbox = deleteOps;
       saveCatCache(c);
       saveCatOutbox(c);
-      if (sb && navigator.onLine) {
-        sb.from(CATS[c].table).delete().neq("id", "00000000-0000-0000-0000-000000000000").then(function () {});
-      }
     });
     entries = catStore[activeCat].entries;
     outbox = catStore[activeCat].outbox;
     render();
     refreshStatus();
+    if (!sb || !navigator.onLine) {
+      alert(deleteCount + " bulut kaydı silme kuyruğuna alındı. İnternet gelince otomatik tamamlanacak.");
+      return;
+    }
+    Promise.all(CAT_ORDER.map(function (cat) { return flushOutbox(cat); })).then(function () {
+      var remaining = 0;
+      CAT_ORDER.forEach(function (cat) { remaining += catStore[cat].outbox.length; });
+      if (remaining) alert("Yerel kayıtlar temizlendi; " + remaining + " bulut silme işlemi yeniden denenecek.");
+      else alert("Tüm kategoriler yerel ve bulut ortamından silindi.");
+    });
   }
 
   // ---------- Theme ----------
@@ -3151,8 +3238,9 @@
     if (!navigator.onLine) { alert("Çevrimdışısın. İnternet gelince otomatik senkronlanır."); return; }
     lastCloudError = null;
     refreshStatus();
-    flushOutbox()
-      .then(syncFromRemote)
+    Promise.all(CAT_ORDER.map(function (cat) {
+      return flushOutbox(cat).then(function () { return syncFromRemote(cat); });
+    }))
       .then(function () {
         refreshStatus();
         if (lastCloudError) {
@@ -3177,13 +3265,18 @@
   var TAB_KEY = "dumanalti.tab";
   var closeAddDial = function () {}; // bindAddDial içinde atanır
   function showTab(name) {
+    var tabs = ["portal", "home", "stats", "history", "map", "settings"];
+    if (tabs.indexOf(name) === -1) name = "portal";
     closeAddDial();
-    ["portal", "home", "stats", "history", "map", "settings"].forEach(function (n) {
+    tabs.forEach(function (n) {
       var v = el("view-" + n);
       if (v) v.classList.toggle("hidden", n !== name);
     });
     document.querySelectorAll(".tab").forEach(function (b) {
-      b.classList.toggle("active", b.getAttribute("data-tab") === name);
+      var selected = b.getAttribute("data-tab") === name;
+      b.classList.toggle("active", selected);
+      b.setAttribute("aria-selected", selected ? "true" : "false");
+      b.setAttribute("tabindex", selected ? "0" : "-1");
     });
     document.body.setAttribute("data-active-tab", name);
     try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
@@ -3311,7 +3404,7 @@
     var beerBrandSel = el("beerBrandSel");
     if (beerBrandSel) {
       beerBrandSel.addEventListener("change", function (ev) {
-        selectedBeerBrand = beerBrandSel.value;
+        selectedBeerBrand = (/** @type {HTMLSelectElement} */ (beerBrandSel)).value;
       });
     }
 
@@ -3578,11 +3671,19 @@
 
   // Kayıtları CSV olarak dışa aktar (Excel/Numbers'ta açılır)
   function exportCsv() {
-    var rows = ["tarih,saat,kisi,mantiksal_gun"];
-    entries.forEach(function (e) {
-      var d = new Date(e.ts);
-      var tarih = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
-      rows.push(tarih + "," + formatTime(e.ts) + "," + WHO[e.who].label + "," + dayKey(e.ts));
+    function csvCell(value) {
+      return '"' + String(value === undefined || value === null ? "" : value).replace(/"/g, '""') + '"';
+    }
+    var rows = ["kategori,tarih,saat,kisi,tur,etiket,mantiksal_gun,enlem,boylam"];
+    CAT_ORDER.forEach(function (cat) {
+      catStore[cat].entries.forEach(function (e) {
+        var d = new Date(e.ts);
+        var tarih = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+        rows.push([
+          cat, tarih, formatTime(e.ts), WHO[e.who].label, e.kind || "", e.tag || "",
+          dayKey(e.ts), e.lat, e.lng
+        ].map(csvCell).join(","));
+      });
     });
     var blob = new Blob(["﻿" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
     var url = URL.createObjectURL(blob);
@@ -3957,42 +4058,6 @@
     addEntry(who);
   }
 
-  function fetchWeather() {
-    var CACHE_KEY = "dumanalti.weather";
-    var CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-    var cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      try {
-        var data = JSON.parse(cached);
-        if (Date.now() - data.ts < CACHE_TTL) {
-          updateWeatherUI(data.temp, data.code);
-          return;
-        }
-      } catch (e) {}
-    }
-
-    function getWeather(lat, lon) {
-      var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true";
-      fetch(url).then(function (res) { return res.json(); }).then(function (data) {
-        if (data && data.current_weather) {
-          var w = data.current_weather;
-          updateWeatherUI(w.temperature, w.weathercode);
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ temp: w.temperature, code: w.weathercode, ts: Date.now() }));
-        }
-      }).catch(function () {});
-    }
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function (pos) { getWeather(pos.coords.latitude, pos.coords.longitude); },
-        function () { getWeather(41.01, 28.97); }, // Fallback Istanbul
-        { timeout: 5000 }
-      );
-    } else {
-      getWeather(41.01, 28.97); // Fallback Istanbul
-    }
-  }
-
   var currentTemp = null;
   var currentCode = null;
 
@@ -4024,31 +4089,40 @@
       try {
         var data = JSON.parse(cached);
         if (Date.now() - data.ts < CACHE_TTL) {
+          if (typeof data.lat === "number" && typeof data.lng === "number") {
+            lastKnownLocation = { lat: data.lat, lng: data.lng };
+          }
           updateWeatherUI(data.temp, data.code);
           return;
         }
       } catch (e) {}
     }
 
-    function getWeather(lat, lon) {
+    function getWeather(lat, lon, rememberLocation) {
       var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current_weather=true";
       fetch(url).then(function (res) { return res.json(); }).then(function (data) {
         if (data && data.current_weather) {
           var w = data.current_weather;
+          var cacheData = { temp: w.temperature, code: w.weathercode, ts: Date.now() };
+          if (rememberLocation) {
+            lastKnownLocation = { lat: lat, lng: lon };
+            cacheData.lat = lat;
+            cacheData.lng = lon;
+          }
           updateWeatherUI(w.temperature, w.weathercode);
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ temp: w.temperature, code: w.weathercode, ts: Date.now() }));
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
         }
       }).catch(function () {});
     }
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        function (pos) { getWeather(pos.coords.latitude, pos.coords.longitude); },
-        function () { getWeather(41.01, 28.97); }, // Fallback Istanbul
+        function (pos) { getWeather(pos.coords.latitude, pos.coords.longitude, true); },
+        function () { getWeather(41.01, 28.97, false); }, // Fallback Istanbul
         { timeout: 5000 }
       );
     } else {
-      getWeather(41.01, 28.97); // Fallback Istanbul
+      getWeather(41.01, 28.97, false); // Fallback Istanbul
     }
   }
 
@@ -4162,7 +4236,8 @@
       render: render,
       addEntry: addEntry,
       deleteEntry: deleteEntry,
-      updateEntry: updateEntry
+      updateEntry: updateEntry,
+      normalizeEntry: normalizeEntry
     };
   }
 })();

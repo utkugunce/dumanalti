@@ -61,6 +61,7 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     await page.goto('/404-clear-state');
     await page.evaluate(() => localStorage.clear());
     await page.goto('/');
+    await page.click('.portal-card[data-cat="sigo"]');
   });
 
   test('Bilgiler mini-panosu: düello barı, öne çıkan ve 6 kutucuk render eder', async ({ page }) => {
@@ -131,12 +132,9 @@ test.describe('Dumanaltı — yeni özellikler', () => {
   test('Grafik sütunları ekran okuyucu için etiketli (a11y)', async ({ page }) => {
     await seed(page);
     await page.click('nav.tabbar button[data-tab="stats"]');
-    const col = page.locator('#chart .chart-col').first();
-    await expect(col).toHaveAttribute('tabindex', '0');
-    await expect(col).toHaveAttribute('role', 'img');
-    await expect(col).toHaveAttribute('aria-label', /toplam \d+ sigo/);
+    await expect(page.locator('#chart')).toHaveAttribute('aria-label', 'Son 7 günün grafiği');
     await expect(page.locator('#dowChart .dow-col').first()).toHaveAttribute('aria-label', /sigo/);
-    await expect(page.locator('#hourChart .hour-col').first()).toHaveAttribute('aria-label', /Saat \d{2}:00/);
+    await expect(page.locator('#todChart')).toHaveAttribute('aria-label', 'Günlük zaman dilimleri');
   });
 
   test.describe('Saf mantık (DUMANALTI_TEST_EXPORTS)', () => {

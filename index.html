@@ -11,8 +11,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Dumanaltı" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <link rel="stylesheet" href="vendor/leaflet-1.9.4.css" />
+  <script src="vendor/leaflet-1.9.4.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -429,7 +429,7 @@
       </div>
       <div class="set-row">
         <label for="tgBotTokenInput">Telegram Bot Token</label>
-        <input id="tgBotTokenInput" type="text" class="set-input" placeholder="123456:ABC..." />
+        <input id="tgBotTokenInput" type="password" class="set-input" placeholder="123456:ABC..." autocomplete="off" />
       </div>
       <div class="set-row">
         <label for="tgChatIdInput">Telegram Chat ID</label>
@@ -456,8 +456,8 @@
     <section class="card data-tools">
       <div class="set-row"><label>Toplam kayıt</label><strong id="setCount">0</strong></div>
       <div class="data-buttons">
-        <button id="exportBtn" class="ghost-btn">📤 JSON</button>
-        <button id="exportCsvBtn" class="ghost-btn">📊 CSV</button>
+        <button id="exportBtn" class="ghost-btn">📤 Tam JSON</button>
+        <button id="exportCsvBtn" class="ghost-btn">📊 Tam CSV</button>
         <button id="importBtn" class="ghost-btn">📥 İçe aktar</button>
         <button id="resetBtn" class="ghost-btn danger">🗑️ Sıfırla</button>
       </div>
@@ -602,8 +602,8 @@
   </nav>
 
   <script src="config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="vendor/supabase-js-2.111.0.min.js"></script>
+  <script src="vendor/d3-v7.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

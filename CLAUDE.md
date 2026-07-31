@@ -15,7 +15,7 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v7.0.0 · derleme 139 · SW cache `dumanalti-v139`** — buradan devam et.
+Güncel sürüm sayacı: **v7.1.0 · derleme 140 · SW cache `dumanalti-v140`** — buradan devam et.
 
 ## Düzen ve platform
 
@@ -34,5 +34,5 @@ Güncel sürüm sayacı: **v7.0.0 · derleme 139 · SW cache `dumanalti-v139`** 
 - Commit + push `main`'e; Vercel MCP `get_deployment` ile `target: production`, `state: READY` doğrula.
 - Oturum ayrı bir çalışma dalına bağlıysa: kullanıcıdan merge İSTEME — işi bitirince main'e taşımayı kendin yap (doğrudan push veya PR aç + kendin merge et), sonra dağıtımı doğrula.
 - Kullanıcıya Türkçe raporla; network-first SW olduğundan "bir kez yenileyin" hatırlat.
-- Repo private ve öyle kalmalı: `icons/avatar-*.png` gerçek kişi fotoğrafları içeriyor. Ham/orijinal fotoğrafları ASLA commit'leme (sadece işlenmiş dairesel kırpımlar).
+- Repo publictir: `icons/avatar-*.png` işlenmiş gerçek kişi fotoğrafları içerir. Ham/orijinal fotoğrafları ASLA commit'leme (yalnız mevcut işlenmiş dairesel kırpımlar kullanılabilir).
 - Kod stili: ES5 (`var`, function ifadeleri), Türkçe yorumlar/UI metinleri.

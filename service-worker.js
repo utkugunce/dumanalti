@@ -1,4 +1,4 @@
-var CACHE = "dumanalti-v139";
+var CACHE = "dumanalti-v140";
 var ASSETS = [
   "./",
   "./index.html",
@@ -6,6 +6,10 @@ var ASSETS = [
   "./config.js",
   "./app.js",
   "./manifest.json",
+  "./vendor/leaflet-1.9.4.css",
+  "./vendor/leaflet-1.9.4.js",
+  "./vendor/supabase-js-2.111.0.min.js",
+  "./vendor/d3-v7.min.js",
   "./icons/icon.svg",
   "./icons/mascot.svg",
   "./icons/mascot-surprised.svg",
@@ -15,8 +19,7 @@ var ASSETS = [
   "./icons/avatar-utku.png",
   "./icons/avatar-gozde.png",
   "./icons/avatar-both.png",
-  "./icons/avatar-hepberaber.svg",
-  "https://d3js.org/d3.v7.min.js"
+  "./icons/avatar-hepberaber.svg"
 ];
 
 self.addEventListener("install", function (event) {

@@ -1,6 +1,6 @@
 {
   "name": "dumanalti",
-  "version": "5.1.1",
+  "version": "7.1.0",
   "description": "Utku & Gözde sigo takip uygulaması",
   "main": "app.js",
   "scripts": {

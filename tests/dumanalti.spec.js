@@ -15,6 +15,7 @@ test.describe('Dumanaltı App Tests', () => {
 
       // Stateful in-memory mock database array to persist inserted records across async sync cycles
       let mockDb = [];
+      window.__getMockDb = () => mockDb.map(row => ({ ...row }));
 
       const mockSupabase = {
         createClient: () => {
@@ -86,6 +87,8 @@ test.describe('Dumanaltı App Tests', () => {
 
     // Go to the app homepage
     await page.goto('/');
+    // Portal artık varsayılan ekran; çekirdek akışlar için Sigo kartından Bugün'e gir.
+    await page.click('.portal-card[data-cat="sigo"]');
   });
 
   test.describe('Unit & Logic Tests (via page.evaluate)', () => {
@@ -179,6 +182,20 @@ test.describe('Dumanaltı App Tests', () => {
       expect(result.counts.sigo).toBe(2);
       expect(result.counts.bong).toBe(2);
       expect(result.kinds).toEqual(['sigo', 'bong', 'sigo', 'bong']);
+    });
+
+    test('normalizeEntry validates imported and remote records', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const ex = window.DUMANALTI_TEST_EXPORTS;
+        return {
+          invalidWho: ex.normalizeEntry({ id: 'x', who: '<script>', ts: Date.now() }, 'sigo', false),
+          invalidTime: ex.normalizeEntry({ id: 'x', who: 'utku', ts: 'bad' }, 'sigo', false),
+          safe: ex.normalizeEntry({ id: 'ok-1', who: 'gozde', ts: Date.now(), kind: 'bong', lat: 41, lng: 29 }, 'sigo', false)
+        };
+      });
+      expect(result.invalidWho).toBeNull();
+      expect(result.invalidTime).toBeNull();
+      expect(result.safe).toMatchObject({ id: 'ok-1', who: 'gozde', kind: 'bong', lat: 41, lng: 29 });
     });
 
     test('badge calculations are correct', async ({ page }) => {
@@ -285,8 +302,8 @@ test.describe('Dumanaltı App Tests', () => {
       await expect(page.locator('#addDial')).toHaveClass(/open/);
 
       // Select Bong option
-      await page.click('#addKindSeg button[data-kind="bong"]');
-      await expect(page.locator('#addKindSeg button[data-kind="bong"]')).toHaveClass(/active/);
+      await page.click('#sigoKindSeg button[data-kind="bong"]');
+      await expect(page.locator('#sigoKindSeg button[data-kind="bong"]')).toHaveClass(/active/);
 
       // Add "Gözde" Bong
       await page.click('#addOptions button[data-who="gozde"]');
@@ -295,10 +312,14 @@ test.describe('Dumanaltı App Tests', () => {
       // Check undo toast indicates Bong
       await expect(page.locator('#undoBar')).not.toHaveClass(/hidden/);
       await expect(page.locator('#undoText')).toContainText('Gözde (🫧 Bong) eklendi');
+      await expect.poll(() => page.evaluate(() => {
+        const row = window.__getMockDb().find(item => item.who === 'gozde');
+        return row && row.kind;
+      })).toBe('bong');
 
       // Now add a Sigo record for Utku
       await page.click('#addFab');
-      await page.click('#addKindSeg button[data-kind="sigo"]');
+      await page.click('#sigoKindSeg button[data-kind="sigo"]');
       await page.click('#addOptions button[data-who="utku"]');
 
       // Total today should be 2
@@ -381,7 +402,7 @@ test.describe('Dumanaltı App Tests', () => {
       
       // Go to Settings tab to verify the state shows offline
       await page.click('nav.tabbar button[data-tab="settings"]');
-      await expect(page.locator('#syncInfo')).toContainText('Durum: 📴 Çevrimdışı');
+      await expect(page.locator('#syncInfo')).toContainText('Çevrimdışı');
 
       // Return to home to add a record
       await page.click('nav.tabbar button[data-tab="home"]');
@@ -412,12 +433,28 @@ test.describe('Dumanaltı App Tests', () => {
       await page.click('#syncNowBtn');
 
       // Verification: Check status goes back to online / synced, and "bekliyor" drops to 0
-      await expect(page.locator('#syncInfo')).toContainText('Durum: ☁️ Senkron');
+      await expect(page.locator('#syncInfo')).toContainText('Bulut senkronize');
 
       // Check history again; pending status should be gone
       await page.click('nav.tabbar button[data-tab="history"]');
       await expect(page.locator('.history-item.who-gozde')).not.toHaveClass(/is-pending/);
       await expect(page.locator('.history-item.who-gozde')).not.toContainText('bekliyor');
+    });
+
+    test('offline reset keeps cloud deletes in the outbox', async ({ page, context }) => {
+      await page.click('#addFab');
+      await page.click('#addOptions button[data-who="utku"]');
+      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('dumanalti.outbox.v1') || '[]').length)).toBe(0);
+
+      await context.setOffline(true);
+      await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+      await page.click('nav.tabbar button[data-tab="settings"]');
+      page.on('dialog', dialog => dialog.type() === 'prompt' ? dialog.accept('SIFIRLA') : dialog.accept());
+      await page.click('#resetBtn');
+
+      const queued = await page.evaluate(() => JSON.parse(localStorage.getItem('dumanalti.outbox.v1') || '[]'));
+      expect(queued).toHaveLength(1);
+      expect(queued[0]).toMatchObject({ type: 'delete' });
     });
   });
 });
