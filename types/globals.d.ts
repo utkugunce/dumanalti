@@ -16,6 +16,9 @@ interface Entry {
   tag?: string;
   lat?: number;
   lng?: number;
+  sessionId?: string;
+  deletedAt?: string;
+  updatedAt?: string;
 }
 
 /** Offline outbox işlemi: gönderilemeyen ekleme/güncelleme/silme. */
@@ -24,6 +27,7 @@ interface OutboxOp {
   id?: string;
   row?: Entry;
   fields?: Record<string, any>;
+  baseUpdatedAt?: string | null;
 }
 
 /** Kullanıcı ayarları (localStorage). */
@@ -33,11 +37,8 @@ interface Settings {
   owner: "" | "utku" | "gozde";
   mascot: "on" | "off";
   sound: "on" | "off";
-  waPhone?: string;
-  callApp?: "whatsapp" | "telegram";
-  tgUser?: string;
-  tgBotToken?: string;
-  tgChatId?: string;
+  customMascot: string;
+  locationEnabled: boolean;
 }
 
 /** Bulut yapılandırması (config.js). */

@@ -13,6 +13,11 @@ Utku ve Gözde için hazırlanmış, iki kişilik ortak sigo, sigara ve içki ta
 - **Analiz içi harita:** konum izni verildiğinde yeni kayıtların yaklaşık konumu
 - **Tam yedek:** tüm kategorileri içeren JSON/CSV dışa aktarma ve doğrulamalı içe aktarma
 - **Bulut senkronu:** Supabase realtime + çevrimdışı outbox
+- **İki kişilik oturumlar:** ortak oturum, haftalık özet ve ortak seri
+- **Hızlı kullanım:** son kategori/tür hafızası, kopya uyarısı, son kaydı anında düzeltme, tarih/dönem karşılaştırması ve kaydırarak kategori değiştirme
+- **Güvenli geçmiş:** yedi günlük çöp kutusu, senkron çakışma kaydı ve haftalık yedek hatırlatıcısı
+- **Kişisel güvenlik:** cihaz PIN'i, desteklenen cihazlarda biyometri ve iki hesaplı Supabase oturumu
+- **Eğlence:** paylaşılabilir aylık Wrapped görseli, özel Zıvana mesajı ve özel rozetler
 - **Zıvana:** veriye dayalı yerel yardımcı ve proaktif bildirimler
 - **Safari odaklı mobil arayüz:** iPhone 13 ve iPhone 11 düzenleri
 
@@ -38,6 +43,14 @@ supabase/migrations/20260731114000_extend_entry_metadata.sql
 ```
 
 İstemci, migrasyon uygulanana kadar eski şemaya geri düşerek temel kayıt eklemeyi sürdürür; tür, etiket ve konumun cihazlar arasında eksiksiz korunması için migrasyon gereklidir.
+
+v7.3.0 için oturum/çöp kutusu alanlarını ve iki kullanıcı erişim altyapısını ekleyen migrasyon:
+
+```text
+supabase/migrations/20260731143000_sessions_trash_two_user_rls.sql
+```
+
+Bu migrasyon RLS'yi hemen açmaz. Önce uygulamadaki Ayarlar → Gizlilik ve güvenlik alanından iki hesapla giriş yapın; görünen kullanıcı UUID'lerini `dumanalti_allowed_users` tablosuna Utku ve Gözde olarak ekleyin. Allowlist tam iki kayıt olduğunda service-role yetkisiyle `select public.dumanalti_activate_rls();` çalıştırın. Böylece hatalı/eksik hesap kurulumu canlı uygulamayı kilitlemez.
 
 ## Güvenlik ve gizlilik
 

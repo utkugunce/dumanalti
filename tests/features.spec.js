@@ -59,7 +59,7 @@ test.describe('Dumanaltı — yeni özellikler', () => {
   test.beforeEach(async ({ page }) => {
     await installSupabaseMock(page);
     await page.goto('/404-clear-state');
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => { localStorage.clear(); localStorage.setItem('dumanalti.onboarded.v1', '1'); });
     await page.goto('/');
     await page.click('.portal-card[data-cat="sigo"]');
   });
@@ -147,6 +147,52 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     await page.fill('#historySearch', 'Utku');
     await expect(page.locator('.history-item')).toHaveCount(30);
     await expect(page.locator('#historyCount')).toContainText('32 kayıt');
+  });
+
+  test('İlk kurulum cihaz sahibi ve kategori seçimini tamamlar', async ({ page }) => {
+    await page.evaluate(() => localStorage.removeItem('dumanalti.onboarded.v1'));
+    await page.reload();
+    await expect(page.locator('#onboarding')).toBeVisible();
+    await page.click('[data-onboard-owner="utku"]');
+    await page.click('[data-onboard-cat="sigo"]');
+    await page.click('#onboardingFinish');
+    await expect(page.locator('#onboarding')).not.toBeVisible();
+    const state = await page.evaluate(() => ({ owner: JSON.parse(localStorage.getItem('dumanalti.settings.v1') || '{}').owner, done: localStorage.getItem('dumanalti.onboarded.v1') }));
+    expect(state).toEqual({ owner: 'utku', done: '1' });
+  });
+
+  test('Ortak oturum yeni kaydı gruplar ve hızlı düzeltmeyi açar', async ({ page }) => {
+    await page.click('nav.tabbar button[data-tab="settings"]');
+    await page.dispatchEvent('#ownerSeg button[data-owner="utku"]', 'pointerdown');
+    await page.click('nav.tabbar button[data-tab="home"]');
+    await page.click('#sessionToggleBtn');
+    await page.click('#quickMeBtn');
+    await expect(page.locator('#sessionMeta')).toContainText('1 kayıt');
+    await expect(page.locator('#quickEditBar')).toBeVisible();
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('dumanalti.entries.v1') || '[]').slice(-1)[0]);
+    expect(stored.sessionId).toBeTruthy();
+  });
+
+  test('Dönem karşılaştırması 30 gün ve özel aralık modlarını açar', async ({ page }) => {
+    await seed(page);
+    await page.click('nav.tabbar button[data-tab="stats"]');
+    await page.click('#periodSwitcher [data-period="30"]');
+    await expect(page.locator('#periodSwitcher [data-period="30"]')).toHaveClass(/active/);
+    await expect(page.locator('#periodCompareCard')).toContainText('Seçili dönem');
+    await page.click('#periodSwitcher [data-period="custom"]');
+    await expect(page.locator('#periodCustom')).toBeVisible();
+  });
+
+  test('Silinen kayıt yedi günlük çöp kutusundan geri alınır', async ({ page }) => {
+    await page.evaluate(() => { const ex = window.DUMANALTI_TEST_EXPORTS; ex.setEntries([{ id: 'trash-one', who: 'utku', kind: 'sigo', ts: Date.now() }]); ex.render(); });
+    await page.click('nav.tabbar button[data-tab="history"]');
+    await page.click('.history-item[aria-label="Utku kaydını düzenle"]');
+    await page.click('.hist-edit-btns .danger');
+    await expect(page.locator('#trashCount')).toHaveText('1');
+    await page.click('#trashToggleBtn');
+    await page.click('#trashList button');
+    await expect(page.locator('#trashCount')).toHaveText('0');
+    await expect(page.locator('.history-item')).toHaveCount(1);
   });
 
   test('Grafik sütunları ekran okuyucu için etiketli (a11y)', async ({ page }) => {

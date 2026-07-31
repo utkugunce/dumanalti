@@ -83,7 +83,7 @@ test.describe('Dumanaltı App Tests', () => {
 
     // Go to a dummy 404 page first to clear localStorage cleanly on the same origin without running any app.js promises
     await page.goto('/404-clear-state');
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => { localStorage.clear(); localStorage.setItem('dumanalti.onboarded.v1', '1'); });
 
     // Go to the app homepage
     await page.goto('/');

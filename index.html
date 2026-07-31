@@ -88,6 +88,12 @@
     </main>
 
     <main id="view-home" class="view hidden">
+    <section id="backupReminder" class="backup-reminder hidden"><span>Haftalık yedeğin hazır.</span><button id="backupReminderBtn" type="button">Yedekle</button><button id="backupDismissBtn" type="button" aria-label="Bu hafta kapat">×</button></section>
+    <section class="card session-card" id="sessionCard">
+      <div class="session-copy"><span class="eyebrow">Ortak oturum</span><strong id="sessionStatus">Aktif oturum yok</strong><span id="sessionMeta" class="muted">Birlikte geçirilen kayıtları grupla.</span></div>
+      <button id="sessionToggleBtn" class="ghost-btn small" type="button">Oturum başlat</button>
+    </section>
+    <section id="weeklySummary" class="card weekly-summary"></section>
     <section class="home-quick" aria-labelledby="quickAddTitle">
       <div class="home-quick-copy">
         <span class="eyebrow">Hızlı kayıt</span>
@@ -188,6 +194,9 @@
       <button class="analysis-switch" data-analysis="charts" role="tab" aria-selected="false">Grafikler</button>
       <button class="analysis-switch" data-analysis="fun" role="tab" aria-selected="false">Eğlence</button>
     </div>
+    <div class="period-switcher" id="periodSwitcher" aria-label="Karşılaştırma dönemi"><button class="period-chip" data-period="today">Bugün</button><button class="period-chip active" data-period="7">7 gün</button><button class="period-chip" data-period="30">30 gün</button><button class="period-chip" data-period="custom">Özel</button></div>
+    <div id="periodCustom" class="period-custom hidden"><input id="periodFrom" type="date" aria-label="Karşılaştırma başlangıcı" /><input id="periodTo" type="date" aria-label="Karşılaştırma bitişi" /><button id="periodApplyBtn" class="ghost-btn small" type="button">Uygula</button></div>
+    <section id="periodCompareCard" class="card period-compare"></section>
     <!-- Kişi seçici -->
     <div class="scope-bar" id="scopeBar">
       <button class="scope-chip active" data-scope="all">Tümü</button>
@@ -223,6 +232,7 @@
       <div class="wrapped-header">
         <span class="wrapped-badge">Utku &amp; Gözde</span>
         <h2 id="wrappedTitle">Bu Ayın Özeti ✨</h2>
+        <button id="shareWrappedBtn" class="ghost-btn small" type="button">Paylaşılabilir görsel</button>
       </div>
       <div class="wrapped-grid" id="wrappedGrid"></div>
       <div class="wrapped-letter" id="wrappedLetter"></div>
@@ -383,6 +393,7 @@
         <span class="sr-only">Geçmişte ara</span>
         <input id="historySearch" type="search" placeholder="Kişi, tür veya tarihte ara" autocomplete="off" />
       </label>
+      <div class="history-date-filter"><input id="historyFrom" type="date" aria-label="Geçmiş başlangıç tarihi" /><input id="historyTo" type="date" aria-label="Geçmiş bitiş tarihi" /><button id="historyDateClear" class="ghost-btn small" type="button">Temizle</button></div>
       <div class="hist-filters" id="histFilters">
         <button class="hist-chip active" data-f="all">Tümü</button>
         <button class="hist-chip" data-f="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
@@ -397,6 +408,8 @@
       </div>
       <div id="historyList" class="history-list"></div>
       <button id="historyMoreBtn" class="ghost-btn history-more hidden" type="button">Daha fazla göster</button>
+      <button id="trashToggleBtn" class="ghost-btn history-more" type="button">🗑️ Çöp kutusu <span id="trashCount">0</span></button>
+      <div id="trashList" class="trash-list hidden"></div>
       <p id="historyEmpty" class="empty">Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆</p>
     </section>
     </main>
@@ -465,23 +478,8 @@
           <button class="seg-btn" data-mascot="off">🙈 Gizli</button>
         </div>
       </div>
-    </section>
-
-    <h3 class="group-title settings-notify-title">🔔 Bildirimler</h3>
-    <section class="card settings-card settings-notify">
-      <div class="set-row">
-        <label for="tgBotTokenInput">Telegram Bot Token</label>
-        <input id="tgBotTokenInput" type="password" class="set-input" placeholder="123456:ABC..." autocomplete="off" />
-      </div>
-      <div class="set-row">
-        <label for="tgChatIdInput">Telegram Chat ID</label>
-        <input id="tgChatIdInput" type="text" class="set-input" placeholder="987654321" />
-      </div>
-      <div class="set-row">
-        <label>Telegram Test</label>
-        <button id="testTgBotBtn" class="ghost-btn small">🧪 Botu Test Et</button>
-      </div>
-      <p class="set-note">BotFather'dan alınan Token &amp; Chat ID girildiğinde, "Oturma Odasına Gel!" butonu Telegram bildirimi atar.</p>
+      <div class="set-row set-row-stack"><label for="customMascotInput">Zıvana'nın özel mesajı</label><input id="customMascotInput" type="text" class="set-input wide" maxlength="100" placeholder="Örn. Hadi biraz ara verelim 🌿" /></div>
+      <label class="set-row"><span>Yeni kayıtlara konum ekle</span><input id="locationSetting" type="checkbox" /></label>
     </section>
 
     <h3 class="group-title settings-sync-title">☁️ Senkronizasyon</h3>
@@ -492,7 +490,14 @@
       </div>
       <p class="set-note" id="syncInfo">Durum: —</p>
       <p class="set-note">Veriler bulutta tutulur; Utku ve Gözde aynı URL'de ortak veriyi gerçek zamanlı görür.</p>
+      <button id="syncCenterBtn" class="ghost-btn" type="button">Senkronizasyon merkezini aç</button><div id="syncCenter" class="sync-center hidden"></div>
     </section>
+
+    <h3 class="group-title settings-security-title">🔒 Gizlilik</h3>
+    <section class="card settings-card settings-security"><div class="set-row"><label>Uygulama kilidi</label><button id="pinSetupBtn" class="ghost-btn small" type="button">PIN oluştur</button></div><div class="set-row"><label>Biyometrik kilit</label><button id="biometricSetupBtn" class="ghost-btn small" type="button">Etkinleştir</button></div><div class="set-row set-row-stack"><label for="authEmailInput">Bulut hesabı</label><input id="authEmailInput" type="email" autocomplete="email" class="set-input wide" placeholder="E-posta adresi" /><button id="authEmailBtn" class="ghost-btn" type="button">Giriş bağlantısı gönder</button><p id="authStatus" class="set-note">RLS etkinleştirilmeden önce iki hesapla giriş yapılmalıdır.</p></div><p class="set-note">PIN bu cihazda saklanır. Biyometri destekleniyorsa Face ID/Touch ID kullanılabilir.</p></section>
+
+    <h3 class="group-title settings-fun-title">🏅 Özel rozet</h3>
+    <section class="card settings-card settings-fun"><div class="set-row set-row-stack"><label for="customBadgeName">Rozet adı</label><input id="customBadgeName" class="set-input wide" maxlength="30" placeholder="Örn. Balkon ustası" /></div><div class="set-row"><label for="customBadgeTarget">Kayıt hedefi</label><input id="customBadgeTarget" class="set-input" type="number" min="1" max="10000" value="50" /></div><button id="customBadgeAddBtn" class="ghost-btn" type="button">Özel rozeti ekle</button><div id="customBadgeList" class="custom-badge-list"></div></section>
 
     <h3 class="group-title settings-data-title">💾 Veri</h3>
     <section class="card data-tools settings-data">
@@ -597,21 +602,8 @@
       <button class="add-opt" data-who="both" aria-label="Ortak ekle"><img class="avatar" src="icons/avatar-both.png" alt="Ortak" /><span>Ortak</span></button>
       <button class="add-opt" data-who="gozde" aria-label="Gözde ekle"><img class="avatar" src="icons/avatar-gozde.png" alt="Gözde" /><span>Gözde</span></button>
       <button class="add-opt" data-who="utku" aria-label="Utku ekle"><img class="avatar" src="icons/avatar-utku.png" alt="Utku" /><span>Utku</span></button>
-      <button id="callBalkonBtn" class="add-opt add-opt-call" type="button" aria-label="Oturma odası çağrısı gönder">🛋️ <span>Oturma Odasına Gel!</span></button>
     </div>
     <button id="addFab" class="add-fab" aria-label="Kayıt ekle">＋</button>
-  </div>
-
-  <!-- Canlı Uygulama İçi Oturma Odası Çağrısı Toast'ı -->
-  <div id="callToast" class="call-toast hidden" role="alert">
-    <div class="call-toast-content">
-      <span class="call-toast-icon">🛋️</span>
-      <div class="call-toast-text">
-        <strong id="callToastTitle">Oturma Odası Molası!</strong>
-        <span id="callToastSub">Gözde seni oturma odasına çağırıyor 🚬</span>
-      </div>
-    </div>
-    <button id="callToastDismiss" class="call-toast-btn">Geliyorum! 🚀</button>
   </div>
 
   <!-- Global geri-al + etiket toast'ı (tüm sayfalarda) -->
@@ -620,7 +612,11 @@
       <span id="undoText">Eklendi</span>
       <button id="undoBtn" class="undo-btn">Geri al</button>
     </div>
+    <div id="quickEditBar" class="quick-edit-bar hidden"><button id="quickEditWhoBtn" type="button">Kişiyi değiştir</button><button id="quickEditKindBtn" type="button">Türü değiştir</button></div>
   </div>
+
+  <div id="onboarding" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle"><div class="modal-card"><span class="eyebrow">İlk kurulum</span><h2 id="onboardingTitle">Dumanaltı'nı sana göre ayarlayalım</h2><div class="onboarding-step" data-step="1"><p>Bu cihaz kimin?</p><div class="choice-grid"><button data-onboard-owner="utku">🧔 Utku</button><button data-onboard-owner="gozde">👩 Gözde</button></div></div><div class="onboarding-step hidden" data-step="2"><p>En çok hangi kategori?</p><div class="choice-grid three"><button data-onboard-cat="sigo">🍃 Sigo</button><button data-onboard-cat="sigara">🚬 Sigara</button><button data-onboard-cat="icki">🥂 İçki</button></div></div><div class="onboarding-step hidden" data-step="3"><p>İzinler daha sonra Ayarlar'dan değiştirilebilir.</p><label class="check-row"><input id="onboardLocation" type="checkbox" /> Yeni kayıtlara konum ekle</label><button id="onboardingFinish" class="quick-action primary" type="button">Başlayalım</button></div></div></div>
+  <div id="lockScreen" class="modal-layer lock-layer hidden" role="dialog" aria-modal="true" aria-labelledby="lockTitle"><div class="modal-card lock-card"><img src="icons/icon.svg" alt="" /><h2 id="lockTitle">Dumanaltı kilitli</h2><input id="pinUnlockInput" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" aria-label="Uygulama PIN'i" /><button id="pinUnlockBtn" class="quick-action primary" type="button">Kilidi aç</button><button id="biometricUnlockBtn" class="ghost-btn hidden" type="button">Biyometri kullan</button><p id="lockError" class="set-note"></p></div></div>
 
   <!-- D3.js Tooltip -->
   <div id="d3Tooltip" class="d3-tooltip hidden"></div>

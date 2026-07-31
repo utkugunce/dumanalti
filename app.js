@@ -9,11 +9,19 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.2.0";
-  var APP_BUILD = 141;
+  var APP_VERSION = "7.3.0";
+  var APP_BUILD = 142;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
+  var ONBOARD_KEY = "dumanalti.onboarded.v1";
+  var SESSION_KEY = "dumanalti.session.v1";
+  var TRASH_KEY = "dumanalti.trash.v1";
+  var PIN_KEY = "dumanalti.pin.v1";
+  var BIO_KEY = "dumanalti.biometric.v1";
+  var BACKUP_KEY = "dumanalti.lastBackupAt";
+  var BADGES_KEY = "dumanalti.customBadges.v1";
+  var CONFLICT_KEY = "dumanalti.conflicts.v1";
 
   var CFG = window.DUMANALTI_CONFIG || {};
 
@@ -97,7 +105,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "", callApp: "telegram", tgUser: "", tgBotToken: "", tgChatId: "" };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", customMascot: "", locationEnabled: false };
 
   function updateQuickActions() {
     var me = el("quickMeBtn");
@@ -141,10 +149,17 @@
   var historyKind = "all";
   var historyQuery = "";
   var historyVisible = 30;
+  var historyFromTs = 0;
+  var historyToTs = Infinity;
   var editingId = null; // Geçmişte düzenleme paneli açık olan kaydın id'si
   var statsScope = "all"; // İstatistik kişi filtresi: all | both | hepberaber | gozde | utku
   var statsKind = "all"; // İstatistik tür filtresi: all | sigo | bong
   var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak/beraber içilenler dahil mi
+  var comparisonPeriod = "7";
+  var activeSession = null;
+  var trash = [];
+  var conflicts = [];
+  var customBadges = [];
 
   // Aktif kategoriyi değiştir: entries/outbox alias'larını güncelle, UI'ı yeniden çiz
   function switchCat(cat) {
@@ -189,6 +204,10 @@
     }
     if (duoHep) /** @type {HTMLElement} */ (duoHep).style.display = cat === "sigo" ? "" : "none";
 
+    // Her kategori için son kullanılan türü hatırla.
+    var rememberedKind = localStorage.getItem("dumanalti.lastKind." + cat);
+    if (cat === "icki" && DRINK_TYPES[rememberedKind]) selectedAddKind = rememberedKind;
+    else if (cat === "sigo" && KINDS[rememberedKind]) selectedAddKind = rememberedKind;
     // Seçili ekleme türünü de zorla düzelt (sigo/bong vs bira/cin)
     if (cat === "icki" && (!selectedAddKind || !DRINK_TYPES[selectedAddKind])) {
       selectedAddKind = "bira";
@@ -243,25 +262,6 @@
   var onlineUsers = {};
   var lastKnownLocation = null;
 
-  function playChime() {
-    try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      var ctx = new AC();
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
-    } catch (e) {}
-  }
-
   function updatePresenceUI() {
     var presEl = el("presenceStatus");
     var presText = el("presenceText");
@@ -273,101 +273,6 @@
       presEl.classList.remove("hidden");
       presText.textContent = names.join(" & ") + " online";
     }
-  }
-
-  function showCallToast(whoLabel) {
-    playChime();
-    var t = el("callToast");
-    var title = el("callToastTitle");
-    var sub = el("callToastSub");
-    if (!t || !title || !sub) return;
-    title.textContent = "🛋️ Oturma Odası Molası!";
-    sub.textContent = (whoLabel || "Biri") + " seni oturma odasına çağırıyor 🚬";
-    t.classList.remove("hidden");
-    var dis = el("callToastDismiss");
-    if (dis) {
-      dis.onclick = function () { t.classList.add("hidden"); };
-    }
-    setTimeout(function () {
-      if (t) t.classList.add("hidden");
-    }, 10000);
-  }
-
-  function showNoticeToast(msg) {
-    var t = el("callToast");
-    var title = el("callToastTitle");
-    var sub = el("callToastSub");
-    if (!t || !title || !sub) { alert(msg); return; }
-    title.textContent = "✈️ Telegram Bildirimi";
-    sub.textContent = msg;
-    t.classList.remove("hidden");
-    setTimeout(function () { if (t) t.classList.add("hidden"); }, 5000);
-  }
-
-  function sendBalkonCall() {
-    var myLabel = settings.owner === "utku" ? "Utku" : (settings.owner === "gozde" ? "Gözde" : "Partnerin");
-    showCallToast(myLabel);
-    var callChannel = realtimeChannels.sigo || realtimeChannels[activeCat];
-    if (callChannel) {
-      callChannel.send({
-        type: "broadcast",
-        event: "balkon_call",
-        payload: { who: myLabel, ts: Date.now() }
-      });
-    }
-
-    var text = "Hadi sigo içelim!";
-    var token = (settings.tgBotToken || "").trim();
-    var chatId = (settings.tgChatId || "").trim();
-
-    if (token && chatId) {
-      var url = "https://api.telegram.org/bot" + encodeURIComponent(token) +
-                "/sendMessage?chat_id=" + encodeURIComponent(chatId) +
-                "&text=" + encodeURIComponent(text);
-      fetch(url)
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          if (data && data.ok) {
-            showNoticeToast("✈️ Telegram bildirimi gönderildi!");
-          } else {
-            var errStr = (data && data.description) || "Bilinmeyen hata";
-            showNoticeToast("⚠️ Telegram: " + errStr);
-          }
-        })
-        .catch(function () {
-          showNoticeToast("⚠️ Telegram sunucusuna ulaşılamadı");
-        });
-      return;
-    }
-
-    showNoticeToast("📢 Bildirim için Ayarlar'dan Telegram Bot Token girin!");
-    var fallbackUrl = "https://t.me/share/url?text=" + encodeURIComponent(text);
-    setTimeout(function () { window.location.href = fallbackUrl; }, 1200);
-  }
-
-  function testTgBot() {
-    var token = (settings.tgBotToken || "").trim();
-    var chatId = (settings.tgChatId || "").trim();
-    if (!token || !chatId) {
-      alert("Lütfen önce Telegram Bot Token ve Chat ID alanlarını doldurun.");
-      return;
-    }
-    var url = "https://api.telegram.org/bot" + encodeURIComponent(token) +
-              "/sendMessage?chat_id=" + encodeURIComponent(chatId) +
-              "&text=" + encodeURIComponent("🧪 Dumanaltı test bildirimi başarılı!");
-
-    fetch(url)
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (data && data.ok) {
-          alert("✅ BAŞARILI! Telegram botu mesajı iletti.");
-        } else {
-          alert("❌ HATA: Telegram şu yanıtı döndü:\n" + ((data && data.description) || JSON.stringify(data)));
-        }
-      })
-      .catch(function (err) {
-        alert("❌ BAĞLANTI HATASI: " + (err.message || String(err)));
-      });
   }
 
 
@@ -462,14 +367,14 @@
         settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
         settings.mascot = s.mascot === "off" ? "off" : "on";
         settings.sound = s.sound === "on" ? "on" : "off";
-        settings.waPhone = typeof s.waPhone === "string" ? s.waPhone : "";
-        settings.callApp = s.callApp === "whatsapp" ? "whatsapp" : "telegram";
-        settings.tgUser = typeof s.tgUser === "string" ? s.tgUser : "";
-        settings.tgBotToken = typeof s.tgBotToken === "string" ? s.tgBotToken : "";
-        settings.tgChatId = typeof s.tgChatId === "string" ? s.tgChatId : "";
-
+        settings.customMascot = typeof s.customMascot === "string" ? s.customMascot.slice(0, 100) : "";
+        settings.locationEnabled = s.locationEnabled === true;
       }
     } catch (e) {}
+    try { activeSession = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e2) { activeSession = null; }
+    try { trash = JSON.parse(localStorage.getItem(TRASH_KEY) || "[]"); if (!Array.isArray(trash)) trash = []; } catch (e3) { trash = []; }
+    try { conflicts = JSON.parse(localStorage.getItem(CONFLICT_KEY) || "[]"); if (!Array.isArray(conflicts)) conflicts = []; } catch (e4) { conflicts = []; }
+    try { customBadges = JSON.parse(localStorage.getItem(BADGES_KEY) || "[]"); if (!Array.isArray(customBadges)) customBadges = []; } catch (e5) { customBadges = []; }
   }
   function saveSettings() {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
@@ -494,6 +399,9 @@
       row.lat = lat;
       row.lng = lng;
     }
+    if (typeof raw.session_id === "string" || typeof raw.sessionId === "string") row.sessionId = String(raw.session_id || raw.sessionId).slice(0, 100);
+    if (typeof raw.deleted_at === "string" || typeof raw.deletedAt === "string") row.deletedAt = String(raw.deleted_at || raw.deletedAt);
+    if (typeof raw.updated_at === "string" || typeof raw.updatedAt === "string") row.updatedAt = String(raw.updated_at || raw.updatedAt);
     return row;
   }
 
@@ -604,6 +512,96 @@
   // ---------- Rendering ----------
   function el(id) { return document.getElementById(id); }
 
+  function saveTrash() { try { localStorage.setItem(TRASH_KEY, JSON.stringify(trash)); } catch (e) {} }
+  function saveConflicts() { try { localStorage.setItem(CONFLICT_KEY, JSON.stringify(conflicts.slice(-25))); } catch (e) {} }
+
+  function commonStreak() {
+    var days = {};
+    CAT_ORDER.forEach(function (cat) {
+      catStore[cat].entries.forEach(function (e) { if (isShared(e.who)) days[dayKey(e.ts)] = true; });
+    });
+    var run = 0;
+    for (var t = startOfDay(Date.now()).getTime(); days[dayKey(t)]; t -= 86400000) run++;
+    return run;
+  }
+
+  function renderSession() {
+    var title = el("sessionStatus"), meta = el("sessionMeta"), btn = el("sessionToggleBtn");
+    if (!title || !meta || !btn) return;
+    if (activeSession) {
+      title.textContent = activeSession.label || "Aktif oturum";
+      var count = entries.filter(function (e) { return e.sessionId === activeSession.id; }).length;
+      meta.textContent = "Başlangıç " + formatTime(activeSession.startedAt) + " · " + count + " kayıt";
+      btn.textContent = "Oturumu bitir";
+      btn.classList.add("active");
+    } else {
+      title.textContent = "Birlikte oturum başlat";
+      meta.textContent = "Bu sırada eklenen kayıtları tek grupta gör.";
+      btn.textContent = "Başlat";
+      btn.classList.remove("active");
+    }
+  }
+
+  function renderWeeklySummary() {
+    var box = el("weeklySummary"); if (!box) return;
+    var start = startOfWeek(Date.now()).getTime();
+    var previous = start - 7 * 86400000;
+    var nowCount = entries.filter(function (e) { return e.ts >= start; }).length;
+    var prevCount = entries.filter(function (e) { return e.ts >= previous && e.ts < start; }).length;
+    var delta = nowCount - prevCount;
+    box.innerHTML = '<div><span class="eyebrow">Haftalık özet</span><strong>' + nowCount + ' ' + CATS[activeCat].unitPlural + '</strong><p>' + (delta === 0 ? 'Geçen haftayla aynı' : 'Geçen haftadan ' + Math.abs(delta) + (delta > 0 ? ' fazla' : ' az')) + '</p></div><div class="streak-pill">🔥 Ortak seri ' + commonStreak() + ' gün</div>';
+  }
+
+  function periodRange() {
+    var now = Date.now(), start, end = now, days;
+    if (comparisonPeriod === "today") { start = startOfDay(now).getTime(); days = 1; }
+    else if (comparisonPeriod === "custom") {
+      var from = /** @type {HTMLInputElement} */ (el("periodFrom")), to = /** @type {HTMLInputElement} */ (el("periodTo"));
+      start = from && from.value ? new Date(from.value + "T04:00:00").getTime() : startOfDay(now).getTime() - 6 * 86400000;
+      end = to && to.value ? new Date(to.value + "T04:00:00").getTime() + 86400000 - 1 : now;
+      days = Math.max(1, Math.ceil((end - start) / 86400000));
+    } else { days = Number(comparisonPeriod) || 7; start = startOfDay(now).getTime() - (days - 1) * 86400000; }
+    return { start: start, end: end, span: Math.max(86400000, end - start), days: days };
+  }
+
+  function renderPeriodComparison() {
+    var card = el("periodCompareCard"); if (!card) return;
+    var r = periodRange();
+    var current = entries.filter(function (e) { return e.ts >= r.start && e.ts <= r.end; });
+    var previous = entries.filter(function (e) { return e.ts >= r.start - r.span && e.ts < r.start; });
+    var c = countWho(current), p = countWho(previous), diff = current.length - previous.length;
+    card.innerHTML = '<div><span class="eyebrow">Seçili dönem</span><strong>' + current.length + '</strong><small>' + c.utku + ' Utku · ' + c.gozde + ' Gözde · ' + (c.both + c.hepberaber) + ' ortak</small></div><div class="period-delta ' + (diff <= 0 ? 'good' : 'warn') + '">' + (diff === 0 ? 'Önceki dönemle aynı' : 'Önceki dönemden ' + Math.abs(diff) + (diff > 0 ? ' fazla' : ' az')) + '<small>Önceki: ' + previous.length + '</small></div>';
+  }
+
+  function renderTrash() {
+    var list = el("trashList"), count = el("trashCount");
+    if (count) count.textContent = String(trash.length);
+    if (!list) return;
+    list.innerHTML = "";
+    if (!trash.length) { list.innerHTML = '<p class="set-note">Çöp kutusu boş.</p>'; return; }
+    trash.slice().reverse().forEach(function (item) {
+      var row = document.createElement("div"); row.className = "trash-row";
+      var text = document.createElement("span");
+      text.textContent = CATS[item.cat].label + " · " + WHO[item.row.who].label + " · " + new Date(item.row.ts).toLocaleString("tr-TR");
+      var btn = document.createElement("button"); btn.className = "ghost-btn small"; btn.textContent = "Geri al";
+      btn.addEventListener("click", function () { restoreTrash(item); });
+      row.appendChild(text); row.appendChild(btn); list.appendChild(row);
+    });
+  }
+
+  function renderSyncCenter() {
+    var box = el("syncCenter"); if (!box) return;
+    var rows = CAT_ORDER.map(function (cat) { return '<div><span>' + CATS[cat].emoji + ' ' + CATS[cat].label + '</span><b>' + catStore[cat].outbox.length + ' bekliyor</b></div>'; }).join("");
+    var conflictHtml = conflicts.length ? '<p class="set-note">Son çakışmalar (yerel değişiklik korundu): ' + conflicts.slice(-3).map(function (c) { return CATS[c.cat].label + ' / ' + new Date(c.at).toLocaleString("tr-TR"); }).join(' · ') + '</p>' : '<p class="set-note">Kaydedilmiş çakışma yok.</p>';
+    box.innerHTML = rows + '<p class="set-note">Son başarılı eşitleme: ' + (lastSyncAt ? new Date(lastSyncAt).toLocaleString("tr-TR") : 'henüz yok') + '</p>' + conflictHtml;
+  }
+
+  function renderBackupReminder() {
+    var box = el("backupReminder"); if (!box) return;
+    var last = Number(localStorage.getItem(BACKUP_KEY) || 0);
+    box.classList.toggle("hidden", Date.now() - last < 7 * 86400000);
+  }
+
   function render() {
     renderToday();
     renderLimit();
@@ -614,6 +612,12 @@
     renderInsights();
     renderHistory();
     renderPortalSummaries();
+    renderSession();
+    renderWeeklySummary();
+    renderPeriodComparison();
+    renderTrash();
+    renderSyncCenter();
+    renderBackupReminder();
     refreshAsst();
     if (el("setCount")) el("setCount").textContent = String(entries.length);
     if (el("profileSub")) {
@@ -1166,7 +1170,7 @@
     var time = document.createElement("span");
     time.className = "h-time";
     var tagStr = "";
-    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (e.sessionId ? " · 🫶 oturum" : "") + (pending ? " · ⏳ bekliyor" : "");
     main.appendChild(who);
     main.appendChild(time);
 
@@ -1351,7 +1355,8 @@
         var haystack = (WHO[e.who].label + " " + kindLabel + " " + dayLabel(e.ts) + " " + new Date(e.ts).toLocaleDateString("tr-TR")).toLocaleLowerCase("tr-TR");
         searchMatch = haystack.indexOf(historyQuery) !== -1;
       }
-      return whoMatch && kindMatch && searchMatch;
+      var dateMatch = e.ts >= historyFromTs && e.ts <= historyToTs;
+      return whoMatch && kindMatch && searchMatch && dateMatch;
     });
     el("historyCount").textContent = filtered.length ? filtered.length + " kayıt" : "";
     var moreBtn = el("historyMoreBtn");
@@ -2018,7 +2023,7 @@
       if (h >= 0 && h < 4) night = true;
       if (h >= 4 && h < 8) morning = true;
     });
-    return [
+    var builtIn = [
       { e: "🌱", t: "İlk adım", d: "İlk sigo kaydı", on: total >= 1 },
       { e: "💯", t: "Yüzler", d: "100 kayıt", on: total >= 100 },
       { e: "🏆", t: "Beşyüz", d: "500 kayıt", on: total >= 500 },
@@ -2029,6 +2034,10 @@
       { e: "🦉", t: "Gece kuşu", d: "00–04 arası", on: night },
       { e: "🌅", t: "Erkenci", d: "04–08 arası", on: morning }
     ];
+    customBadges.forEach(function (b) {
+      builtIn.push({ e: b.emoji || "⭐", t: b.name, d: b.target + " toplam kayıt", on: total >= b.target, custom: true });
+    });
+    return builtIn;
   }
 
   function renderBadges() {
@@ -2157,7 +2166,7 @@
       '</div>' +
       '<div class="wrapped-item">' +
         '<span class="wrapped-item-ico">⏰</span>' +
-        '<span class="wrapped-item-title">Oturma Odası Saatiniz</span>' +
+        '<span class="wrapped-item-title">Favori Saatiniz</span>' +
         '<span class="wrapped-item-val">' + peakHStr + '</span>' +
         '<span class="wrapped-item-sub">Zirve zamanı</span>' +
       '</div>' +
@@ -2169,7 +2178,7 @@
       '</div>';
 
     if (activeCat === "sigo") {
-      letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori oturma odası zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
+      letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
     } else {
       letter.innerHTML = '<strong>Özet Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak toplam ' + total + ' ' + catUnit + ' kaydettiniz. Favori saat aralığınız ' + peakHStr + ' olarak öne çıkıyor! ✨';
     }
@@ -2503,6 +2512,9 @@
     renderToday();
     renderLimit();
     renderSince();
+    renderSession();
+    renderWeeklySummary();
+    renderTrash();
     refreshAsst();
     var hist = el("view-history");
     if (hist && !hist.classList.contains("hidden")) renderHistory();
@@ -2537,12 +2549,18 @@
 
   function addEntry(who, x, y, kind, tag) {
     var k = kind || selectedAddKind || "sigo";
+    var duplicate = entries.length ? entries[entries.length - 1] : null;
+    if (duplicate && duplicate.who === who && entryKind(duplicate) === k && Date.now() - duplicate.ts < 30000) {
+      if (!confirm("Aynı kayıt son 30 saniye içinde eklendi. Yine de eklensin mi?")) return;
+    }
     var entry = { id: uuid(), who: who, kind: k, ts: Date.now() };
+    if (activeSession) entry.sessionId = activeSession.id;
     if (tag) entry.tag = tag;
-    if (lastKnownLocation) {
+    if (settings.locationEnabled && lastKnownLocation) {
       entry.lat = lastKnownLocation.lat;
       entry.lng = lastKnownLocation.lng;
     }
+    try { localStorage.setItem("dumanalti.lastKind." + activeCat, k); } catch (e) {}
     entries.push(entry);
     sortEntries();
     // Optimistic UI: önce kuyruğa al, sonra anında çiz (bekliyor işareti doğru görünsün)
@@ -2565,7 +2583,10 @@
   function deleteEntry(id) {
     var idx = findIndexById(id);
     if (idx === -1) return;
+    var removed = entries[idx];
     entries.splice(idx, 1);
+    trash.push({ cat: activeCat, row: removed, deletedAt: Date.now() });
+    saveTrash();
     saveCache();
     renderQuick();
 
@@ -2578,16 +2599,69 @@
         break;
       }
     }
-    if (!pendingInsert) outbox.push({ type: "delete", id: id });
+    if (!pendingInsert) outbox.push({ type: "update", id: id, fields: { deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, baseUpdatedAt: removed.updatedAt || null });
     saveOutbox();
     flushOutbox();
     refreshStatus();
+  }
+
+  function shareWrappedImage() {
+    var monthList = entriesSince(startOfMonth()), counts = countWho(monthList);
+    var canvas = document.createElement("canvas"); canvas.width = 1080; canvas.height = 1350;
+    var ctx = canvas.getContext("2d"), grad = ctx.createLinearGradient(0, 0, 1080, 1350);
+    grad.addColorStop(0, "#12152b"); grad.addColorStop(0.55, "#32245c"); grad.addColorStop(1, "#0f746c");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1350);
+    ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.beginPath(); ctx.arc(930, 170, 270, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f4eeff"; ctx.font = "700 44px system-ui"; ctx.fillText("DUMANALTI WRAPPED", 80, 120);
+    ctx.font = "800 96px system-ui"; ctx.fillText(String(monthList.length), 80, 330);
+    ctx.font = "500 38px system-ui"; ctx.fillStyle = "#cfc7e8"; ctx.fillText("bu ay toplam " + CATS[activeCat].unitPlural, 80, 390);
+    ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fillRect(80, 490, 920, 380);
+    ctx.fillStyle = "#ffffff"; ctx.font = "700 42px system-ui";
+    ctx.fillText("Utku  " + (counts.utku + counts.both + counts.hepberaber), 130, 610);
+    ctx.fillText("Gözde  " + (counts.gozde + counts.both + counts.hepberaber), 130, 710);
+    ctx.fillText("Birlikte  " + (counts.both + counts.hepberaber), 130, 810);
+    ctx.fillStyle = "#bdfcf2"; ctx.font = "700 36px system-ui"; ctx.fillText("🔥 Ortak seri: " + commonStreak() + " gün", 80, 1000);
+    ctx.fillStyle = "#cfc7e8"; ctx.font = "500 30px system-ui"; ctx.fillText("Utku & Gözde · " + new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" }), 80, 1215);
+    canvas.toBlob(function (blob) {
+      if (!blob) return;
+      var file = new File([blob], "dumanalti-wrapped.png", { type: "image/png" });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ title: "Dumanaltı Wrapped", files: [file] }).catch(function () {});
+      } else {
+        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      }
+    }, "image/png");
+  }
+
+  function restoreTrash(item) {
+    var idx = trash.indexOf(item); if (idx === -1) return;
+    trash.splice(idx, 1); saveTrash();
+    var cat = item.cat, row = item.row;
+    delete row.deletedAt;
+    catStore[cat].entries.push(row);
+    catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
+    catStore[cat].outbox.push({ type: "insert", row: row });
+    catStore[cat].outbox.push({ type: "update", id: row.id, fields: { deleted_at: null, updated_at: new Date().toISOString() }, baseUpdatedAt: row.updatedAt || null });
+    saveCatCache(cat); saveCatOutbox(cat);
+    if (cat === activeCat) { entries = catStore[cat].entries; outbox = catStore[cat].outbox; render(); }
+    flushOutbox(cat);
+  }
+
+  function purgeTrash() {
+    var cutoff = Date.now() - 7 * 86400000, kept = [];
+    trash.forEach(function (item) {
+      if (item.deletedAt >= cutoff) kept.push(item);
+      else catStore[item.cat].outbox.push({ type: "delete", id: item.row.id });
+    });
+    trash = kept; saveTrash();
+    CAT_ORDER.forEach(function (cat) { saveCatOutbox(cat); flushOutbox(cat); });
   }
 
   // Bir kaydın alanlarını günceller (kişi/saat/etiket/tür); buluta update olarak gider
   function patchEntry(id, fields) {
     var idx = findIndexById(id);
     if (idx === -1) return;
+    var baseUpdatedAt = entries[idx].updatedAt || null;
     Object.keys(fields).forEach(function (k) {
       entries[idx][k] = fields[k];
     });
@@ -2605,7 +2679,7 @@
       }
     }
     if (!pendingInsert) {
-      outbox.push({ type: "update", id: id, fields: fields });
+      outbox.push({ type: "update", id: id, fields: Object.assign({}, fields, { updated_at: new Date().toISOString() }), baseUpdatedAt: baseUpdatedAt });
     }
     saveOutbox();
     flushOutbox();
@@ -2631,8 +2705,10 @@
     ut.appendChild(document.createTextNode(" " + WHO[who].label + " (" + kInfo.emoji + " " + kInfo.label + ") eklendi"));
 
     bar.classList.remove("hidden");
+    var quick = el("quickEditBar");
+    if (quick) quick.classList.remove("hidden");
     clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () { bar.classList.add("hidden"); lastUndo = null; }, 4000);
+    undoTimer = setTimeout(function () { bar.classList.add("hidden"); if (quick) quick.classList.add("hidden"); lastUndo = null; }, 8000);
   }
 
   function undoLast() {
@@ -2640,6 +2716,7 @@
     deleteEntry(lastUndo.id);
     lastUndo = null;
     el("undoBar").classList.add("hidden");
+    if (el("quickEditBar")) el("quickEditBar").classList.add("hidden");
     clearTimeout(undoTimer);
   }
 
@@ -3019,6 +3096,7 @@
         if (op.row.tag) dbRow.tag = op.row.tag;
         if (op.row.lat !== undefined) dbRow.lat = op.row.lat;
         if (op.row.lng !== undefined) dbRow.lng = op.row.lng;
+        if (op.row.sessionId) dbRow.session_id = op.row.sessionId;
         p = withSchemaFallback(
           sb.from(tableName).upsert(dbRow, { onConflict: "id", ignoreDuplicates: true }),
           function () { return sb.from(tableName).upsert(legacyDbRow(cat, op.row), { onConflict: "id", ignoreDuplicates: true }); }
@@ -3062,13 +3140,15 @@
       var map = {};
       res.data.forEach(function (r) {
         var o = normalizeEntry(r, cat, false);
-        if (o) map[o.id] = o;
+        if (o && !o.deletedAt) map[o.id] = o;
       });
       // Henüz gönderilmemiş yerel işlemleri uzaktaki veriye uygula
       catOutbox.forEach(function (op) {
         if (op.type === "insert" && op.row) map[op.row.id] = op.row;
         else if (op.type === "delete") delete map[op.id];
         else if (op.type === "update" && map[op.id] && op.fields) {
+          var remoteUpdated = map[op.id].updatedAt || null;
+          if (op.baseUpdatedAt && remoteUpdated && op.baseUpdatedAt !== remoteUpdated) { conflicts.push({ cat: cat, id: op.id, at: Date.now(), resolution: "local" }); saveConflicts(); }
           Object.keys(op.fields).forEach(function (k) { map[op.id][k] = op.fields[k]; });
         }
       });
@@ -3119,6 +3199,12 @@
         if (idx === -1) return;
         var updated = normalizeEntry(r, cat, false);
         if (!updated) return;
+        if (updated.deletedAt) {
+          catStore[cat].entries.splice(idx, 1);
+          saveCatCache(cat);
+          if (cat === activeCat) render();
+          return;
+        }
         catStore[cat].entries[idx] = updated;
         catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
         saveCatCache(cat);
@@ -3131,12 +3217,6 @@
         catStore[cat].entries.splice(idx, 1);
         saveCatCache(cat);
         if (cat === activeCat) render();
-      })
-      .on("broadcast", { event: "balkon_call" }, function (payload) {
-        var p = payload ? payload.payload : null;
-        if (p && p.who) {
-          showCallToast(p.who);
-        }
       })
       .on("presence", { event: "sync" }, function () {
         var state = ch.presenceState();
@@ -3174,6 +3254,8 @@
     a.download = "dumanalti-tam-yedek-" + dayKey(Date.now()) + ".json";
     a.click();
     URL.revokeObjectURL(url);
+    try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {}
+    renderBackupReminder();
   }
 
   function importData(file) {
@@ -3226,6 +3308,12 @@
     if (typed == null || typed.trim() !== "SIFIRLA") {
       if (typed != null) alert("Sıfırlama iptal edildi.");
       return;
+    }
+    if (sb.auth && el("authStatus")) {
+      sb.auth.getSession().then(function (res) {
+        var user = res.data && res.data.session && res.data.session.user;
+        el("authStatus").textContent = user ? "Giriş açık · kullanıcı kimliği: " + user.id : "Bulut hesabında giriş açık değil.";
+      });
     }
     var deleteCount = 0;
     CAT_ORDER.forEach(function (c) {
@@ -3484,7 +3572,7 @@
       b.addEventListener(TAP_EVT, function () {
         if (b.dataset.lock === "1") return;
         var who = b.getAttribute("data-who");
-        if (!who) return; // callBalkonBtn handles its own click
+        if (!who) return;
         b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
         var r = b.getBoundingClientRect();
         close();
@@ -3496,14 +3584,6 @@
       });
     });
 
-    var callBtn = el("callBalkonBtn");
-    if (callBtn) {
-      callBtn.addEventListener(TAP_EVT, function (ev) {
-        ev.stopPropagation();
-        close();
-        sendBalkonCall();
-      });
-    }
   }
 
   // ---------- Init ----------
@@ -3514,7 +3594,8 @@
       ".settings-owner-title", ".settings-owner",
       ".settings-appearance-title", ".settings-appearance",
       ".settings-sync-title", ".settings-sync",
-      ".settings-notify-title", ".settings-notify",
+      ".settings-security-title", ".settings-security",
+      ".settings-fun-title", ".settings-fun",
       ".settings-data-title", ".settings-data",
       ".settings-about-title", ".settings-about", ".settings-profile"
     ].forEach(function (selector) {
@@ -3523,8 +3604,146 @@
     });
   }
 
+  function hashPin(pin) {
+    if (!window.crypto || !crypto.subtle) return Promise.resolve(btoa(pin));
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin)).then(function (buf) {
+      return Array.from(new Uint8Array(buf)).map(function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+    });
+  }
+
+  function bytesToBase64(buf) {
+    var bytes = new Uint8Array(buf), binary = "";
+    bytes.forEach(function (b) { binary += String.fromCharCode(b); });
+    return btoa(binary);
+  }
+
+  function base64ToBytes(value) {
+    var binary = atob(value), bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function showLockIfNeeded() {
+    var lock = el("lockScreen"); if (!lock) return;
+    var hasPin = !!localStorage.getItem(PIN_KEY);
+    lock.classList.toggle("hidden", !hasPin);
+    var bio = el("biometricUnlockBtn");
+    if (bio) bio.classList.toggle("hidden", !localStorage.getItem(BIO_KEY));
+  }
+
+  function biometricUnlock() {
+    var saved = localStorage.getItem(BIO_KEY);
+    if (!saved || !navigator.credentials) return Promise.reject(new Error("Biyometri hazır değil"));
+    var challenge = crypto.getRandomValues(new Uint8Array(32));
+    return navigator.credentials.get({ publicKey: { challenge: challenge, timeout: 60000, userVerification: "required", allowCredentials: [{ id: base64ToBytes(saved), type: "public-key" }] } }).then(function () { el("lockScreen").classList.add("hidden"); });
+  }
+
+  function renderCustomBadgeSettings() {
+    var box = el("customBadgeList"); if (!box) return;
+    box.innerHTML = "";
+    customBadges.forEach(function (badge) {
+      var row = document.createElement("div"); row.className = "custom-badge-row";
+      var span = document.createElement("span"); span.textContent = "⭐ " + badge.name + " · " + badge.target;
+      var remove = document.createElement("button"); remove.className = "ghost-btn small"; remove.textContent = "Sil";
+      remove.addEventListener("click", function () { customBadges = customBadges.filter(function (x) { return x.id !== badge.id; }); localStorage.setItem(BADGES_KEY, JSON.stringify(customBadges)); renderCustomBadgeSettings(); renderBadges(); });
+      row.appendChild(span); row.appendChild(remove); box.appendChild(row);
+    });
+  }
+
+  function initOnboarding() {
+    var modal = el("onboarding"); if (!modal) return;
+    if (!localStorage.getItem(ONBOARD_KEY) && settings.owner) localStorage.setItem(ONBOARD_KEY, "1");
+    if (localStorage.getItem(ONBOARD_KEY)) return;
+    modal.classList.remove("hidden"); var pickedCat = activeCat;
+    function show(n) { modal.querySelectorAll(".onboarding-step").forEach(function (x) { x.classList.toggle("hidden", Number(x.getAttribute("data-step")) !== n); }); }
+    modal.querySelectorAll("[data-onboard-owner]").forEach(function (b) { b.addEventListener("click", function () { var owner = b.getAttribute("data-onboard-owner"); if (owner === "utku" || owner === "gozde") settings.owner = owner; saveSettings(); show(2); }); });
+    modal.querySelectorAll("[data-onboard-cat]").forEach(function (b) { b.addEventListener("click", function () { pickedCat = b.getAttribute("data-onboard-cat"); show(3); }); });
+    el("onboardingFinish").addEventListener("click", function () {
+      settings.locationEnabled = !!/** @type {HTMLInputElement} */ (el("onboardLocation")).checked; saveSettings(); localStorage.setItem(ONBOARD_KEY, "1"); modal.classList.add("hidden"); switchCat(pickedCat); updateQuickActions(); if (settings.locationEnabled) fetchWeather();
+    });
+  }
+
+  function bindFeaturePack() {
+    if (el("sessionToggleBtn")) el("sessionToggleBtn").addEventListener("click", function () {
+      activeSession = activeSession ? null : { id: uuid(), label: "Ortak oturum", startedAt: Date.now() };
+      if (activeSession) localStorage.setItem(SESSION_KEY, JSON.stringify(activeSession)); else localStorage.removeItem(SESSION_KEY);
+      renderSession();
+    });
+
+    document.querySelectorAll("#periodSwitcher .period-chip").forEach(function (b) {
+      b.addEventListener("click", function () {
+        comparisonPeriod = b.getAttribute("data-period") || "7";
+        document.querySelectorAll("#periodSwitcher .period-chip").forEach(function (x) { x.classList.toggle("active", x === b); });
+        el("periodCustom").classList.toggle("hidden", comparisonPeriod !== "custom"); renderPeriodComparison();
+      });
+    });
+    if (el("periodApplyBtn")) el("periodApplyBtn").addEventListener("click", renderPeriodComparison);
+    function applyHistoryDates() {
+      var from = /** @type {HTMLInputElement} */ (el("historyFrom")), to = /** @type {HTMLInputElement} */ (el("historyTo"));
+      historyFromTs = from.value ? new Date(from.value + "T04:00:00").getTime() : 0;
+      historyToTs = to.value ? new Date(to.value + "T04:00:00").getTime() + 86400000 - 1 : Infinity;
+      historyVisible = 30; renderHistory();
+    }
+    if (el("historyFrom")) el("historyFrom").addEventListener("change", applyHistoryDates);
+    if (el("historyTo")) el("historyTo").addEventListener("change", applyHistoryDates);
+    if (el("historyDateClear")) el("historyDateClear").addEventListener("click", function () { /** @type {HTMLInputElement} */ (el("historyFrom")).value = ""; /** @type {HTMLInputElement} */ (el("historyTo")).value = ""; applyHistoryDates(); });
+    if (el("trashToggleBtn")) el("trashToggleBtn").addEventListener("click", function () { el("trashList").classList.toggle("hidden"); renderTrash(); });
+    if (el("syncCenterBtn")) el("syncCenterBtn").addEventListener("click", function () { el("syncCenter").classList.toggle("hidden"); renderSyncCenter(); });
+    if (el("shareWrappedBtn")) el("shareWrappedBtn").addEventListener("click", shareWrappedImage);
+    if (el("backupReminderBtn")) el("backupReminderBtn").addEventListener("click", exportData);
+    if (el("backupDismissBtn")) el("backupDismissBtn").addEventListener("click", function () { localStorage.setItem(BACKUP_KEY, String(Date.now())); renderBackupReminder(); });
+
+    var custom = /** @type {HTMLInputElement} */ (el("customMascotInput"));
+    if (custom) { custom.value = settings.customMascot || ""; custom.addEventListener("change", function () { settings.customMascot = custom.value.trim(); saveSettings(); updatePortalZivana(); }); }
+    var locationSetting = /** @type {HTMLInputElement} */ (el("locationSetting"));
+    if (locationSetting) { locationSetting.checked = settings.locationEnabled; locationSetting.addEventListener("change", function () { settings.locationEnabled = locationSetting.checked; saveSettings(); if (settings.locationEnabled) fetchWeather(); }); }
+    if (el("customBadgeAddBtn")) el("customBadgeAddBtn").addEventListener("click", function () {
+      var nameInput = /** @type {HTMLInputElement} */ (el("customBadgeName")), targetInput = /** @type {HTMLInputElement} */ (el("customBadgeTarget"));
+      var name = nameInput.value.trim(), target = Number(targetInput.value);
+      if (!name || !target || target < 1) { alert("Rozet adı ve geçerli bir hedef gir."); return; }
+      customBadges.push({ id: uuid(), name: name, target: target }); localStorage.setItem(BADGES_KEY, JSON.stringify(customBadges)); nameInput.value = ""; renderCustomBadgeSettings(); renderBadges();
+    });
+    renderCustomBadgeSettings();
+
+    if (el("quickEditWhoBtn")) el("quickEditWhoBtn").addEventListener("click", function () {
+      if (!lastUndo) return; var order = activeCat === "sigo" ? ["utku", "gozde", "both", "hepberaber"] : ["utku", "gozde"];
+      var next = order[(order.indexOf(lastUndo.who) + 1) % order.length]; patchEntry(lastUndo.id, { who: next }); lastUndo.who = next; render();
+    });
+    if (el("quickEditKindBtn")) el("quickEditKindBtn").addEventListener("click", function () {
+      if (!lastUndo) return; var order = activeCat === "sigo" ? Object.keys(KINDS) : (activeCat === "icki" ? Object.keys(DRINK_TYPES) : ["sigara"]);
+      var next = order[(order.indexOf(entryKind(lastUndo)) + 1) % order.length]; patchEntry(lastUndo.id, { kind: next }); lastUndo.kind = next; render();
+    });
+
+    if (el("pinSetupBtn")) el("pinSetupBtn").addEventListener("click", function () {
+      if (localStorage.getItem(PIN_KEY) && confirm("Bu cihazdaki PIN kilidi kaldırılsın mı?")) { localStorage.removeItem(PIN_KEY); el("pinSetupBtn").textContent = "PIN oluştur"; return; }
+      var pin = prompt("4-6 haneli bir PIN belirle:"); if (!/^\d{4,6}$/.test(pin || "")) { if (pin !== null) alert("PIN 4-6 rakam olmalı."); return; }
+      hashPin(pin).then(function (hash) { localStorage.setItem(PIN_KEY, hash); el("pinSetupBtn").textContent = "PIN'i kaldır"; alert("PIN kilidi etkinleştirildi."); });
+    });
+    if (localStorage.getItem(PIN_KEY) && el("pinSetupBtn")) el("pinSetupBtn").textContent = "PIN'i kaldır";
+    if (el("pinUnlockBtn")) el("pinUnlockBtn").addEventListener("click", function () { var value = /** @type {HTMLInputElement} */ (el("pinUnlockInput")).value; hashPin(value).then(function (hash) { if (hash === localStorage.getItem(PIN_KEY)) el("lockScreen").classList.add("hidden"); else el("lockError").textContent = "PIN yanlış."; }); });
+    if (el("biometricUnlockBtn")) el("biometricUnlockBtn").addEventListener("click", function () { biometricUnlock().catch(function () { el("lockError").textContent = "Biyometrik doğrulama tamamlanamadı."; }); });
+    if (el("biometricSetupBtn")) el("biometricSetupBtn").addEventListener("click", function () {
+      if (!navigator.credentials || !window.PublicKeyCredential) { alert("Bu cihaz biyometrik web kilidini desteklemiyor."); return; }
+      var challenge = crypto.getRandomValues(new Uint8Array(32)), userId = new TextEncoder().encode(settings.owner || "dumanalti-user");
+      navigator.credentials.create({ publicKey: { challenge: challenge, rp: { name: "Dumanaltı" }, user: { id: userId, name: settings.owner || "kullanici", displayName: settings.owner || "Dumanaltı" }, pubKeyCredParams: [{ alg: -7, type: "public-key" }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }, timeout: 60000 } }).then(function (cred) { localStorage.setItem(BIO_KEY, bytesToBase64(/** @type {PublicKeyCredential} */ (cred).rawId)); el("biometricSetupBtn").textContent = "Etkin"; }).catch(function () { alert("Biyometrik kayıt tamamlanamadı."); });
+    });
+    if (localStorage.getItem(BIO_KEY) && el("biometricSetupBtn")) el("biometricSetupBtn").textContent = "Etkin";
+
+    if (el("authEmailBtn")) el("authEmailBtn").addEventListener("click", function () {
+      var email = /** @type {HTMLInputElement} */ (el("authEmailInput")).value.trim(); if (!email || !sb) { alert("Geçerli e-posta gir ve bulut bağlantısını kontrol et."); return; }
+      sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + location.pathname } }).then(function (res) { el("authStatus").textContent = res.error ? res.error.message : "Giriş bağlantısı e-postana gönderildi."; });
+    });
+
+    var swipeStart = 0, home = el("view-home");
+    if (home) {
+      home.addEventListener("touchstart", function (ev) { swipeStart = ev.touches[0].clientX; }, { passive: true });
+      home.addEventListener("touchend", function (ev) { var dx = ev.changedTouches[0].clientX - swipeStart; if (Math.abs(dx) < 70) return; var idx = CAT_ORDER.indexOf(activeCat); switchCat(CAT_ORDER[(idx + (dx < 0 ? 1 : CAT_ORDER.length - 1)) % CAT_ORDER.length]); }, { passive: true });
+    }
+  }
+
   function bind() {
     arrangeSettingsDom();
+    bindFeaturePack();
     // Sigo ekleme artık her sayfadaki genişleyen '+' butonundan (bindAddDial)
 
     // Geri al dokunma anında tepki versin (click parmak kalkınca ateşlenir)
@@ -3668,27 +3887,6 @@
     bindSeg("ownerSeg", "data-owner", settings.owner, function (v) {
       settings.owner = v; saveSettings(); updateQuickActions();
     });
-
-    var tgTokenInp = el("tgBotTokenInput");
-    if (tgTokenInp) {
-      /** @type {HTMLInputElement} */ (tgTokenInp).value = settings.tgBotToken || "";
-      tgTokenInp.addEventListener("change", function () {
-        settings.tgBotToken = (/** @type {HTMLInputElement} */ (tgTokenInp).value || "").trim();
-        saveSettings();
-      });
-    }
-
-    var tgChatInp = el("tgChatIdInput");
-    if (tgChatInp) {
-      /** @type {HTMLInputElement} */ (tgChatInp).value = settings.tgChatId || "";
-      tgChatInp.addEventListener("change", function () {
-        settings.tgChatId = (/** @type {HTMLInputElement} */ (tgChatInp).value || "").trim();
-        saveSettings();
-      });
-    }
-
-    if (el("testTgBotBtn")) el("testTgBotBtn").addEventListener("click", testTgBot);
-
 
     // Zıvana görünürlüğü
     bindSeg("mascotSeg", "data-mascot", settings.mascot, function (v) {
@@ -4189,6 +4387,7 @@
   function updatePortalZivana() {
     var tipEl = el("portalZivanaTip");
     if (!tipEl) return;
+    if (settings.customMascot) { tipEl.textContent = settings.customMascot; return; }
     var hour = new Date().getHours();
     var msg = "Bugün nasıl hissediyoruz?";
     if (currentTemp !== null) {
@@ -4240,7 +4439,7 @@
       }).catch(function () {});
     }
 
-    if (navigator.geolocation) {
+    if (settings.locationEnabled && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         function (pos) { getWeather(pos.coords.latitude, pos.coords.longitude, true); },
         function () { getWeather(41.01, 28.97, false); }, // Fallback Istanbul
@@ -4302,6 +4501,9 @@
   loadCache();
   document.body.setAttribute("data-cat", activeCat);
   bind();
+  initOnboarding();
+  purgeTrash();
+  showLockIfNeeded();
   render();
   initPortalWidgets();
   handleQuickAction();
