@@ -90,6 +90,7 @@ test.describe('Dumanaltı — yeni özellikler', () => {
   test('Rekorlar 8 kutucuk render eder ve değerleri boş değil', async ({ page }) => {
     await seed(page);
     await page.click('nav.tabbar button[data-tab="stats"]');
+    await page.dispatchEvent('.analysis-switch[data-analysis="fun"]', 'pointerdown');
     const tiles = page.locator('#recordList .record-tile');
     await expect(tiles).toHaveCount(8);
     // Her kutucuğun bir değeri olmalı
@@ -107,6 +108,7 @@ test.describe('Dumanaltı — yeni özellikler', () => {
       ex.setEntries(list); ex.render();
     });
     await page.click('nav.tabbar button[data-tab="stats"]');
+    await page.dispatchEvent('.analysis-switch[data-analysis="fun"]', 'pointerdown');
     await expect(page.locator('#badgeCount')).toContainText('/');
     const first = page.locator('#badgeGrid .badge').first();
     await first.dispatchEvent('pointerdown');
@@ -129,9 +131,28 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     expect(state.stored).toBe('on');
   });
 
+  test('Geçmiş kayıtları 30arlı yükler ve aramayı uygular', async ({ page }) => {
+    await page.evaluate(() => {
+      const ex = window.DUMANALTI_TEST_EXPORTS;
+      const list = [];
+      for (let i = 0; i < 65; i++) {
+        list.push({ id: 'hist' + i, who: i % 2 ? 'utku' : 'gozde', kind: 'sigo', ts: Date.now() - i * 3600000 });
+      }
+      ex.setEntries(list); ex.render();
+    });
+    await page.click('nav.tabbar button[data-tab="history"]');
+    await expect(page.locator('.history-item')).toHaveCount(30);
+    await page.click('#historyMoreBtn');
+    await expect(page.locator('.history-item')).toHaveCount(60);
+    await page.fill('#historySearch', 'Utku');
+    await expect(page.locator('.history-item')).toHaveCount(30);
+    await expect(page.locator('#historyCount')).toContainText('32 kayıt');
+  });
+
   test('Grafik sütunları ekran okuyucu için etiketli (a11y)', async ({ page }) => {
     await seed(page);
     await page.click('nav.tabbar button[data-tab="stats"]');
+    await page.dispatchEvent('.analysis-switch[data-analysis="charts"]', 'pointerdown');
     await expect(page.locator('#chart')).toHaveAttribute('aria-label', 'Son 7 günün grafiği');
     await expect(page.locator('#dowChart .dow-col').first()).toHaveAttribute('aria-label', /sigo/);
     await expect(page.locator('#todChart')).toHaveAttribute('aria-label', 'Günlük zaman dilimleri');

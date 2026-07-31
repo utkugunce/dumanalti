@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.1.0";
-  var APP_BUILD = 140;
+  var APP_VERSION = "7.2.0";
+  var APP_BUILD = 141;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -99,6 +99,32 @@
   /** @type {Settings} */
   var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", waPhone: "", callApp: "telegram", tgUser: "", tgBotToken: "", tgChatId: "" };
 
+  function updateQuickActions() {
+    var me = el("quickMeBtn");
+    var together = el("quickTogetherBtn");
+    var hint = el("quickOwnerHint");
+    if (!me || !together) return;
+    var owner = settings.owner;
+    me.textContent = owner ? "Ben içtim" : "Kişi seç";
+    if (activeCat === "sigo") {
+      together.textContent = "Ortak içtik";
+    } else if (owner) {
+      together.textContent = (owner === "utku" ? "Gözde" : "Utku") + " içti";
+    } else {
+      together.textContent = "Diğer kişi";
+    }
+    if (hint) {
+      hint.textContent = owner
+        ? "Bu cihaz " + WHO[owner].label + " için ayarlı · " + CATS[activeCat].label + " kaydı"
+        : "Tek dokunuş için Ayarlar’dan bu cihazın sahibini seç.";
+    }
+    document.querySelectorAll(".portal-card").forEach(function (card) {
+      var selected = card.getAttribute("data-cat") === activeCat;
+      card.classList.toggle("active", selected);
+      card.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+  }
+
   var DAY_NAMES = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
   // entries ve outbox aktif kategoriye alias olur (switchCat ile güncellenir)
@@ -113,6 +139,8 @@
   var selectedAddKind = "sigo";
   var historyFilter = "all";
   var historyKind = "all";
+  var historyQuery = "";
+  var historyVisible = 30;
   var editingId = null; // Geçmişte düzenleme paneli açık olan kaydın id'si
   var statsScope = "all"; // İstatistik kişi filtresi: all | both | hepberaber | gozde | utku
   var statsKind = "all"; // İstatistik tür filtresi: all | sigo | bong
@@ -176,6 +204,8 @@
           btn.classList.toggle("active", btn.getAttribute("data-kind") === "sigo");
         });
       }
+    } else if (cat === "sigara") {
+      selectedAddKind = "sigara";
     }
 
     var beerWrap = el("beerOptWrap");
@@ -184,6 +214,11 @@
     if (glassWrap) glassWrap.classList.toggle("hidden", cat !== "icki" || selectedAddKind === "bira");
 
 
+    updateQuickActions();
+    document.querySelectorAll(".portal-card").forEach(function (card) {
+      card.classList.toggle("active", card.getAttribute("data-cat") === cat);
+      card.setAttribute("aria-pressed", card.getAttribute("data-cat") === cat ? "true" : "false");
+    });
     applyMascot();
     render();
     try { localStorage.setItem("dumanalti.activeCat", cat); } catch (e) {}
@@ -1135,25 +1170,24 @@
     main.appendChild(who);
     main.appendChild(time);
 
-    var edit = document.createElement("button");
-    edit.className = "h-del";
-    edit.textContent = "✏️";
-    edit.title = "Düzenle";
-    edit.addEventListener("click", function () {
+    var openHint = document.createElement("span");
+    openHint.className = "h-open";
+    openHint.textContent = "Ayrıntı";
+    row.setAttribute("role", "button");
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("aria-label", WHO[e.who].label + " kaydını düzenle");
+    function toggleEdit() {
       editingId = editingId === e.id ? null : e.id;
       renderHistory();
+    }
+    row.addEventListener("click", toggleEdit);
+    row.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggleEdit(); }
     });
-
-    var del = document.createElement("button");
-    del.className = "h-del";
-    del.textContent = "✕";
-    del.title = "Sil";
-    del.addEventListener("click", function () { deleteEntry(e.id); });
 
     row.appendChild(em);
     row.appendChild(main);
-    row.appendChild(edit);
-    row.appendChild(del);
+    row.appendChild(openHint);
     return row;
   }
 
@@ -1270,8 +1304,13 @@
     cancel.className = "ghost-btn small";
     cancel.textContent = "Vazgeç";
     cancel.addEventListener("click", function () { editingId = null; renderHistory(); });
+    var remove = document.createElement("button");
+    remove.className = "ghost-btn small danger";
+    remove.textContent = "Kaydı sil";
+    remove.addEventListener("click", function () { deleteEntry(e.id); });
     btns.appendChild(save);
     btns.appendChild(cancel);
+    btns.appendChild(remove);
 
     if (topControlSection.childNodes.length > 0) panel.appendChild(topControlSection);
     panel.appendChild(chips);
@@ -1306,16 +1345,29 @@
     var filtered = entries.filter(function (e) {
       var whoMatch = historyFilter === "all" || e.who === historyFilter;
       var kindMatch = historyKind === "all" || entryKind(e) === historyKind;
-      return whoMatch && kindMatch;
+      var searchMatch = true;
+      if (historyQuery) {
+        var kindLabel = activeCat === "sigo" && KINDS[entryKind(e)] ? KINDS[entryKind(e)].label : CATS[activeCat].label;
+        var haystack = (WHO[e.who].label + " " + kindLabel + " " + dayLabel(e.ts) + " " + new Date(e.ts).toLocaleDateString("tr-TR")).toLocaleLowerCase("tr-TR");
+        searchMatch = haystack.indexOf(historyQuery) !== -1;
+      }
+      return whoMatch && kindMatch && searchMatch;
     });
+    el("historyCount").textContent = filtered.length ? filtered.length + " kayıt" : "";
+    var moreBtn = el("historyMoreBtn");
     if (filtered.length === 0) {
       empty.classList.remove("hidden");
       empty.textContent = entries.length ? "Bu filtrede kayıt yok." : "Henüz kayıt yok. Sol alttaki + ile ekle 👆";
+      if (moreBtn) moreBtn.classList.add("hidden");
       return;
     }
     empty.classList.add("hidden");
 
-    var recent = filtered.slice(-150).reverse();
+    var recent = filtered.slice(-historyVisible).reverse();
+    if (moreBtn) {
+      moreBtn.classList.toggle("hidden", filtered.length <= historyVisible);
+      moreBtn.textContent = "Daha fazla göster · " + Math.min(30, filtered.length - historyVisible) + " kayıt";
+    }
     var byKey = {}, groups = [];
     recent.forEach(function (e) {
       var k = dayKey(e.ts);
@@ -3264,14 +3316,19 @@
 
   var TAB_KEY = "dumanalti.tab";
   var closeAddDial = function () {}; // bindAddDial içinde atanır
+  var openAddDial = function () {};
   function showTab(name) {
-    var tabs = ["portal", "home", "stats", "history", "map", "settings"];
-    if (tabs.indexOf(name) === -1) name = "portal";
+    var tabs = ["home", "history", "stats", "settings"];
+    if (name === "portal") name = "home";
+    if (name === "map") name = "stats";
+    if (tabs.indexOf(name) === -1) name = "home";
     closeAddDial();
     tabs.forEach(function (n) {
       var v = el("view-" + n);
       if (v) v.classList.toggle("hidden", n !== name);
     });
+    var picker = el("view-portal");
+    if (picker) picker.classList.toggle("hidden", name !== "home");
     document.querySelectorAll(".tab").forEach(function (b) {
       var selected = b.getAttribute("data-tab") === name;
       b.classList.toggle("active", selected);
@@ -3282,9 +3339,6 @@
     try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
     window.scrollTo(0, 0);
     
-    if (name === "map") {
-      setTimeout(renderMap, 50);
-    }
   }
 
   var leafletMap = null;
@@ -3297,7 +3351,7 @@
     var hasCoords = entries.filter(function(e) { return typeof e.lat === "number" && typeof e.lng === "number"; });
     
     if (hasCoords.length === 0) {
-      container.innerHTML = "<div style='padding: 20px; text-align: center; color: var(--muted);'>Henüz konum içeren bir kayıt yok. Yeni kayıt eklerken konum izni verirseniz burada görünür.</div>";
+      container.innerHTML = '<div class="map-empty"><div><strong>Henüz konumlu kayıt yok</strong><br>Konum izni verdikten sonra eklenen yeni kayıtlar burada görünecek.</div></div>';
       return;
     }
     
@@ -3359,6 +3413,7 @@
       if (scrim) { var s = scrim; scrim = null; s.classList.remove("show"); setTimeout(function () { s.remove(); }, 200); }
     }
     closeAddDial = close;
+    openAddDial = open;
     fab.addEventListener(TAP_EVT, function (ev) {
       ev.stopPropagation();
       dial.classList.contains("open") ? close() : open();
@@ -3452,7 +3507,24 @@
   }
 
   // ---------- Init ----------
+  function arrangeSettingsDom() {
+    var view = el("view-settings");
+    if (!view) return;
+    [
+      ".settings-owner-title", ".settings-owner",
+      ".settings-appearance-title", ".settings-appearance",
+      ".settings-sync-title", ".settings-sync",
+      ".settings-notify-title", ".settings-notify",
+      ".settings-data-title", ".settings-data",
+      ".settings-about-title", ".settings-about", ".settings-profile"
+    ].forEach(function (selector) {
+      var node = view.querySelector(selector);
+      if (node) view.appendChild(node);
+    });
+  }
+
   function bind() {
+    arrangeSettingsDom();
     // Sigo ekleme artık her sayfadaki genişleyen '+' butonundan (bindAddDial)
 
     // Geri al dokunma anında tepki versin (click parmak kalkınca ateşlenir)
@@ -3473,23 +3545,35 @@
         showTab(btn.getAttribute("data-tab"));
       });
     });
-    showTab(localStorage.getItem(TAB_KEY) || "portal");
+    showTab(localStorage.getItem(TAB_KEY) || "home");
 
-    // Portal kartlarına tıklanınca o kategoriye git ve Anasayfa (Bugün) sekmesini aç
+    // Bugün ekranındaki kategori seçici.
     document.querySelectorAll(".portal-card").forEach(function (btn) {
       btn.addEventListener(TAP_EVT, function () {
         var cat = btn.getAttribute("data-cat");
         if (cat) {
           switchCat(cat);
-          showTab("home");
         }
       });
+    });
+
+    var historySearch = el("historySearch");
+    if (historySearch) historySearch.addEventListener("input", function () {
+      historyQuery = (/** @type {HTMLInputElement} */ (historySearch)).value.trim().toLocaleLowerCase("tr-TR");
+      historyVisible = 30;
+      renderHistory();
+    });
+    var historyMore = el("historyMoreBtn");
+    if (historyMore) historyMore.addEventListener("click", function () {
+      historyVisible += 30;
+      renderHistory();
     });
 
     // Geçmiş kişi filtreleri
     document.querySelectorAll("#histFilters .hist-chip").forEach(function (chip) {
       chip.addEventListener("click", function () {
         historyFilter = chip.getAttribute("data-f");
+        historyVisible = 30;
         document.querySelectorAll("#histFilters .hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
         renderHistory();
       });
@@ -3499,6 +3583,7 @@
     document.querySelectorAll("#histKindFilters .hist-chip").forEach(function (chip) {
       chip.addEventListener("click", function () {
         historyKind = chip.getAttribute("data-kf");
+        historyVisible = 30;
         document.querySelectorAll("#histKindFilters .hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
         renderHistory();
       });
@@ -3530,6 +3615,21 @@
         scopeIncludeBoth = b.getAttribute("data-include") === "yes";
         document.querySelectorAll("#scopeToggle .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
         renderStats();
+      });
+    });
+
+    document.querySelectorAll(".analysis-switch").forEach(function (button) {
+      button.addEventListener(TAP_EVT, function () {
+        var section = button.getAttribute("data-analysis") || "summary";
+        document.querySelectorAll(".analysis-switch").forEach(function (b) {
+          var selected = b === button;
+          b.classList.toggle("active", selected);
+          b.setAttribute("aria-selected", selected ? "true" : "false");
+        });
+        document.querySelectorAll(".analysis-section").forEach(function (panel) {
+          panel.classList.toggle("hidden", panel.id !== "analysis-" + section);
+        });
+        if (section === "fun") setTimeout(renderMap, 50);
       });
     });
 
@@ -3566,7 +3666,7 @@
 
     // Cihaz sahibi (adla selamlama)
     bindSeg("ownerSeg", "data-owner", settings.owner, function (v) {
-      settings.owner = v; saveSettings();
+      settings.owner = v; saveSettings(); updateQuickActions();
     });
 
     var tgTokenInp = el("tgBotTokenInput");
@@ -3601,6 +3701,31 @@
 
     bindAssistant();
     bindAddDial();
+    updateQuickActions();
+    function quickKind() {
+      if (activeCat === "sigo") return KINDS[selectedAddKind] ? selectedAddKind : "sigo";
+      if (activeCat === "icki") return DRINK_TYPES[selectedAddKind] ? selectedAddKind : "bira";
+      return "sigara";
+    }
+    function addQuick(who, source) {
+      var rect = source.getBoundingClientRect();
+      var kind = quickKind();
+      var tag = activeCat === "icki" ? (kind === "bira" ? "efes_pilsen:50cl" : "1") : undefined;
+      addEntry(who, rect.left + rect.width / 2, rect.top + rect.height / 2, kind, tag);
+    }
+    var quickMe = el("quickMeBtn");
+    if (quickMe) quickMe.addEventListener(TAP_EVT, function () {
+      if (!settings.owner) { openAddDial(); return; }
+      addQuick(settings.owner, quickMe);
+    });
+    var quickTogether = el("quickTogetherBtn");
+    if (quickTogether) quickTogether.addEventListener(TAP_EVT, function () {
+      if (activeCat === "sigo") { addQuick("both", quickTogether); return; }
+      if (!settings.owner) { openAddDial(); return; }
+      addQuick(settings.owner === "utku" ? "gozde" : "utku", quickTogether);
+    });
+    var quickMore = el("quickMoreBtn");
+    if (quickMore) quickMore.addEventListener(TAP_EVT, openAddDial);
     applyMascot();
 
     // Bilgiler kartı açılır-kapanır (durum kalıcı)

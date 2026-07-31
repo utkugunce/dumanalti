@@ -32,7 +32,7 @@
       <button id="themeToggle" class="icon-btn" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
     </header>
 
-    <main id="view-portal" class="view">
+    <main id="view-portal" class="view home-category-picker">
       <div class="portal-header">
         <div class="portal-time-wrap">
           <div id="portalTime" class="portal-time">--:--</div>
@@ -88,6 +88,18 @@
     </main>
 
     <main id="view-home" class="view hidden">
+    <section class="home-quick" aria-labelledby="quickAddTitle">
+      <div class="home-quick-copy">
+        <span class="eyebrow">Hızlı kayıt</span>
+        <h2 id="quickAddTitle">Tek dokunuşla ekle</h2>
+      </div>
+      <div class="home-quick-actions">
+        <button id="quickMeBtn" class="quick-action primary" type="button">Ben içtim</button>
+        <button id="quickTogetherBtn" class="quick-action" type="button">Ortak içtik</button>
+        <button id="quickMoreBtn" class="quick-action icon" type="button" aria-label="Diğer kayıt seçenekleri">•••</button>
+      </div>
+      <p id="quickOwnerHint" class="quick-owner-hint"></p>
+    </section>
     <!-- Today summary -->
     <section class="card today-card">
       <div class="card-head">
@@ -171,6 +183,11 @@
     </main>
 
     <main id="view-stats" class="view hidden">
+    <div class="analysis-switcher" id="analysisSwitcher" role="tablist" aria-label="Analiz bölümleri">
+      <button class="analysis-switch active" data-analysis="summary" role="tab" aria-selected="true">Özet</button>
+      <button class="analysis-switch" data-analysis="charts" role="tab" aria-selected="false">Grafikler</button>
+      <button class="analysis-switch" data-analysis="fun" role="tab" aria-selected="false">Eğlence</button>
+    </div>
     <!-- Kişi seçici -->
     <div class="scope-bar" id="scopeBar">
       <button class="scope-chip active" data-scope="all">Tümü</button>
@@ -196,6 +213,7 @@
     </div>
 
     <!-- Haftalık düello (Utku vs Gözde, kişi filtresinden bağımsız) -->
+    <div id="analysis-summary" class="analysis-section">
     <h3 class="group-title">⚔️ Haftalık düello</h3>
     <section class="card" id="duelCard"></section>
 
@@ -238,6 +256,8 @@
       </div>
     </section>
 
+    </div>
+    <div id="analysis-charts" class="analysis-section hidden">
     <!-- Dağılım -->
     <h3 class="group-title">📈 Dağılım</h3>
     <!-- 7 day chart -->
@@ -324,6 +344,8 @@
       <div class="chart-detail" id="calDetail">Güne dokunarak sigo detayını gör 👆</div>
     </section>
 
+    </div>
+    <div id="analysis-fun" class="analysis-section hidden">
     <!-- Rozetler -->
     <h3 class="group-title">🏅 Rozetler <span class="gt-count" id="badgeCount"></span></h3>
     <section class="card">
@@ -336,6 +358,17 @@
     <section class="card">
       <div class="record-grid" id="recordList"></div>
     </section>
+    <h3 class="group-title">🗺️ Konumlar</h3>
+    <section class="card map-card">
+      <div class="card-head map-head">
+        <div>
+          <h2>Konum Haritası</h2>
+          <span class="muted">Konum izni verilen yeni kayıtlar</span>
+        </div>
+      </div>
+      <div id="mapContainer"></div>
+    </section>
+    </div>
     </main>
 
     <main id="view-history" class="view hidden">
@@ -346,6 +379,10 @@
         <span class="muted" id="historyCount"></span>
       </div>
       <div class="hist-summary" id="histSummary"></div>
+      <label class="history-search">
+        <span class="sr-only">Geçmişte ara</span>
+        <input id="historySearch" type="search" placeholder="Kişi, tür veya tarihte ara" autocomplete="off" />
+      </label>
       <div class="hist-filters" id="histFilters">
         <button class="hist-chip active" data-f="all">Tümü</button>
         <button class="hist-chip" data-f="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
@@ -359,14 +396,15 @@
         <button class="hist-chip" data-kf="bong">🫧 Bong</button>
       </div>
       <div id="historyList" class="history-list"></div>
+      <button id="historyMoreBtn" class="ghost-btn history-more hidden" type="button">Daha fazla göster</button>
       <p id="historyEmpty" class="empty">Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆</p>
     </section>
     </main>
 
     <main id="view-settings" class="view hidden">
 
-    <h3 class="group-title">ℹ️ Hakkında</h3>
-    <section class="card about-card">
+    <h3 class="group-title settings-about-title">ℹ️ Hakkında</h3>
+    <section class="card about-card settings-about">
       <img class="about-logo" src="icons/icon.svg" alt="Dumanaltı logosu" />
       <div class="about-name">Dumanaltı</div>
       <div class="about-sub">Utku &amp; Gözde için 💛</div>
@@ -374,7 +412,7 @@
       <div class="about-version" id="appVersion"></div>
     </section>
     <!-- Profil özeti -->
-    <section class="card profile-card">
+    <section class="card profile-card settings-profile">
       <img class="profile-logo" src="icons/icon.svg" alt="Dumanaltı" />
       <div class="profile-main">
         <div class="profile-name">Utku &amp; Gözde</div>
@@ -382,8 +420,8 @@
       </div>
     </section>
 
-    <h3 class="group-title">🎨 Görünüm</h3>
-    <section class="card settings-card">
+    <h3 class="group-title settings-appearance-title">🎨 Görünüm ve ses</h3>
+    <section class="card settings-card settings-appearance">
       <div class="set-row">
         <label>Tema</label>
         <div class="seg" id="themeSeg">
@@ -410,8 +448,8 @@
       <p class="set-note">iPhone titreşimi desteklemez; sigo eklerken minik bir “pop” sesi çalar.</p>
     </section>
 
-    <h3 class="group-title">🙋 Kişiselleştirme</h3>
-    <section class="card settings-card">
+    <h3 class="group-title settings-owner-title">🙋 Bu cihaz</h3>
+    <section class="card settings-card settings-owner">
       <div class="set-row">
         <label>Bu cihaz kimin?</label>
         <div class="seg" id="ownerSeg">
@@ -427,6 +465,10 @@
           <button class="seg-btn" data-mascot="off">🙈 Gizli</button>
         </div>
       </div>
+    </section>
+
+    <h3 class="group-title settings-notify-title">🔔 Bildirimler</h3>
+    <section class="card settings-card settings-notify">
       <div class="set-row">
         <label for="tgBotTokenInput">Telegram Bot Token</label>
         <input id="tgBotTokenInput" type="password" class="set-input" placeholder="123456:ABC..." autocomplete="off" />
@@ -442,8 +484,8 @@
       <p class="set-note">BotFather'dan alınan Token &amp; Chat ID girildiğinde, "Oturma Odasına Gel!" butonu Telegram bildirimi atar.</p>
     </section>
 
-    <h3 class="group-title">☁️ Senkronizasyon</h3>
-    <section class="card settings-card">
+    <h3 class="group-title settings-sync-title">☁️ Senkronizasyon</h3>
+    <section class="card settings-card settings-sync">
       <div class="set-row">
         <label>Bulut</label>
         <button id="syncNowBtn" class="ghost-btn small">🔄 Şimdi senkronla</button>
@@ -452,8 +494,8 @@
       <p class="set-note">Veriler bulutta tutulur; Utku ve Gözde aynı URL'de ortak veriyi gerçek zamanlı görür.</p>
     </section>
 
-    <h3 class="group-title">💾 Veri</h3>
-    <section class="card data-tools">
+    <h3 class="group-title settings-data-title">💾 Veri</h3>
+    <section class="card data-tools settings-data">
       <div class="set-row"><label>Toplam kayıt</label><strong id="setCount">0</strong></div>
       <div class="data-buttons">
         <button id="exportBtn" class="ghost-btn">📤 Tam JSON</button>
@@ -466,15 +508,6 @@
 
     </main>
 
-    <main id="view-map" class="view hidden">
-      <section class="card map-card">
-        <div class="card-head map-head">
-          <h2>🗺️ Konum Haritası</h2>
-          <span class="muted">Nerelerde sigo içildi?</span>
-        </div>
-        <div id="mapContainer"></div>
-      </section>
-    </main>
   </div>
 
   <!-- Zıvana: yardımcı asistan maskot -->
@@ -592,12 +625,10 @@
   <!-- D3.js Tooltip -->
   <div id="d3Tooltip" class="d3-tooltip hidden"></div>
 
-  <nav class="tabbar" role="tablist">
-    <button class="tab active" data-tab="portal" role="tab"><span class="tab-ico">🌟</span><span class="tab-lbl">Portal</span></button>
-    <button class="tab" data-tab="home" role="tab"><span class="tab-ico">🏠</span><span class="tab-lbl">Bugün</span></button>
-    <button class="tab" data-tab="stats" role="tab"><span class="tab-ico">📊</span><span class="tab-lbl">İstatistik</span></button>
+  <nav class="tabbar" role="tablist" aria-label="Ana menü">
+    <button class="tab active" data-tab="home" role="tab"><span class="tab-ico">🏠</span><span class="tab-lbl">Bugün</span></button>
     <button class="tab" data-tab="history" role="tab"><span class="tab-ico">🕑</span><span class="tab-lbl">Geçmiş</span></button>
-    <button class="tab" data-tab="map" role="tab"><span class="tab-ico">🗺️</span><span class="tab-lbl">Harita</span></button>
+    <button class="tab" data-tab="stats" role="tab"><span class="tab-ico">📊</span><span class="tab-lbl">Analiz</span></button>
     <button class="tab" data-tab="settings" role="tab"><span class="tab-ico">⚙️</span><span class="tab-lbl">Ayarlar</span></button>
   </nav>
 

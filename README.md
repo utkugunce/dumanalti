@@ -7,10 +7,10 @@ Utku ve Gözde için hazırlanmış, iki kişilik ortak sigo, sigara ve içki ta
 - **Üç kategori:** sigo/bong, sigara ve içki
 - **Dört sigo kayıt tipi:** Utku, Gözde, Ortak ve Hep beraber
 - **04:00 mantıksal gün:** gece 00:00–04:00 arasındaki kayıtlar önceki güne yazılır
-- **Portal ve Bugün ekranı:** günlük özet, son kayıt, süre ve limit takibi
-- **İstatistikler:** grafikler, düello, takvim, rekorlar, rozetler ve aylık özet
-- **Geçmiş:** filtreleme, düzenleme, silme ve geri alma
-- **Harita:** konum izni verildiğinde yeni kayıtların yaklaşık konumu
+- **Sade Bugün ekranı:** kategori seçimi, cihaz sahibine göre tek dokunuşla kayıt, günlük özet, süre ve limit takibi
+- **Bölümlü Analiz:** özet, grafikler ve eğlence sekmelerinde düello, takvim, rekorlar, rozetler ve aylık özet
+- **Kademeli Geçmiş:** arama, filtreleme, 30'ar kayıt yükleme, ayrıntı panelinden düzenleme/silme ve geri alma
+- **Analiz içi harita:** konum izni verildiğinde yeni kayıtların yaklaşık konumu
 - **Tam yedek:** tüm kategorileri içeren JSON/CSV dışa aktarma ve doğrulamalı içe aktarma
 - **Bulut senkronu:** Supabase realtime + çevrimdışı outbox
 - **Zıvana:** veriye dayalı yerel yardımcı ve proaktif bildirimler

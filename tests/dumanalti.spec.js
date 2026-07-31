@@ -247,6 +247,7 @@ test.describe('Dumanaltı App Tests', () => {
 
   test.describe('UI Navigation & Core Flow Tests', () => {
     test('tab navigation works correctly', async ({ page }) => {
+      await expect(page.locator('nav.tabbar .tab')).toHaveCount(4);
       // Check homepage active by default
       await expect(page.locator('#view-home')).not.toHaveClass(/hidden/);
       await expect(page.locator('#view-stats')).toHaveClass(/hidden/);
@@ -380,12 +381,25 @@ test.describe('Dumanaltı App Tests', () => {
       // Choose "Utku" as device owner
       await page.click('#ownerSeg button[data-owner="utku"]');
 
+      // Yardımcı yalnız içerik ekranlarında görünür.
+      await page.click('nav.tabbar button[data-tab="home"]');
+
       // Open assistant panel
       await page.click('#asstFab', { force: true });
       await expect(page.locator('#asstPanel')).not.toHaveClass(/hidden/);
 
       // Check Zıvana greeting has "Utku" name in the first message
       await expect(page.locator('.asst-msg').first()).toContainText('Utku');
+    });
+
+    test('device owner enables one-tap quick logging', async ({ page }) => {
+      await page.click('nav.tabbar button[data-tab="settings"]');
+      await page.dispatchEvent('#ownerSeg button[data-owner="utku"]', 'pointerdown');
+      await page.click('nav.tabbar button[data-tab="home"]');
+      await expect(page.locator('#quickOwnerHint')).toContainText('Utku');
+      await page.dispatchEvent('#quickMeBtn', 'pointerdown');
+      await expect(page.locator('#todayUtku')).toHaveText('1');
+      await expect(page.locator('#todayTotal')).toHaveText('1');
     });
   });
 
