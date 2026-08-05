@@ -15,7 +15,9 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v7.4.0 · derleme 143 · SW cache `dumanalti-v143`** — buradan devam et.
+Güncel sürüm sayacı: **v7.5.0 · derleme 144 · SW cache `dumanalti-v144`** — buradan devam et.
+
+Tamamlanan ve doğrulanan her uygulama değişikliğini ayrıca kullanıcı onayı beklemeden commit et ve doğrudan `origin/main` dalına pushla.
 
 ## Düzen ve platform
 
@@ -25,7 +27,6 @@ Güncel sürüm sayacı: **v7.4.0 · derleme 143 · SW cache `dumanalti-v143`** 
 - Tipografi **SF Pro Rounded** (`font-family: ui-rounded, "SF Pro Rounded", …`); SF Pro'dan biraz geniş olduğundan düzen değişiminde taşma tekrar test edilir. Gölgeler katmanlı-yumuşak (`--shadow`: yakın ince + uzak diffüz).
 - Terminoloji: **"sigo"** (sigara/joint değil).
 - Kayıt türleri (sıra sabit): 1. Utku, 2. Gözde, 3. Ortak (`both`), 4. **Hep beraber** (`hepberaber`, misafirlerle içilen; amber renk, ikisinin de kişisel sayacına işlenir). Hep beraber her zaman DÖRDÜNCÜ seçenektir.
-- Maskot: **Zıvana** (kawaii dişli yaprak, `icons/mascot.svg`, SVG parametrik üretim), asistan paneliyle birlikte. Duruma göre yüz değişir: `mascot.svg` (sakin), `mascot-surprised.svg` (limit aşımı/üstünde), `mascot-love.svg` (rekor/kutlama). Asistan proaktif nudge üretir (`asstNudge`), FAB rozeti+yüzü buna göre; serbest metin `asstRoute` ile konuya yönlenir.
 - **Mantıksal gün**: gün 04:00'te başlar/biter (`DAY_START_HOUR`). 00:00–04:00 arası sigolar önceki güne sayılır; gün bazlı her hesap `logicalDate`/`startOfDay`/`dayKey`/`startOfMonth` üzerinden yapılmalı, `new Date(ts)` ile doğrudan takvim günü OKUNMAZ.
 
 ## Çalışma düzeni

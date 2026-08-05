@@ -17,8 +17,7 @@ Utku ve Gözde için hazırlanmış, iki kişilik ortak sigo takip uygulaması.
 - **Hızlı kullanım:** son kategori/tür hafızası, kopya uyarısı, son kaydı anında düzeltme, tarih/dönem karşılaştırması ve kaydırarak kategori değiştirme
 - **Güvenli geçmiş:** yedi günlük çöp kutusu, senkron çakışma kaydı ve haftalık yedek hatırlatıcısı
 - **Kişisel güvenlik:** cihaz PIN'i, desteklenen cihazlarda biyometri ve iki hesaplı Supabase oturumu
-- **Eğlence:** paylaşılabilir aylık Wrapped görseli, özel Zıvana mesajı ve özel rozetler
-- **Zıvana:** veriye dayalı yerel yardımcı ve proaktif bildirimler
+- **Eğlence:** paylaşılabilir aylık Wrapped görseli ve özel rozetler
 - **Safari odaklı mobil arayüz:** iPhone 13 ve iPhone 11 düzenleri
 
 ## Teknoloji

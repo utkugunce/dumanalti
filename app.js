@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.4.0";
-  var APP_BUILD = 143;
+  var APP_VERSION = "7.5.0";
+  var APP_BUILD = 144;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -73,7 +73,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", mascot: "on", sound: "off", customMascot: "", locationEnabled: false };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", sound: "off", locationEnabled: false };
 
   function updateQuickActions() {
     var me = el("quickMeBtn");
@@ -175,7 +175,6 @@
       card.classList.toggle("active", card.getAttribute("data-cat") === cat);
       card.setAttribute("aria-pressed", card.getAttribute("data-cat") === cat ? "true" : "false");
     });
-    applyMascot();
     render();
     try { localStorage.setItem("dumanalti.activeCat", cat); } catch (e) {}
   }
@@ -302,9 +301,7 @@
         settings.dailyLimit = +s.dailyLimit || 0;
         settings.confetti = s.confetti === "lite" || s.confetti === "off" ? s.confetti : "full";
         settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
-        settings.mascot = s.mascot === "off" ? "off" : "on";
         settings.sound = s.sound === "on" ? "on" : "off";
-        settings.customMascot = typeof s.customMascot === "string" ? s.customMascot.slice(0, 100) : "";
         settings.locationEnabled = s.locationEnabled === true;
       }
     } catch (e) {}
@@ -559,7 +556,6 @@
     renderTrash();
     renderSyncCenter();
     renderBackupReminder();
-    refreshAsst();
     if (el("setCount")) el("setCount").textContent = String(entries.length);
     if (el("profileSub")) {
       var days = entries.length ? Math.round((startOfDay(Date.now()).getTime() - startOfDay(entries[0].ts).getTime()) / 86400000) + 1 : 0;
@@ -1857,11 +1853,19 @@
     }).length;
   }
 
+  // Kayıtlar arası en uzun tamamlanmış ara ve son kayıttan beri geçen süre.
+  function longestGap() {
+    var m = 0;
+    for (var i = 1; i < entries.length; i++) { var g = entries[i].ts - entries[i - 1].ts; if (g > m) m = g; }
+    return m;
+  }
+  function runningGap() { return entries.length ? Date.now() - entries[entries.length - 1].ts : 0; }
+
   // 🏅 Rozetler: veriden kazanılmış/kilitli başarımlar
   function computeBadges() {
     var c = countWho(entries);
     var total = entries.length;
-    var lg = Math.max(asstLongestGap(), asstRunningGap());
+    var lg = Math.max(longestGap(), runningGap());
     var clean = longestCleanStreak(entries);
     var together = c.both + c.hepberaber;
     var night = false, morning = false;
@@ -2025,7 +2029,7 @@
       '</div>';
 
     if (activeCat === "sigo") {
-      letter.innerHTML = '<strong>Zıvana\'dan Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
+      letter.innerHTML = '<strong>Aylık not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
     } else {
       letter.innerHTML = '<strong>Özet Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak toplam ' + total + ' ' + catUnit + ' kaydettiniz. Favori saat aralığınız ' + peakHStr + ' olarak öne çıkıyor! ✨';
     }
@@ -2362,7 +2366,6 @@
     renderSession();
     renderWeeklySummary();
     renderTrash();
-    refreshAsst();
     var hist = el("view-history");
     if (hist && !hist.classList.contains("hidden")) renderHistory();
     clearTimeout(renderDeferTimer);
@@ -3489,8 +3492,6 @@
     if (el("backupReminderBtn")) el("backupReminderBtn").addEventListener("click", exportData);
     if (el("backupDismissBtn")) el("backupDismissBtn").addEventListener("click", function () { localStorage.setItem(BACKUP_KEY, String(Date.now())); renderBackupReminder(); });
 
-    var custom = /** @type {HTMLInputElement} */ (el("customMascotInput"));
-    if (custom) { custom.value = settings.customMascot || ""; custom.addEventListener("change", function () { settings.customMascot = custom.value.trim(); saveSettings(); updatePortalZivana(); }); }
     var locationSetting = /** @type {HTMLInputElement} */ (el("locationSetting"));
     if (locationSetting) { locationSetting.checked = settings.locationEnabled; locationSetting.addEventListener("change", function () { settings.locationEnabled = locationSetting.checked; saveSettings(); if (settings.locationEnabled) fetchWeather(); }); }
     if (el("customBadgeAddBtn")) el("customBadgeAddBtn").addEventListener("click", function () {
@@ -3679,16 +3680,10 @@
       settings.owner = v; saveSettings(); updateQuickActions();
     });
 
-    // Zıvana görünürlüğü
-    bindSeg("mascotSeg", "data-mascot", settings.mascot, function (v) {
-      settings.mascot = v; saveSettings(); applyMascot();
-    });
-
     if (el("syncNowBtn")) el("syncNowBtn").addEventListener(TAP_EVT, syncNow);
     if (el("exportCsvBtn")) el("exportCsvBtn").addEventListener("click", exportCsv);
 
 
-    bindAssistant();
     bindAddDial();
     updateQuickActions();
     function quickKind() {
@@ -3710,8 +3705,6 @@
     });
     var quickMore = el("quickMoreBtn");
     if (quickMore) quickMore.addEventListener(TAP_EVT, openAddDial);
-    applyMascot();
-
     // Bilgiler kartı açılır-kapanır (durum kalıcı)
     var insHead = el("insightsHead");
     if (insHead) {
@@ -3732,7 +3725,6 @@
       var lastY = window.pageYOffset || 0;
       var hidden = false;
       var dial = el("addDial");
-      var asst = el("assistant");
       var threshold = 12; // px – küçük titreşimleri görmezden gel
       window.addEventListener("scroll", function () {
         var y = window.pageYOffset || 0;
@@ -3740,12 +3732,10 @@
         if (delta > threshold && !hidden && y > 60) {
           hidden = true;
           if (dial) dial.classList.add("fab-hidden");
-          if (asst) asst.classList.add("fab-hidden");
         } else if (delta < -threshold || y < 30) {
           if (hidden) {
             hidden = false;
             if (dial) dial.classList.remove("fab-hidden");
-            if (asst) asst.classList.remove("fab-hidden");
           }
         }
         lastY = y;
@@ -3754,15 +3744,6 @@
 
     setInterval(function () { renderToday(); }, 60000);
     setInterval(function () { renderSince(); }, 1000);
-  }
-
-  // Zıvana'yı ayara ve aktif kategoriye (sadece Sigo) göre göster/gizle
-  function applyMascot() {
-    var a = el("assistant");
-    var hide = settings.mascot === "off" || activeCat !== "sigo";
-    if (a) a.classList.toggle("hidden", hide);
-    if (hide) { var p = el("asstPanel"); if (p) p.classList.add("hidden"); }
-    else if (typeof refreshAsst === "function") refreshAsst();
   }
 
   // Hızlı ekleme bağlantısını panoya kopyala (iOS Kısayollar / yer imi için)
@@ -3803,361 +3784,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // ---------- Zıvana: yardımcı asistan ----------
-  var asstOpened = false;
-  var ASST_SEEN_KEY = "dumanalti.asst.seen";
-  var FACES = { neutral: "icons/mascot.svg", happy: "icons/mascot.svg",
-                surprised: "icons/mascot-surprised.svg", love: "icons/mascot-love.svg" };
-  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
-
-  function asstStats() {
-    var all = countWho(entries);
-    var today = todayEntries().length;
-    var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-    var avg7Info = calcAverages(entriesSince(sevenAgo), 7);
-    var wStart = startOfWeek(Date.now()).getTime();
-    var thisWeek = entriesSince(wStart).length;
-    var lastWeek = entries.filter(function (e) { return e.ts >= wStart - 7 * 86400000 && e.ts < wStart; }).length;
-    var byHour = [];
-    for (var h = 0; h < 24; h++) byHour[h] = 0;
-    entries.forEach(function (e) { byHour[logicalDate(e.ts).getHours()]++; });
-    var peakH = 0;
-    for (h = 1; h < 24; h++) if (byHour[h] > byHour[peakH]) peakH = h;
-    var last = entries.length ? entries[entries.length - 1] : null;
-    return {
-      all: all, today: today, avg7: avg7Info.total, utkuAvg7: avg7Info.utku, gozdeAvg7: avg7Info.gozde,
-      thisWeek: thisWeek, lastWeek: lastWeek,
-      peakH: peakH, peakCount: byHour[peakH], last: last,
-      utku: all.utku + all.both + all.hepberaber, gozde: all.gozde + all.both + all.hepberaber
-    };
-  }
-
-  // Kayıtlar arası en uzun tamamlanmış ara (ms)
-  function asstLongestGap() {
-    var m = 0;
-    for (var i = 1; i < entries.length; i++) { var g = entries[i].ts - entries[i - 1].ts; if (g > m) m = g; }
-    return m;
-  }
-  // Son sigodan bu yana geçen süre (ms)
-  function asstRunningGap() { return entries.length ? Date.now() - entries[entries.length - 1].ts : 0; }
-  // Bugün dahil, ortalamanın altında kaç ardışık mantıksal gün geçti
-  function asstBelowAvgStreak(avg, who) {
-    if (avg <= 0) return 0;
-    var byDay = {};
-    entries.forEach(function (e) {
-      if (!who || e.who === who || isShared(e.who)) {
-        var k = dayKey(e.ts);
-        byDay[k] = (byDay[k] || 0) + 1;
-      }
-    });
-    var d = logicalDate(Date.now()), streak = 0;
-    for (var i = 0; i < 90; i++) {
-      var p = new Date(d.getFullYear(), d.getMonth(), d.getDate() - i);
-      var k = p.getFullYear() + "-" + (p.getMonth() + 1) + "-" + p.getDate();
-      if ((byDay[k] || 0) < avg) streak++; else break;
-    }
-    return streak;
-  }
-  // Tek günde en çok (adet + "gg.aa")
-  function asstRecordDay() {
-    var byDay = {};
-    entries.forEach(function (e) { var k = dayKey(e.ts); byDay[k] = (byDay[k] || 0) + 1; });
-    var mk = null, mc = 0;
-    Object.keys(byDay).forEach(function (k) { if (byDay[k] > mc) { mc = byDay[k]; mk = k; } });
-    if (!mk) return null;
-    var p = String(mk).split("-");
-    return { count: mc, label: ("0" + p[2]).slice(-2) + "." + ("0" + p[1]).slice(-2) };
-  }
-
-  // Proaktif nudge: o an söylenmeye değer TEK şey (veya null)
-  function asstNudge() {
-    var s = asstStats();
-    if (s.all.total === 0) return null;
-    var now = new Date();
-    // 1) Günlük limit aşıldı
-    if (settings.dailyLimit > 0 && s.today > settings.dailyLimit) {
-      return { key: "limit:" + dayKey(now) + ":" + s.today, mood: "surprised", emoji: "⚠️",
-        text: "Bugün günlük limiti aştın (" + s.today + " / " + settings.dailyLimit + "). Kalanı yavaşlatmayı dene 💪" };
-    }
-    // 2) Şu an en uzun aranı kırıyorsun
-    var lg = asstLongestGap(), rg = asstRunningGap();
-    if (rg > lg && rg >= 3 * 3600000) {
-      return { key: "gap:" + Math.floor(rg / 3600000), mood: "love", emoji: "🏆",
-        text: "Rekor kırıyorsun! " + fmtCoarse(rg) + " sigo içmedin — bu en uzun aran 🏆" };
-    }
-    // 3) Toplam kilometre taşı
-    var mil = [50, 100, 250, 500, 1000, 2000];
-    for (var i = 0; i < mil.length; i++) {
-      if (s.all.total === mil[i]) return { key: "mil:" + mil[i], mood: "love", emoji: "🎉",
-        text: mil[i] + ". sigo kaydı! Koca bir geçmiş biriktirdiniz 📈" };
-    }
-    // 4) Düşük gün serisi
-    var targetAvg = settings.owner === "utku" ? s.utkuAvg7 : (settings.owner === "gozde" ? s.gozdeAvg7 : s.avg7);
-    var st = asstBelowAvgStreak(targetAvg, settings.owner);
-    if (targetAvg > 0 && st >= 2) {
-      return { key: "streak:" + st, mood: "love", emoji: "🔥",
-        text: st + " gündür ortalamanın altındasın 🔥 Harika gidiyorsun!" };
-    }
-    // 5) Bugün gidişat
-    var tCounts = countWho(todayEntries());
-    var myTodayCount = settings.owner === "utku" ? (tCounts.utku + tCounts.both + tCounts.hepberaber) :
-                      (settings.owner === "gozde" ? (tCounts.gozde + tCounts.both + tCounts.hepberaber) : s.today);
-    if (myTodayCount > 0 && targetAvg > 0 && myTodayCount < targetAvg) {
-      return { key: "under:" + dayKey(now), mood: "happy", emoji: "🌿",
-        text: "Bugün ortalamanın altındasın (" + myTodayCount + " < " + targetAvg.toFixed(1) + "). Aferin! 🌿" };
-    }
-    if (myTodayCount > 0 && targetAvg > 0 && myTodayCount > targetAvg) {
-      return { key: "over:" + dayKey(now) + ":" + myTodayCount, mood: "surprised", emoji: "👀",
-        text: "Bugün ortalamanın üstündesin (" + myTodayCount + " > " + targetAvg.toFixed(1) + "). Yavaşlayalım mı? 🙂" };
-    }
-    return null;
-  }
-
-  // FAB + panel yüzünü ruh haline göre değiştir (aynıysa dokunma, titremesin)
-  function setAsstFace(mood) {
-    var src = FACES[mood] || FACES.neutral;
-    document.querySelectorAll(".asst-fab-face, .asst-face").forEach(function (img) {
-      if (img.getAttribute("src") !== src) img.setAttribute("src", src);
-    });
-  }
-
-  function asstSeenKey() { try { return localStorage.getItem(ASST_SEEN_KEY) || ""; } catch (e) { return ""; } }
-  function asstMarkSeen(k) { try { localStorage.setItem(ASST_SEEN_KEY, k); } catch (e) {} }
-
-  // Yüz + rozeti canlı duruma göre güncelle (render'dan ve ekleme sonrası çağrılır)
-  function refreshAsst() {
-    if (settings.mascot === "off") return;
-    var n = asstNudge();
-    setAsstFace(n ? n.mood : "neutral");
-    var badge = el("asstBadge");
-    if (!badge) return;
-    if (!asstOpened && !asstSeenKey()) {          // ilk tanışma
-      badge.textContent = "?"; badge.classList.remove("hidden");
-    } else if (n && n.key !== asstSeenKey()) {     // görülmemiş yeni olay
-      badge.textContent = n.emoji; badge.classList.remove("hidden");
-    } else {
-      badge.classList.add("hidden");
-    }
-  }
-
-  // Bir konuya veriden üretilmiş cevap (metin dizisi)
-  function asstReply(topic) {
-    var s = asstStats();
-    var catInfo = CATS[activeCat] || CATS.sigo;
-    var u = catInfo.unit;
-    if (s.all.total === 0 && topic !== "hi") {
-      return ["Henüz hiç kayıt yok 💨 İlk kaydı eklediğinde sana verilerinizi yorumlarım!"];
-    }
-    var out = [];
-    if (topic === "hi") {
-      var hr = new Date().getHours();
-      var greet = hr < 6 ? "İyi geceler" : hr < 12 ? "Günaydın" : hr < 18 ? "İyi günler" : "İyi akşamlar";
-      var hitap = settings.owner ? " " + WHO[settings.owner].label : "";
-      out.push(greet + hitap + "! " + pick([
-        "Ben Zıvana 💨 Merak ettiğini sor.",
-        "Ben Zıvana 🌿 Verilerinize göz kulağım.",
-        "Zıvana burada 💨 Sana rakamları yorumlarım."
-      ]));
-      var n = asstNudge();
-      if (n) out.push(n.text);
-      else if (s.today === 0) out.push("Bugün henüz hiç tüketmemişsiniz — böyle devam! 🌿");
-      else out.push("Bugün şu ana kadar " + s.today + " " + u + " içildi.");
-    } else if (topic === "today") {
-      out.push("Bugün toplam " + s.today + " " + u + " içildi.");
-      if (s.utkuAvg7 > 0 || s.gozdeAvg7 > 0) {
-        out.push("7 günlük ortalamalar: 🧔 Utku " + s.utkuAvg7.toFixed(1) + " · 👩 Gözde " + s.gozdeAvg7.toFixed(1));
-      }
-    } else if (topic === "who") {
-      if (s.utku > s.gozde) out.push("Utku önde: " + s.utku + " " + u + ", Gözde " + s.gozde + ". Fark " + (s.utku - s.gozde) + " 🏆");
-      else if (s.gozde > s.utku) out.push("Gözde önde: " + s.gozde + " " + u + ", Utku " + s.utku + ". Fark " + (s.gozde - s.utku) + " 🏆");
-      else out.push("Tam berabere! İkiniz de " + s.utku + " " + u + " 🤝");
-      var pct = s.all.total ? Math.round((s.all.both + s.all.hepberaber) / s.all.total * 100) : 0;
-      if (activeCat === "sigo") out.push("Sigoların %" + pct + "'ini birlikte içtiniz 💜");
-    } else if (topic === "me") {
-      if (!settings.owner) {
-        out.push("Önce Ayarlar > Kişiselleştirme'den bu cihazın kimin olduğunu seç, sana özel konuşayım 🙂");
-      } else {
-        var meName = WHO[settings.owner].label;
-        var t = countWho(todayEntries());
-        var meToday = settings.owner === "utku" ? (t.utku + t.both + t.hepberaber) : (t.gozde + t.both + t.hepberaber);
-        var meTotal = settings.owner === "utku" ? s.utku : s.gozde;
-        var other = settings.owner === "utku" ? s.gozde : s.utku;
-        out.push(meName + ", bugün senin hanene " + meToday + " " + u + " yazıldı.");
-        if (meTotal > other) out.push("Toplamda " + (meTotal - other) + " " + u + " öndesin 🏆");
-        else if (other > meTotal) out.push("Toplamda " + (other - meTotal) + " " + u + " geridesin — yavaşlamak yarışı da kazandırır 😉");
-        else out.push("Rakibinle tam berabersin 🤝");
-      }
-    } else if (topic === "peak") {
-      if (s.peakCount === 0) out.push("Henüz saat örüntüsü çıkaracak kadar veri yok.");
-      else {
-        out.push("En yoğun saatin " + pad2(s.peakH) + ":00 civarı (" + s.peakCount + " " + u + ") ⏰");
-        out.push(pick([
-          "O saate yaklaşırken bir bardak su iç, kriz geçer 💧",
-          "O saatte kısa bir yürüyüş çok işe yarar 🚶",
-          "O saati bir sakızla atlatmayı dene 🍬"
-        ]));
-      }
-    } else if (topic === "week") {
-      out.push("Bu hafta " + s.thisWeek + " " + u + " içtiniz.");
-      if (s.lastWeek > 0) {
-        if (s.thisWeek < s.lastWeek) out.push("Geçen haftaya göre " + (s.lastWeek - s.thisWeek) + " tane az — düşüşteyiz, süper! 📉");
-        else if (s.thisWeek > s.lastWeek) out.push("Geçen haftaya göre " + (s.thisWeek - s.lastWeek) + " tane fazla. Bu hafta kısalım mı? 💪");
-        else out.push("Geçen haftayla aynı seviyedesiniz.");
-      }
-    } else if (topic === "month") {
-      var mCount = entriesSince(startOfMonth()).length;
-      out.push("Bu ay toplam " + mCount + " " + u + " içildi.");
-      var dayNo = logicalDate(Date.now()).getDate();
-      if (dayNo >= 2 && mCount > 0) out.push("Bu hızla ay sonunda ~" + Math.round(mCount / dayNo * 30) + " olur.");
-    } else if (topic === "records") {
-      var lg = asstLongestGap(), rg = asstRunningGap();
-      if (rg > lg && rg >= 3600000) out.push("Şu an rekordasın: " + fmtCoarse(rg) + " ara verdin, öncekini geçtin 🏆");
-      else if (Math.max(lg, rg) > 0) out.push("En uzun aran: " + fmtCoarse(Math.max(lg, rg)) + " ⏱️");
-      var rd = asstRecordDay();
-      if (rd) out.push("Tek günde rekor: " + rd.count + " " + u + " (" + rd.label + ") 🔥");
-    } else if (topic === "streak") {
-      var st = asstBelowAvgStreak(s.avg7);
-      if (s.avg7 <= 0) out.push("Seri için biraz daha veri lazım, birkaç gün geçince takip ederim 🌱");
-      else if (st >= 2) out.push(st + " gündür ortalamanın altındasın 🔥 Böyle devam!");
-      else if (st === 1) out.push("Bugün ortalamanın altındasın — seriyi büyütmeye var mısın? 💪");
-      else out.push("Şu an düşük-gün serisi yok ama her yeni gün bir fırsat 🌿");
-    } else if (topic === "tip") {
-      if (s.last) {
-        var gapMin = Math.floor((Date.now() - s.last.ts) / 60000);
-        if (gapMin >= 120) out.push("Son " + u + "dan " + Math.floor(gapMin / 60) + " saat geçmiş — arayı uzatmak en etkili yöntem 🌿");
-      }
-      if (s.peakCount > 0) out.push("En çok " + pad2(s.peakH) + ":00 sularında içiyorsun; o saatte kısa bir mola krizi atlatır 🚶");
-      if (s.avg7 > 0) out.push("Küçük hedef: bugünü " + Math.max(0, Math.floor(s.avg7) - 1) + " " + u + " ile bitir, ortalamanı düşür 💪");
-      if (out.length === 0) out.push(pick([
-        "Harika gidiyorsun, böyle devam! Her içmediğin " + u + " bir kazanç 💨",
-        "Su iç, derin nefes al, kriz 3-5 dakikada geçer 🌬️",
-        "Canın çektiğinde 10 dakika ertele — çoğu zaman istek geçer ⏳"
-      ]));
-    }
-    return out;
-  }
-
-  // Serbest metni bir konuya yönlendir (anahtar kelime eşleme)
-  function asstRoute(text) {
-    var q = text.toLocaleLowerCase("tr");
-    /** @type {(...terms: string[]) => boolean} */
-    var has = function () { for (var i = 0; i < arguments.length; i++) if (q.indexOf(arguments[i]) >= 0) return true; return false; };
-    if (has("selam", "merhaba", "naber", "nasılsın", "nasilsin")) return "hi";
-    if (has("rekor", "en uzun", "en çok", "en cok", "record")) return "records";
-    if (has("seri", "gündür", "gundur", "sigosuz", "kaç gün", "kac gun")) return "streak";
-    if (has("ben ", "benim", "nasılım", "nasilim", "kendim")) return "me";
-    if (has("kim", "önde", "onde", "yarış", "yaris", "kazan", "düello", "duello")) return "who";
-    if (has("hafta")) return "week";
-    if (has("ay", "aylık", "aylik")) return "month";
-    if (has("saat", "yoğun", "yogun", "ne zaman")) return "peak";
-    if (has("tavsiye", "ipucu", "öneri", "oneri", "yardım", "yardim", "bırak", "birak")) return "tip";
-    if (has("bugün", "bugun", "gün", "gun")) return "today";
-    return null;
-  }
-
-  function asstPush(text, isMe) {
-    var body = el("asstBody");
-    var msg = document.createElement("div");
-    msg.className = "asst-msg" + (isMe ? " me" : "");
-    msg.textContent = text;
-    body.appendChild(msg);
-    body.scrollTop = body.scrollHeight;
-  }
-
-  // Çipler: kişisel soru yalnız cihaz sahibi seçiliyse eklenir
-  function asstChips() {
-    var c = [
-      { k: "today", t: "Bugün nasıl?" },
-      { k: "who", t: "Kim önde?" },
-      { k: "week", t: "Bu hafta?" },
-      { k: "month", t: "Bu ay?" },
-      { k: "records", t: "Rekorlarım 🏆" },
-      { k: "streak", t: "Serim 🔥" },
-      { k: "peak", t: "Yoğun saatim?" },
-      { k: "tip", t: "Tavsiye 💡" }
-    ];
-    if (settings.owner) c.splice(1, 0, { k: "me", t: "Ben nasılım?" });
-    return c;
-  }
-
-  // "yazıyor…" göstergesi: cevap gelmeden önce üç nokta yanıp söner (native his)
-  function asstTyping() {
-    var body = el("asstBody");
-    var t = document.createElement("div");
-    t.className = "asst-msg asst-typing";
-    t.setAttribute("aria-label", "Zıvana yazıyor");
-    t.innerHTML = '<span class="asst-dot"></span><span class="asst-dot"></span><span class="asst-dot"></span>';
-    body.appendChild(t);
-    body.scrollTop = body.scrollHeight;
-    return t;
-  }
-
-  function asstAsk(topic, label) {
-    if (label) asstPush(label, true);
-    var replies = asstReply(topic);
-    var i = 0;
-    (function next() {
-      if (i >= replies.length) return;
-      var typing = asstTyping();
-      setTimeout(function () {
-        typing.remove();
-        asstPush(replies[i], false); i++; next();
-      }, i === 0 ? 350 : 550);
-    })();
-  }
-
-  // Serbest metin gönderimi
-  function asstSubmit() {
-    var inp = /** @type {HTMLInputElement} */ (el("asstInput"));
-    if (!inp) return;
-    var text = (inp.value || "").trim();
-    if (!text) return;
-    inp.value = "";
-    asstPush(text, true);
-    var topic = asstRoute(text);
-    if (topic) { asstAsk(topic); return; }
-    var typing = asstTyping();
-    setTimeout(function () {
-      typing.remove();
-      asstPush("Tam anlamadım 🤔 Şunları sorabilirsin: bugün, kim önde, bu hafta/ay, rekorlarım, serim, yoğun saatim, tavsiye.", false);
-    }, 400);
-  }
-
-  function asstOpen() {
-    var panel = el("asstPanel");
-    panel.classList.remove("hidden");
-    var n = asstNudge();
-    if (n) asstMarkSeen(n.key); else asstMarkSeen("intro");
-    el("asstBadge").classList.add("hidden");
-    if (!asstOpened) {
-      asstOpened = true;
-      el("asstBody").innerHTML = "";
-      asstAsk("hi");
-    } else if (n) {
-      setTimeout(function () { asstPush(n.text, false); }, 200); // açıkken yeni olayı hatırlat
-    }
-  }
-
-  function bindAssistant() {
-    var chips = el("asstChips");
-    asstChips().forEach(function (c) {
-      var b = document.createElement("button");
-      b.className = "asst-chip";
-      b.textContent = c.t;
-      b.addEventListener(TAP_EVT, function () { asstAsk(c.k, c.t); });
-      chips.appendChild(b);
-    });
-    el("asstFab").addEventListener(TAP_EVT, function () {
-      var panel = el("asstPanel");
-      if (panel.classList.contains("hidden")) asstOpen();
-      else panel.classList.add("hidden");
-    });
-    el("asstClose").addEventListener(TAP_EVT, function () { el("asstPanel").classList.add("hidden"); });
-    var form = el("asstForm");
-    if (form) form.addEventListener("submit", function (ev) { ev.preventDefault(); asstSubmit(); });
-    refreshAsst();
-  }
-
   function handleQuickAction() {
     // iOS Kısayollar uygulaması veya bir yer iminden ?add=utku|gozde|both|hepberaber
     // ile açılırsa uygulamayı açar açmaz o kaydı ekler.
@@ -4165,30 +3791,6 @@
     if (!WHO[who]) return;
     history.replaceState(null, "", window.location.pathname);
     addEntry(who);
-  }
-
-  var currentTemp = null;
-  var currentCode = null;
-
-  function updatePortalZivana() {
-    var tipEl = el("portalZivanaTip");
-    if (!tipEl) return;
-    if (settings.customMascot) { tipEl.textContent = settings.customMascot; return; }
-    var hour = new Date().getHours();
-    var msg = "Bugün nasıl hissediyoruz?";
-    if (currentTemp !== null) {
-      if (currentTemp > 28) msg = "Hava " + Math.round(currentTemp) + "°C! Serin bir köşe bulup keyfine bakalım 🌿";
-      else if (currentTemp < 10) msg = "Dışarısı " + Math.round(currentTemp) + "°C, çok soğuk! Sigo'yu içeride mi sarsak? 🥶";
-      else if (currentCode >= 51 && currentCode <= 67) msg = "Yağmur yağıyor 🌧️ Tam cam kenarı Sigo havası!";
-      else if (hour < 12) msg = "Günaydın! Sabahın ilk sigosu yandı mı? 🌅";
-      else if (hour > 22) msg = "Gece uzun... Dumanaltı mesaisi devam ediyor 🌙";
-      else msg = "Günün keyfini çıkar! Hava mis gibi " + Math.round(currentTemp) + "°C.";
-    } else {
-      if (hour < 12) msg = "Günaydın! Sabahın ilk sigosu yandı mı? 🌅";
-      else if (hour > 22) msg = "Gece uzun... Dumanaltı mesaisi devam ediyor 🌙";
-      else msg = "Zıvana düşünüyor... Bugün ne içsek?";
-    }
-    tipEl.textContent = msg;
   }
 
   function fetchWeather() {
@@ -4237,8 +3839,6 @@
   }
 
   function updateWeatherUI(temp, code) {
-    currentTemp = temp;
-    currentCode = code;
     var elTemp = el("weatherTemp");
     var elIcon = el("weatherIcon");
     if (elTemp) elTemp.textContent = Math.round(temp) + "°";
@@ -4254,7 +3854,6 @@
       else if (code >= 95 && code <= 99) icon = "⛈️";
       elIcon.textContent = icon;
     }
-    updatePortalZivana();
   }
 
   function initPortalWidgets() {
@@ -4323,15 +3922,6 @@
       entriesSince: entriesSince,
       todayEntries: todayEntries,
       breakdownText: breakdownText,
-      asstStats: asstStats,
-      asstLongestGap: asstLongestGap,
-      asstRunningGap: asstRunningGap,
-      asstBelowAvgStreak: asstBelowAvgStreak,
-      asstRecordDay: asstRecordDay,
-      asstNudge: asstNudge,
-      asstReply: asstReply,
-      asstRoute: asstRoute,
-      asstChips: asstChips,
       longestCleanStreak: longestCleanStreak,
       computeBadges: computeBadges,
       entries: function () { return entries; },

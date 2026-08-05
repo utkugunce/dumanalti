@@ -80,8 +80,7 @@ body[data-active-tab="portal"] .app {
    Kısa ekranda boş alan olmadığından kartlar büyümez (kompakt düzen korunur). */
 .view { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; }
 
-/* Kaydırılan sekmelerde en alttaki içerik (ör. Geçmiş'teki silme butonları)
-   Zıvana'nın butonunun üstüne kaydırılabilsin */
+/* Kaydırılan sekmelerde en alttaki içerik sekme çubuğunun üstünde kalsın. */
 #view-stats, #view-history, #view-settings { padding-bottom: 110px; }
 
 /* Bugün ve Son sigodan beri kutuları uzun ekranlarda aşağı doğru genişler */
@@ -139,8 +138,7 @@ body[data-active-tab="portal"] .tabbar {
   opacity: 0;
   pointer-events: none;
 }
-body[data-active-tab="portal"] .add-dial,
-body[data-active-tab="portal"] .assistant {
+body[data-active-tab="portal"] .add-dial {
   transform: translateY(150%);
   opacity: 0;
   pointer-events: none;
@@ -292,34 +290,6 @@ body[data-active-tab="portal"] .assistant {
 }
 .duel-ico { font-size: 18px; }
 .duel-text { font-size: 13px; font-weight: 600; color: #f4d03f; }
-
-.portal-zivana {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 16px;
-  animation: floatZivana 4s ease-in-out infinite;
-}
-.portal-zivana-face {
-  width: 48px;
-  height: 48px;
-  filter: drop-shadow(0 4px 12px rgba(31,180,143,0.3));
-}
-.portal-zivana-bubble {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  border-bottom-left-radius: 4px;
-  padding: 12px 16px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text);
-  box-shadow: var(--shadow);
-}
-@keyframes floatZivana {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
 
 .portal-last-action {
   background: var(--bg-elev);
@@ -856,8 +826,7 @@ body[data-active-tab="portal"] {
 }
 
 /* Bilgiler: görsel mini-pano (düello bar + öne çıkan + kutucuklar) */
-/* Alt satır, ekranın altında yüzen '+' ve Zıvana butonlarının üstünde kalsın diye
-   gövdeye alt boşluk verilir (butonlar iki alt köşeyi kapatıyor). */
+/* Alt satır, ekranın altında yüzen '+' butonunun üstünde kalsın. */
 .insight-body { display: flex; flex-direction: column; gap: 10px; padding-bottom: 64px; }
 
 .ins-empty { display: flex; gap: 9px; align-items: center; font-size: 13px; color: var(--muted); line-height: 1.35; }
@@ -1363,7 +1332,6 @@ body[data-active-tab="portal"] {
   [data-theme="light"] .tabbar { background: rgba(255, 255, 255, 0.96); }
 }
 
-/* ===== Zıvana asistan maskot ===== */
 /* ===== Global sigo ekleme (genişleyen buton, sol altta) ===== */
 .add-dial { position: fixed; left: 14px; z-index: 365; bottom: calc(64px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .add-fab {
@@ -1422,153 +1390,13 @@ body[data-active-tab="portal"] {
 }
 
 /* Scroll-hide: aşağı kaydırınca FAB'lar aşağı kayıp gizlenir */
-.add-dial, .assistant {
+.add-dial {
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
 }
-.add-dial.fab-hidden, .assistant.fab-hidden {
+.add-dial.fab-hidden {
   transform: translateY(calc(100% + 20px));
   opacity: 0;
   pointer-events: none;
-}
-
-.assistant { position: fixed; right: 14px; z-index: 350; bottom: calc(64px + env(safe-area-inset-bottom)); }
-.asst-fab {
-  position: relative;
-  width: 60px; height: 60px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: linear-gradient(165deg, #1fb48f, #0c6b53);
-  box-shadow: 0 8px 22px -6px rgba(31, 180, 143, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  -webkit-tap-highlight-color: transparent;
-  animation: asstFloat 3.5s ease-in-out infinite;
-}
-.asst-fab:active { transform: scale(0.9); }
-.asst-fab-face { width: 46px; height: 46px; display: block; pointer-events: none; }
-@keyframes asstFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-.asst-badge {
-  position: absolute; top: -2px; right: -2px;
-  min-width: 20px; height: 20px; padding: 0 5px;
-  border-radius: 999px;
-  background: var(--accent); color: #1a1300;
-  font-size: 11px; font-weight: 800; line-height: 20px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-}
-
-.asst-panel {
-  position: absolute;
-  right: 0;
-  bottom: 72px;
-  width: min(84vw, 320px);
-  border-radius: 20px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  -webkit-backdrop-filter: blur(18px) saturate(1.7);
-  backdrop-filter: blur(18px) saturate(1.7);
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 16px 40px rgba(0, 0, 0, 0.4);
-  padding: 12px;
-  transform-origin: bottom right;
-  animation: asstPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-@keyframes asstPop {
-  0% { opacity: 0; transform: scale(0.7) translateY(10px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-.asst-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.asst-face { width: 38px; height: 38px; flex: none; }
-.asst-title { display: flex; flex-direction: column; line-height: 1.2; flex: 1; }
-.asst-title strong { font-size: 14px; }
-.asst-title span { font-size: 11px; color: var(--muted); }
-.asst-close {
-  background: var(--bg-elev-2); border: 1px solid var(--border);
-  color: var(--text); width: 28px; height: 28px; border-radius: 50%;
-  font-size: 13px; cursor: pointer; flex: none;
-}
-.asst-body {
-  max-height: 44vh; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 2px;
-}
-.asst-msg {
-  align-self: flex-start; max-width: 90%;
-  background: var(--bg-elev-2);
-  border: 1px solid var(--border);
-  border-radius: 14px 14px 14px 4px;
-  padding: 8px 11px; font-size: 13px; line-height: 1.35;
-  animation: asstMsgIn 0.25s ease;
-}
-.asst-msg.me {
-  align-self: flex-end;
-  background: linear-gradient(160deg, #22c39a, #0c6b53);
-  color: #fff; border: none;
-  border-radius: 14px 14px 4px 14px;
-}
-@keyframes asstMsgIn {
-  0% { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-/* Zıvana "yazıyor…" göstergesi: üç nokta sırayla yanıp söner */
-.asst-typing { display: flex; gap: 4px; align-items: center; padding: 11px 13px; }
-.asst-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); opacity: 0.4; animation: asstDot 1.2s infinite ease-in-out; }
-.asst-dot:nth-child(2) { animation-delay: 0.18s; }
-.asst-dot:nth-child(3) { animation-delay: 0.36s; }
-@keyframes asstDot {
-  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
-  30% { opacity: 1; transform: translateY(-3px); }
-}
-/* Grafik sütunları klavye ile gezilebilir: net odak halkası */
-.chart-col:focus-visible, .hour-col:focus-visible, .dow-col:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px;
-}
-.asst-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.asst-chip {
-  background: var(--bg-elev-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 999px; padding: 6px 11px;
-  font-size: 12px; font-family: inherit; cursor: pointer;
-  transition: transform 0.12s, background 0.15s;
-}
-.asst-chip:active { transform: scale(0.94); }
-.asst-chip:hover { background: var(--accent); color: #1a1300; }
-
-/* Serbest metin giriş satırı */
-.asst-input { display: flex; gap: 6px; margin-top: 8px; }
-.asst-input input {
-  flex: 1;
-  background: var(--bg-elev-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 8px 13px;
-  font-family: inherit;
-  font-size: 13px;
-  min-width: 0;
-}
-.asst-input input:focus { outline: none; border-color: var(--accent); }
-.asst-send {
-  flex: none;
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: var(--accent);
-  color: #1a1300;
-  font-size: 14px;
-  cursor: pointer;
-  transition: transform 0.12s;
-}
-.asst-send:active { transform: scale(0.9); }
-
-@media (prefers-reduced-motion: reduce) {
-  .asst-fab { animation: none; }
-  .asst-panel, .asst-msg { animation: none; }
-  .asst-dot { animation: none; opacity: 0.6; }
 }
 
 /* Sigo / Bong Tür Seçimi ve İstatistik Stilleri */
@@ -1826,13 +1654,9 @@ body[data-active-tab="portal"] {
 
 body[data-active-tab="home"] .app { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 body:not([data-active-tab="home"]) .add-dial { display: none; }
-body[data-active-tab="history"] .assistant,
-body[data-active-tab="settings"] .assistant { display: none; }
-
 .home-category-picker { flex: 0 0 auto; gap: 8px; }
 .home-category-picker .portal-banner,
 .home-category-picker .portal-duel,
-.home-category-picker .portal-zivana,
 .home-category-picker .portal-last-action { display: none !important; }
 .home-category-picker .portal-header { margin: 0; padding: 0 2px; }
 .home-category-picker .portal-time { font-size: 24px; }

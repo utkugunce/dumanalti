@@ -35,9 +35,7 @@ interface Settings {
   dailyLimit: number;
   confetti: "full" | "lite" | "off";
   owner: "" | "utku" | "gozde";
-  mascot: "on" | "off";
   sound: "on" | "off";
-  customMascot: string;
   locationEnabled: boolean;
 }
 

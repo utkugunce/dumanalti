@@ -71,6 +71,10 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     await expect(page.locator('#ickiKindSeg, #beerOptWrap, #glassOptWrap')).toHaveCount(0);
   });
 
+  test('Maskot ve yardımcı paneli arayüzde bulunmaz', async ({ page }) => {
+    await expect(page.locator('#assistant, .portal-zivana, #mascotSeg, #customMascotInput')).toHaveCount(0);
+  });
+
   test('Bilgiler mini-panosu: düello barı, öne çıkan ve 6 kutucuk render eder', async ({ page }) => {
     await seed(page);
     // Anasayfa varsayılan açık; Bilgiler kartı açık olmalı

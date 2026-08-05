@@ -60,13 +60,6 @@
         </button>
       </div>
       
-      <div class="portal-zivana">
-        <img class="portal-zivana-face" src="icons/mascot.svg" alt="Zıvana" />
-        <div class="portal-zivana-bubble">
-          <span id="portalZivanaTip">Zıvana düşünüyor...</span>
-        </div>
-      </div>
-
       <div class="portal-last-action" id="portalLastAction">
         <span class="pla-time">--:--</span>
         <span class="pla-desc">Son aktivite bekleniyor...</span>
@@ -457,14 +450,6 @@
           <button class="seg-btn" data-owner="">—</button>
         </div>
       </div>
-      <div class="set-row">
-        <label>Zıvana (asistan)</label>
-        <div class="seg" id="mascotSeg">
-          <button class="seg-btn" data-mascot="on">💨 Açık</button>
-          <button class="seg-btn" data-mascot="off">🙈 Gizli</button>
-        </div>
-      </div>
-      <div class="set-row set-row-stack"><label for="customMascotInput">Zıvana'nın özel mesajı</label><input id="customMascotInput" type="text" class="set-input wide" maxlength="100" placeholder="Örn. Hadi biraz ara verelim 🌿" /></div>
       <label class="set-row"><span>Yeni kayıtlara konum ekle</span><input id="locationSetting" type="checkbox" /></label>
     </section>
 
@@ -499,30 +484,6 @@
 
     </main>
 
-  </div>
-
-  <!-- Zıvana: yardımcı asistan maskot -->
-  <div id="assistant" class="assistant">
-    <div id="asstPanel" class="asst-panel hidden" role="dialog" aria-label="Zıvana asistan">
-      <div class="asst-head">
-        <img class="asst-face" src="icons/mascot.svg" alt="Zıvana" />
-        <div class="asst-title">
-          <strong>Zıvana</strong>
-          <span>yardımcı asistanın</span>
-        </div>
-        <button id="asstClose" class="asst-close" aria-label="Kapat">✕</button>
-      </div>
-      <div id="asstBody" class="asst-body"></div>
-      <div id="asstChips" class="asst-chips"></div>
-      <form id="asstForm" class="asst-input" autocomplete="off">
-        <input id="asstInput" type="text" placeholder="Zıvana'ya yaz…" aria-label="Zıvana'ya soru yaz" />
-        <button type="submit" class="asst-send" aria-label="Gönder">➤</button>
-      </form>
-    </div>
-    <button id="asstFab" class="asst-fab" aria-label="Zıvana'ya sor">
-      <img class="asst-fab-face" src="icons/mascot.svg" alt="Zıvana" />
-      <span id="asstBadge" class="asst-badge hidden"></span>
-    </button>
   </div>
 
   <!-- Global sigo ekleme: her sayfada açılan hızlı buton -->

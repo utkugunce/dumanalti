@@ -1,4 +1,4 @@
-var CACHE = "dumanalti-v143";
+var CACHE = "dumanalti-v144";
 var ASSETS = [
   "./",
   "./index.html",
@@ -11,9 +11,6 @@ var ASSETS = [
   "./vendor/supabase-js-2.111.0.min.js",
   "./vendor/d3-v7.min.js",
   "./icons/icon.svg",
-  "./icons/mascot.svg",
-  "./icons/mascot-surprised.svg",
-  "./icons/mascot-love.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/avatar-utku.png",

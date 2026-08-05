@@ -227,22 +227,6 @@ test.describe('Dumanaltı App Tests', () => {
       expect(badges.earnedBadges.find(b => b.t === 'Beşyüz').on).toBe(false); // 500 required
     });
 
-    test('assistant route correctly parses topics', async ({ page }) => {
-      const routes = await page.evaluate(() => {
-        const exports = window.DUMANALTI_TEST_EXPORTS;
-        return {
-          selam: exports.asstRoute('Merhaba Zıvana'),
-          rekor: exports.asstRoute('en uzun sigo serisi ne?'),
-          bugun: exports.asstRoute('Bugün nasılız?'),
-          random: exports.asstRoute('ne haber nasılsın')
-        };
-      });
-
-      expect(routes.selam).toBe('hi');
-      expect(routes.rekor).toBe('records');
-      expect(routes.bugun).toBe('today');
-      expect(routes.random).toBe('hi');
-    });
   });
 
   test.describe('UI Navigation & Core Flow Tests', () => {
@@ -356,40 +340,6 @@ test.describe('Dumanaltı App Tests', () => {
       // Select dark theme
       await page.click('#themeSeg button[data-theme="dark"]');
       await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'light');
-    });
-
-    test('assistant chat panel opens and answers questions', async ({ page }) => {
-      // Open assistant panel with force:true to bypass stability checks due to potential floating animations
-      await page.click('#asstFab', { force: true });
-      await expect(page.locator('#asstPanel')).not.toHaveClass(/hidden/);
-
-      // Submit message
-      await page.fill('#asstInput', 'selam');
-      await page.press('#asstInput', 'Enter');
-
-      // Check user message is displayed in chat
-      await expect(page.locator('.asst-msg.me')).toHaveText('selam');
-
-      // Check Zıvana replies
-      await expect(page.locator('.asst-msg').nth(1)).toBeVisible();
-    });
-
-    test('settings owner updates assistant greeting', async ({ page }) => {
-      // Go to Settings
-      await page.click('nav.tabbar button[data-tab="settings"]');
-
-      // Choose "Utku" as device owner
-      await page.click('#ownerSeg button[data-owner="utku"]');
-
-      // Yardımcı yalnız içerik ekranlarında görünür.
-      await page.click('nav.tabbar button[data-tab="home"]');
-
-      // Open assistant panel
-      await page.click('#asstFab', { force: true });
-      await expect(page.locator('#asstPanel')).not.toHaveClass(/hidden/);
-
-      // Check Zıvana greeting has "Utku" name in the first message
-      await expect(page.locator('.asst-msg').first()).toContainText('Utku');
     });
 
     test('device owner enables one-tap quick logging', async ({ page }) => {
