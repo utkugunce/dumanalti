@@ -58,20 +58,6 @@
           <span class="portal-sub">Sarma & Filtre</span>
           <span class="portal-count" id="portalSigoCount">Bugün: 0</span>
         </button>
-        <button class="portal-card sigara-card" data-cat="sigara">
-          <span class="portal-ico">🚬</span>
-          <span class="portal-title">Sigara</span>
-          <span class="portal-sub">Paket Sigara</span>
-          <span class="portal-count" id="portalSigaraCount">Bugün: 0</span>
-        </button>
-        <button class="portal-card icki-card" data-cat="icki">
-          <span class="portal-ico">🥂</span>
-          <div class="portal-text-group">
-            <div class="portal-title">İçki</div>
-            <div class="portal-sub">Kadehler havaya</div>
-          </div>
-          <span class="portal-count" id="portalIckiCount">Bugün: 0</span>
-        </button>
       </div>
       
       <div class="portal-zivana">
@@ -547,57 +533,6 @@
         <button class="add-kind-btn" data-kind="bong" type="button">🫧 Bong</button>
       </div>
 
-      <div id="ickiKindSeg" class="add-kind-seg hidden" role="group" aria-label="İçki türü">
-        <button class="add-kind-btn active" data-kind="bira" type="button">🍺 Bira</button>
-        <button class="add-kind-btn" data-kind="cin" type="button">🍸 Cin</button>
-        <button class="add-kind-btn" data-kind="sarap" type="button">🍷 Şarap</button>
-        <button class="add-kind-btn" data-kind="viski" type="button">🥃 Viski</button>
-        <button class="add-kind-btn" data-kind="raki" type="button">🥛 Rakı</button>
-        <button class="add-kind-btn" data-kind="kokteyl" type="button">🍹 Kokteyl</button>
-        <button class="add-kind-btn" data-kind="diger" type="button">🥂 Diğer</button>
-      </div>
-
-      <!-- Bira özel seçenekleri: Marka ve Hacim -->
-      <div id="beerOptWrap" class="beer-opt-wrap hidden">
-        <div class="beer-opt-row">
-          <label>Marka:</label>
-          <select id="beerBrandSel" class="beer-select" title="Bira Markası Seçimi">
-            <option value="efes_pilsen">🍺 Efes Pilsen</option>
-            <option value="efes_malt">🍺 Efes Malt</option>
-            <option value="tuborg_gold">🍺 Tuborg Gold</option>
-            <option value="tuborg_filtresiz">🍺 Tuborg Filtresiz</option>
-            <option value="bomonti">🍺 Bomonti</option>
-            <option value="carlsberg">🍺 Carlsberg</option>
-            <option value="miller">🍺 Miller</option>
-            <option value="beck_s">🍺 Beck's</option>
-            <option value="heineken">🍺 Heineken</option>
-            <option value="corona">🍺 Corona</option>
-            <option value="bremen">🍺 Bremen</option>
-          </select>
-        </div>
-        <div class="beer-opt-row">
-          <label>Boyut:</label>
-          <div class="seg" id="beerSizeSeg">
-            <button class="seg-btn active" data-size="50cl" type="button">50 cl</button>
-            <button class="seg-btn" data-size="33cl" type="button">33 cl</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Diğer içkiler: Bardak/Kadeh seçimi -->
-      <div id="glassOptWrap" class="beer-opt-wrap hidden">
-        <div class="beer-opt-row">
-          <label>Miktar:</label>
-          <div class="seg" id="glassSizeSeg">
-            <button class="seg-btn active" data-glass="1" type="button">1</button>
-            <button class="seg-btn" data-glass="2" type="button">2</button>
-            <button class="seg-btn" data-glass="3" type="button">3</button>
-            <button class="seg-btn" data-glass="4" type="button">4</button>
-            <button class="seg-btn" data-glass="5" type="button">5</button>
-          </div>
-        </div>
-      </div>
-
       <button class="add-opt" data-who="hepberaber" aria-label="Hep beraber ekle"><img class="avatar" src="icons/avatar-hepberaber.svg" alt="Hep beraber" /><span>Hep beraber</span></button>
       <button class="add-opt" data-who="both" aria-label="Ortak ekle"><img class="avatar" src="icons/avatar-both.png" alt="Ortak" /><span>Ortak</span></button>
       <button class="add-opt" data-who="gozde" aria-label="Gözde ekle"><img class="avatar" src="icons/avatar-gozde.png" alt="Gözde" /><span>Gözde</span></button>
@@ -615,7 +550,7 @@
     <div id="quickEditBar" class="quick-edit-bar hidden"><button id="quickEditWhoBtn" type="button">Kişiyi değiştir</button><button id="quickEditKindBtn" type="button">Türü değiştir</button></div>
   </div>
 
-  <div id="onboarding" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle"><div class="modal-card"><span class="eyebrow">İlk kurulum</span><h2 id="onboardingTitle">Dumanaltı'nı sana göre ayarlayalım</h2><div class="onboarding-step" data-step="1"><p>Bu cihaz kimin?</p><div class="choice-grid"><button data-onboard-owner="utku">🧔 Utku</button><button data-onboard-owner="gozde">👩 Gözde</button></div></div><div class="onboarding-step hidden" data-step="2"><p>En çok hangi kategori?</p><div class="choice-grid three"><button data-onboard-cat="sigo">🍃 Sigo</button><button data-onboard-cat="sigara">🚬 Sigara</button><button data-onboard-cat="icki">🥂 İçki</button></div></div><div class="onboarding-step hidden" data-step="3"><p>İzinler daha sonra Ayarlar'dan değiştirilebilir.</p><label class="check-row"><input id="onboardLocation" type="checkbox" /> Yeni kayıtlara konum ekle</label><button id="onboardingFinish" class="quick-action primary" type="button">Başlayalım</button></div></div></div>
+  <div id="onboarding" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle"><div class="modal-card"><span class="eyebrow">İlk kurulum</span><h2 id="onboardingTitle">Dumanaltı'nı sana göre ayarlayalım</h2><div class="onboarding-step" data-step="1"><p>Bu cihaz kimin?</p><div class="choice-grid"><button data-onboard-owner="utku">🧔 Utku</button><button data-onboard-owner="gozde">👩 Gözde</button></div></div><div class="onboarding-step hidden" data-step="2"><p>İzinler daha sonra Ayarlar'dan değiştirilebilir.</p><label class="check-row"><input id="onboardLocation" type="checkbox" /> Yeni kayıtlara konum ekle</label><button id="onboardingFinish" class="quick-action primary" type="button">Başlayalım</button></div></div></div>
   <div id="lockScreen" class="modal-layer lock-layer hidden" role="dialog" aria-modal="true" aria-labelledby="lockTitle"><div class="modal-card lock-card"><img src="icons/icon.svg" alt="" /><h2 id="lockTitle">Dumanaltı kilitli</h2><input id="pinUnlockInput" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" aria-label="Uygulama PIN'i" /><button id="pinUnlockBtn" class="quick-action primary" type="button">Kilidi aç</button><button id="biometricUnlockBtn" class="ghost-btn hidden" type="button">Biyometri kullan</button><p id="lockError" class="set-note"></p></div></div>
 
   <!-- D3.js Tooltip -->

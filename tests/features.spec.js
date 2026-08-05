@@ -64,6 +64,13 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     await page.click('.portal-card[data-cat="sigo"]');
   });
 
+  test('Ana ekranda yalnızca Sigo kategorisi ve Sigo/Bong türleri bulunur', async ({ page }) => {
+    await expect(page.locator('.portal-card')).toHaveCount(1);
+    await expect(page.locator('.portal-card[data-cat="sigo"]')).toBeVisible();
+    await expect(page.locator('.add-kind-btn')).toHaveCount(2);
+    await expect(page.locator('#ickiKindSeg, #beerOptWrap, #glassOptWrap')).toHaveCount(0);
+  });
+
   test('Bilgiler mini-panosu: düello barı, öne çıkan ve 6 kutucuk render eder', async ({ page }) => {
     await seed(page);
     // Anasayfa varsayılan açık; Bilgiler kartı açık olmalı
@@ -149,12 +156,11 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     await expect(page.locator('#historyCount')).toContainText('32 kayıt');
   });
 
-  test('İlk kurulum cihaz sahibi ve kategori seçimini tamamlar', async ({ page }) => {
+  test('İlk kurulum cihaz sahibi seçimini tamamlar', async ({ page }) => {
     await page.evaluate(() => localStorage.removeItem('dumanalti.onboarded.v1'));
     await page.reload();
     await expect(page.locator('#onboarding')).toBeVisible();
     await page.click('[data-onboard-owner="utku"]');
-    await page.click('[data-onboard-cat="sigo"]');
     await page.click('#onboardingFinish');
     await expect(page.locator('#onboarding')).not.toBeVisible();
     const state = await page.evaluate(() => ({ owner: JSON.parse(localStorage.getItem('dumanalti.settings.v1') || '{}').owner, done: localStorage.getItem('dumanalti.onboarded.v1') }));

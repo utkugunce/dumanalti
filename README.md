@@ -1,10 +1,10 @@
 # 🚬 Dumanaltı
 
-Utku ve Gözde için hazırlanmış, iki kişilik ortak sigo, sigara ve içki takip uygulaması.
+Utku ve Gözde için hazırlanmış, iki kişilik ortak sigo takip uygulaması.
 
 ## Özellikler
 
-- **Üç kategori:** sigo/bong, sigara ve içki
+- **Sigo ve bong takibi:** iki kayıt türü tek, hızlı akışta
 - **Dört sigo kayıt tipi:** Utku, Gözde, Ortak ve Hep beraber
 - **04:00 mantıksal gün:** gece 00:00–04:00 arasındaki kayıtlar önceki güne yazılır
 - **Sade Bugün ekranı:** kategori seçimi, cihaz sahibine göre tek dokunuşla kayıt, günlük özet, süre ve limit takibi

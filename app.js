@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.3.0";
-  var APP_BUILD = 142;
+  var APP_VERSION = "7.4.0";
+  var APP_BUILD = 143;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -25,33 +25,11 @@
 
   var CFG = window.DUMANALTI_CONFIG || {};
 
-  // Türkiye'de çok tüketilen bira markaları
-  var BEER_BRANDS = [
-    { id: "efes_pilsen", label: "Efes Pilsen" },
-    { id: "efes_malt", label: "Efes Malt" },
-    { id: "tuborg_gold", label: "Tuborg Gold" },
-    { id: "tuborg_filtresiz", label: "Tuborg Filtresiz" },
-    { id: "bomonti", label: "Bomonti" },
-    { id: "carlsberg", label: "Carlsberg" },
-    { id: "miller", label: "Miller" },
-    { id: "beck_s", label: "Beck's" },
-    { id: "heineken", label: "Heineken" },
-    { id: "corona", label: "Corona" },
-    { id: "bremen", label: "Bremen" }
-  ];
-
-  var BEER_SIZES = [
-    { id: "50cl", label: "50 cl (Şişe)", factor: 1.0 },
-    { id: "33cl", label: "33 cl (Küçük)", factor: 0.66 }
-  ];
-
-  // ---------- Çoklu kategori tanımları ----------
+  // ---------- Kategori tanımı ----------
   var CATS = {
-    sigo:   { label: "Sigo",   emoji: "🚬", table: CFG.table || "dumanalti_entries", cacheKey: "dumanalti.entries.v1", outboxKey: "dumanalti.outbox.v1", unit: "sigo", unitPlural: "sigo" },
-    sigara: { label: "Sigara", emoji: "🚬", table: "dumanalti_sigara",               cacheKey: "dumanalti.sigara.v1", outboxKey: "dumanalti.sigara_outbox.v1", unit: "sigara", unitPlural: "sigara" },
-    icki:   { label: "İçki",   emoji: "🥂", table: "dumanalti_icki",                 cacheKey: "dumanalti.icki.v1",   outboxKey: "dumanalti.icki_outbox.v1",   unit: "kadeh/bardak", unitPlural: "içki" }
+    sigo: { label: "Sigo", emoji: "🚬", table: CFG.table || "dumanalti_entries", cacheKey: "dumanalti.entries.v1", outboxKey: "dumanalti.outbox.v1", unit: "sigo", unitPlural: "sigo" }
   };
-  var CAT_ORDER = ["sigo", "sigara", "icki"];
+  var CAT_ORDER = ["sigo"];
   var activeCat = "sigo";
 
   // Her kategorinin kendi veri deposu
@@ -65,16 +43,6 @@
     gozde: { label: "Gözde", emoji: "👩", avatar: "icons/avatar-gozde.png", cls: "gozde-bg" },
     both:  { label: "Ortak", emoji: "👫", avatar: "icons/avatar-both.png", cls: "both-bg" },
     hepberaber: { label: "Hep beraber", emoji: "🎉", avatar: "icons/avatar-hepberaber.svg", cls: "hepberaber-bg" }
-  };
-
-  var DRINK_TYPES = {
-    bira: { label: "Bira", emoji: "🍺" },
-    cin: { label: "Cin", emoji: "🍸" },
-    sarap: { label: "Şarap", emoji: "🍷" },
-    viski: { label: "Viski", emoji: "🥃" },
-    raki: { label: "Rakı", emoji: "🥛" },
-    kokteyl: { label: "Kokteyl", emoji: "🍹" },
-    diger: { label: "Diğer", emoji: "🥂" }
   };
 
   var KINDS = {
@@ -114,13 +82,7 @@
     if (!me || !together) return;
     var owner = settings.owner;
     me.textContent = owner ? "Ben içtim" : "Kişi seç";
-    if (activeCat === "sigo") {
-      together.textContent = "Ortak içtik";
-    } else if (owner) {
-      together.textContent = (owner === "utku" ? "Gözde" : "Utku") + " içti";
-    } else {
-      together.textContent = "Diğer kişi";
-    }
+    together.textContent = "Ortak içtik";
     if (hint) {
       hint.textContent = owner
         ? "Bu cihaz " + WHO[owner].label + " için ayarlı · " + CATS[activeCat].label + " kaydı"
@@ -161,32 +123,26 @@
   var conflicts = [];
   var customBadges = [];
 
-  // Aktif kategoriyi değiştir: entries/outbox alias'larını güncelle, UI'ı yeniden çiz
+  // Tek Sigo kategorisini etkinleştir ve arayüzü yeniden çiz.
   function switchCat(cat) {
-    if (!CATS[cat]) return;
+    if (cat !== "sigo") cat = "sigo";
     // Mevcut veriyi depoya geri kaydet
     catStore[activeCat].entries = entries;
     catStore[activeCat].outbox = outbox;
     activeCat = cat;
     entries = catStore[cat].entries;
     outbox = catStore[cat].outbox;
-    // Body data-cat özniteliğini güncelle (CSS tema vurgu renkleri için)
     document.body.setAttribute("data-cat", cat);
-    // Sigo/bong vs İçki tür seçicisi
     var sigoSeg = el("sigoKindSeg");
-    var ickiSeg = el("ickiKindSeg");
-    
-    if (sigoSeg) sigoSeg.style.display = cat === "sigo" ? "" : "none";
-    if (ickiSeg) ickiSeg.classList.toggle("hidden", cat !== "icki");
+    if (sigoSeg) sigoSeg.style.display = "";
 
     var kBar = el("kindScopeBar");
-    if (kBar) kBar.style.display = cat === "sigo" ? "" : "none";
+    if (kBar) kBar.style.display = "";
     var hkFilters = el("histKindFilters");
-    if (hkFilters) hkFilters.style.display = cat === "sigo" ? "" : "none";
+    if (hkFilters) hkFilters.style.display = "";
 
-    // Ortak ve Hep beraber seçeneklerini sadece Sigo kategorisinde göster (Sigara ve İçki için sadece Utku ve Gözde)
     document.querySelectorAll(".add-opt[data-who='both'], .add-opt[data-who='hepberaber']").forEach(function (b) {
-      /** @type {HTMLElement} */ (b).style.display = cat === "sigo" ? "" : "none";
+      /** @type {HTMLElement} */ (b).style.display = "";
     });
     // Bugün kartında Ortak ve Hep beraber satırlarını gizle/göster
     var duoBoth = document.querySelector(".duo-row:has(#todayBoth)");
@@ -195,44 +151,25 @@
       var elBoth = el("todayBoth");
       if (elBoth && elBoth.parentElement) duoBoth = elBoth.parentElement;
     }
-    if (duoBoth) /** @type {HTMLElement} */ (duoBoth).style.display = cat === "sigo" ? "" : "none";
+    if (duoBoth) /** @type {HTMLElement} */ (duoBoth).style.display = "";
 
     var duoHep = document.querySelector(".duo-row:has(#todayHepberaber)");
     if (!duoHep) {
       var elHep = el("todayHepberaber");
       if (elHep && elHep.parentElement) duoHep = elHep.parentElement;
     }
-    if (duoHep) /** @type {HTMLElement} */ (duoHep).style.display = cat === "sigo" ? "" : "none";
+    if (duoHep) /** @type {HTMLElement} */ (duoHep).style.display = "";
 
-    // Her kategori için son kullanılan türü hatırla.
     var rememberedKind = localStorage.getItem("dumanalti.lastKind." + cat);
-    if (cat === "icki" && DRINK_TYPES[rememberedKind]) selectedAddKind = rememberedKind;
-    else if (cat === "sigo" && KINDS[rememberedKind]) selectedAddKind = rememberedKind;
-    // Seçili ekleme türünü de zorla düzelt (sigo/bong vs bira/cin)
-    if (cat === "icki" && (!selectedAddKind || !DRINK_TYPES[selectedAddKind])) {
-      selectedAddKind = "bira";
-      if (ickiSeg) {
-        ickiSeg.querySelectorAll(".add-kind-btn").forEach(function (btn) {
-          btn.classList.toggle("active", btn.getAttribute("data-kind") === "bira");
-        });
-      }
-    } else if (cat === "sigo" && (!selectedAddKind || !KINDS[selectedAddKind])) {
+    if (KINDS[rememberedKind]) selectedAddKind = rememberedKind;
+    if (!selectedAddKind || !KINDS[selectedAddKind]) {
       selectedAddKind = "sigo";
       if (sigoSeg) {
         sigoSeg.querySelectorAll(".add-kind-btn").forEach(function (btn) {
           btn.classList.toggle("active", btn.getAttribute("data-kind") === "sigo");
         });
       }
-    } else if (cat === "sigara") {
-      selectedAddKind = "sigara";
     }
-
-    var beerWrap = el("beerOptWrap");
-    if (beerWrap) beerWrap.classList.toggle("hidden", cat !== "icki" || selectedAddKind !== "bira");
-    var glassWrap = el("glassOptWrap");
-    if (glassWrap) glassWrap.classList.toggle("hidden", cat !== "icki" || selectedAddKind === "bira");
-
-
     updateQuickActions();
     document.querySelectorAll(".portal-card").forEach(function (card) {
       card.classList.toggle("active", card.getAttribute("data-cat") === cat);
@@ -372,8 +309,16 @@
       }
     } catch (e) {}
     try { activeSession = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e2) { activeSession = null; }
-    try { trash = JSON.parse(localStorage.getItem(TRASH_KEY) || "[]"); if (!Array.isArray(trash)) trash = []; } catch (e3) { trash = []; }
-    try { conflicts = JSON.parse(localStorage.getItem(CONFLICT_KEY) || "[]"); if (!Array.isArray(conflicts)) conflicts = []; } catch (e4) { conflicts = []; }
+    try {
+      trash = JSON.parse(localStorage.getItem(TRASH_KEY) || "[]");
+      if (!Array.isArray(trash)) trash = [];
+      trash = trash.filter(function (item) { return !!(item && CATS[item.cat] && item.row); });
+    } catch (e3) { trash = []; }
+    try {
+      conflicts = JSON.parse(localStorage.getItem(CONFLICT_KEY) || "[]");
+      if (!Array.isArray(conflicts)) conflicts = [];
+      conflicts = conflicts.filter(function (item) { return !!(item && CATS[item.cat]); });
+    } catch (e4) { conflicts = []; }
     try { customBadges = JSON.parse(localStorage.getItem(BADGES_KEY) || "[]"); if (!Array.isArray(customBadges)) customBadges = []; } catch (e5) { customBadges = []; }
   }
   function saveSettings() {
@@ -387,11 +332,7 @@
     if (!isFinite(ts) || ts <= 0) return null;
     var validId = typeof raw.id === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(raw.id);
     if (!validId && !allowNewId) return null;
-    var fallbackKind = cat === "icki" ? "bira" : (cat === "sigara" ? "sigara" : "sigo");
-    var kind = fallbackKind;
-    if (cat === "sigo" && KINDS[raw.kind]) kind = raw.kind;
-    else if (cat === "icki" && DRINK_TYPES[raw.kind]) kind = raw.kind;
-    else if (cat === "sigara" && typeof raw.kind === "string" && raw.kind.length <= 40) kind = raw.kind;
+    var kind = KINDS[raw.kind] ? raw.kind : "sigo";
     var row = { id: validId ? raw.id : uuid(), who: raw.who, ts: ts, kind: kind };
     if (typeof raw.tag === "string" && raw.tag.length <= 120) row.tag = raw.tag;
     var lat = Number(raw.lat), lng = Number(raw.lng);
@@ -656,10 +597,8 @@
     else if (diff < 0) { trend.classList.add("down"); trend.textContent = "▼ " + (-diff); }
     else { trend.textContent = "＝"; }
 
-    var catInfo = CATS[activeCat] || CATS.sigo;
-    var kindText = activeCat === "sigo"
-      ? "(" + tk.sigo + " sigo · " + tk.bong + " bong) · "
-      : "";
+    var catInfo = CATS.sigo;
+    var kindText = "(" + tk.sigo + " sigo · " + tk.bong + " bong) · ";
     el("todayHeroSub").textContent = "toplam " + catInfo.unit + " " + kindText + "· dün bu saatte " + ySame;
 
     renderTodayFlow();
@@ -673,15 +612,7 @@
       var last = entries[entries.length - 1];
       lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
       var extraText = "";
-      if (activeCat === "sigo") {
-        extraText = " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")";
-      } else if (activeCat === "bira" && last.tag) {
-        var parts = last.tag.split(":");
-        var brandObj = BEER_BRANDS.filter(function (b) { return b.id === parts[0]; })[0];
-        var brandLabel = brandObj ? brandObj.label : parts[0];
-        var sizeLabel = parts[1] || "";
-        extraText = " (" + brandLabel + (sizeLabel ? " · " + sizeLabel : "") + ")";
-      }
+      extraText = " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")";
       lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + extraText + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
     } else {
       lastSmoke.textContent = "Henüz kayıt yok";
@@ -691,7 +622,7 @@
   function renderPortalSummaries() {
     var now = Date.now();
     var allEntries = [];
-    ["sigo", "sigara", "icki"].forEach(function (cat) {
+    CAT_ORDER.forEach(function (cat) {
       if (!catStore[cat]) return;
       allEntries = allEntries.concat(catStore[cat].entries.map(function(e) { e._cat = cat; return e; }));
       var elCount = el("portal" + cat.charAt(0).toUpperCase() + cat.slice(1) + "Count");
@@ -724,10 +655,8 @@
     if (allEntries.length > 0) {
       allEntries.sort(function(a, b) { return b.ts - a.ts; });
       var last = allEntries[0];
-      var catName = last._cat === "sigo" ? "Sigo" : last._cat === "sigara" ? "Sigara" : "İçki";
       plaTime.textContent = formatTime(last.ts);
-      plaDesc.innerHTML = "<b>" + WHO[last.who].label + "</b> az önce bir " + catName + " yaktı (" + relativeTime(last.ts) + ")";
-      if (last._cat === "icki") plaDesc.innerHTML = "<b>" + WHO[last.who].label + "</b> az önce bir " + (DRINK_TYPES[last.kind] ? DRINK_TYPES[last.kind].label : "içki") + " yudumladı (" + relativeTime(last.ts) + ")";
+      plaDesc.innerHTML = "<b>" + WHO[last.who].label + "</b> az önce bir Sigo yaktı (" + relativeTime(last.ts) + ")";
     } else {
       plaTime.textContent = "--:--";
       plaDesc.textContent = "Henüz bir aktivite yok.";
@@ -1133,39 +1062,12 @@
     main.className = "h-main";
     var who = document.createElement("span");
     who.className = "h-who";
-    var actionWord = activeCat === "icki" ? " içti" : " içti";
-    who.textContent = WHO[e.who].label + actionWord;
-
-    if (activeCat === "icki") {
-      var drinkKind = e.kind && DRINK_TYPES[e.kind] ? e.kind : "bira";
-      if (drinkKind === "bira") {
-        var parts = (e.tag || "efes_pilsen:50cl").split(":");
-        var brandObj = BEER_BRANDS.filter(function (b) { return b.id === parts[0]; })[0];
-        var brandLbl = brandObj ? brandObj.label : parts[0];
-        var sizeLbl = parts[1] || "50cl";
-        who.textContent = WHO[e.who].label + " ";
-        var beerDetail = document.createElement("span");
-        beerDetail.className = "muted";
-        beerDetail.textContent = "(" + brandLbl + ", " + sizeLbl + ")";
-        who.appendChild(beerDetail);
-        who.appendChild(document.createTextNode(" içti"));
-      } else {
-        var qty = e.tag || "1";
-        var drinkLbl = DRINK_TYPES[drinkKind].label;
-        who.textContent = WHO[e.who].label + " ";
-        var drinkDetail = document.createElement("span");
-        drinkDetail.className = "muted";
-        drinkDetail.textContent = "(" + qty + " bardak/kadeh " + drinkLbl + ")";
-        who.appendChild(drinkDetail);
-        who.appendChild(document.createTextNode(" içti"));
-      }
-    } else if (activeCat === "sigo") {
-      var kInfo = KINDS[entryKind(e)] || KINDS.sigo;
-      var kindBadge = document.createElement("span");
-      kindBadge.className = "h-kind " + kInfo.cls;
-      kindBadge.textContent = kInfo.emoji + " " + kInfo.label;
-      who.appendChild(kindBadge);
-    }
+    who.textContent = WHO[e.who].label + " içti";
+    var kInfo = KINDS[entryKind(e)] || KINDS.sigo;
+    var kindBadge = document.createElement("span");
+    kindBadge.className = "h-kind " + kInfo.cls;
+    kindBadge.textContent = kInfo.emoji + " " + kInfo.label;
+    who.appendChild(kindBadge);
 
     var time = document.createElement("span");
     time.className = "h-time";
@@ -1201,77 +1103,23 @@
     panel.className = "hist-edit";
     var selectedWho = e.who;
     var selectedKind = entryKind(e);
-    var selectedTag = e.tag || "efes_pilsen:50cl";
-    var parts = selectedTag.split(":");
-    var selectedBrand = parts[0] || "efes_pilsen";
-    var selectedSize = parts[1] || "50cl";
-
     var topControlSection = document.createElement("div");
     topControlSection.className = "hist-edit-who";
 
-    if (activeCat === "bira") {
-      var beerWrap = document.createElement("div");
-      beerWrap.className = "beer-opt-wrap";
-      beerWrap.style.opacity = "1";
-      beerWrap.style.transform = "none";
-      beerWrap.style.width = "100%";
-
-      var row1 = document.createElement("div");
-      row1.className = "beer-opt-row";
-      var lbl1 = document.createElement("label");
-      lbl1.textContent = "Marka:";
-      var sel = document.createElement("select");
-      sel.className = "beer-select";
-      BEER_BRANDS.forEach(function (bObj) {
-        var opt = document.createElement("option");
-        opt.value = bObj.id;
-        opt.textContent = "🍺 " + bObj.label;
-        if (bObj.id === selectedBrand) opt.selected = true;
-        sel.appendChild(opt);
+    Object.keys(KINDS).forEach(function (k) {
+      var b = document.createElement("button");
+      b.className = "hist-chip" + (k === selectedKind ? " active" : "");
+      b.textContent = KINDS[k].emoji + " " + KINDS[k].label;
+      b.addEventListener("click", function () {
+        selectedKind = k;
+        topControlSection.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === b); });
       });
-      sel.addEventListener("change", function () { selectedBrand = sel.value; });
-      row1.appendChild(lbl1);
-      row1.appendChild(sel);
-
-      var row2 = document.createElement("div");
-      row2.className = "beer-opt-row";
-      var lbl2 = document.createElement("label");
-      lbl2.textContent = "Boyut:";
-      var szSeg = document.createElement("div");
-      szSeg.className = "seg";
-      BEER_SIZES.forEach(function (sObj) {
-        var szBtn = document.createElement("button");
-        szBtn.className = "seg-btn" + (sObj.id === selectedSize ? " active" : "");
-        szBtn.type = "button";
-        szBtn.textContent = sObj.id;
-        szBtn.addEventListener("click", function () {
-          selectedSize = sObj.id;
-          szSeg.querySelectorAll(".seg-btn").forEach(function (x) { x.classList.toggle("active", x === szBtn); });
-        });
-        szSeg.appendChild(szBtn);
-      });
-      row2.appendChild(lbl2);
-      row2.appendChild(szSeg);
-
-      beerWrap.appendChild(row1);
-      beerWrap.appendChild(row2);
-      topControlSection.appendChild(beerWrap);
-    } else if (activeCat === "sigo") {
-      Object.keys(KINDS).forEach(function (k) {
-        var b = document.createElement("button");
-        b.className = "hist-chip" + (k === selectedKind ? " active" : "");
-        b.textContent = KINDS[k].emoji + " " + KINDS[k].label;
-        b.addEventListener("click", function () {
-          selectedKind = k;
-          topControlSection.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === b); });
-        });
-        topControlSection.appendChild(b);
-      });
-    }
+      topControlSection.appendChild(b);
+    });
 
     var chips = document.createElement("div");
     chips.className = "hist-edit-who";
-    var whoList = activeCat === "sigo" ? Object.keys(WHO) : ["utku", "gozde"];
+    var whoList = Object.keys(WHO);
     whoList.forEach(function (w) {
       var b = document.createElement("button");
       b.className = "hist-chip" + (w === selectedWho ? " active" : "");
@@ -1301,8 +1149,7 @@
       var ts = new Date(input.value).getTime();
       if (!input.value || isNaN(ts)) { alert("Geçerli bir tarih/saat seç."); return; }
       if (ts > Date.now()) { alert("Gelecekteki bir saat seçilemez."); return; }
-      var finalTag = activeCat === "bira" ? (selectedBrand + ":" + selectedSize) : e.tag;
-      updateEntry(e.id, selectedWho, ts, selectedKind, finalTag);
+      updateEntry(e.id, selectedWho, ts, selectedKind, e.tag);
     });
     var cancel = document.createElement("button");
     cancel.className = "ghost-btn small";
@@ -3511,61 +3358,15 @@
       b.addEventListener(TAP_EVT, function (ev) {
         ev.stopPropagation();
         var k = b.getAttribute("data-kind");
-        if (k && (KINDS[k] || DRINK_TYPES[k])) {
+        if (k && KINDS[k]) {
           selectedAddKind = k;
           var seg = b.parentElement;
           if (seg) {
             seg.querySelectorAll(".add-kind-btn").forEach(function (btn) { btn.classList.toggle("active", btn === b); });
           }
-          if (activeCat === "icki") {
-            var beerWrap = el("beerOptWrap");
-            var glassWrap = el("glassOptWrap");
-            if (beerWrap) beerWrap.classList.toggle("hidden", k !== "bira");
-            if (glassWrap) glassWrap.classList.toggle("hidden", k === "bira");
-          }
         }
       });
     });
-
-    var selectedBeerBrand = "efes_pilsen";
-    var selectedBeerSize = "50cl";
-
-    var beerSizeSeg = el("beerSizeSeg");
-    if (beerSizeSeg) {
-      beerSizeSeg.querySelectorAll(".seg-btn").forEach(function (b) {
-        b.addEventListener(TAP_EVT, function (ev) {
-          ev.stopPropagation();
-          var sz = b.getAttribute("data-size");
-          if (sz) {
-            selectedBeerSize = sz;
-            beerSizeSeg.querySelectorAll(".seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
-          }
-        });
-      });
-    }
-
-    var beerBrandSel = el("beerBrandSel");
-    if (beerBrandSel) {
-      beerBrandSel.addEventListener("change", function (ev) {
-        selectedBeerBrand = (/** @type {HTMLSelectElement} */ (beerBrandSel)).value;
-      });
-    }
-
-    var selectedGlassCount = "1";
-    var glassSizeSeg = el("glassSizeSeg");
-    if (glassSizeSeg) {
-      glassSizeSeg.querySelectorAll(".seg-btn").forEach(function (b) {
-        b.addEventListener(TAP_EVT, function (ev) {
-          ev.stopPropagation();
-          var sz = b.getAttribute("data-glass");
-          if (sz) {
-            selectedGlassCount = sz;
-            glassSizeSeg.querySelectorAll(".seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
-          }
-        });
-      });
-    }
-
 
     dial.querySelectorAll(".add-opt").forEach(function (bEl) {
       var b = /** @type {HTMLElement} */ (bEl);
@@ -3576,11 +3377,7 @@
         b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
         var r = b.getBoundingClientRect();
         close();
-        var extraTag = undefined;
-        if (activeCat === "icki") {
-          extraTag = selectedAddKind === "bira" ? (selectedBeerBrand + ":" + selectedBeerSize) : selectedGlassCount;
-        }
-        addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind, extraTag);
+        addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind);
       });
     });
 
@@ -3654,12 +3451,11 @@
     var modal = el("onboarding"); if (!modal) return;
     if (!localStorage.getItem(ONBOARD_KEY) && settings.owner) localStorage.setItem(ONBOARD_KEY, "1");
     if (localStorage.getItem(ONBOARD_KEY)) return;
-    modal.classList.remove("hidden"); var pickedCat = activeCat;
+    modal.classList.remove("hidden");
     function show(n) { modal.querySelectorAll(".onboarding-step").forEach(function (x) { x.classList.toggle("hidden", Number(x.getAttribute("data-step")) !== n); }); }
     modal.querySelectorAll("[data-onboard-owner]").forEach(function (b) { b.addEventListener("click", function () { var owner = b.getAttribute("data-onboard-owner"); if (owner === "utku" || owner === "gozde") settings.owner = owner; saveSettings(); show(2); }); });
-    modal.querySelectorAll("[data-onboard-cat]").forEach(function (b) { b.addEventListener("click", function () { pickedCat = b.getAttribute("data-onboard-cat"); show(3); }); });
     el("onboardingFinish").addEventListener("click", function () {
-      settings.locationEnabled = !!/** @type {HTMLInputElement} */ (el("onboardLocation")).checked; saveSettings(); localStorage.setItem(ONBOARD_KEY, "1"); modal.classList.add("hidden"); switchCat(pickedCat); updateQuickActions(); if (settings.locationEnabled) fetchWeather();
+      settings.locationEnabled = !!/** @type {HTMLInputElement} */ (el("onboardLocation")).checked; saveSettings(); localStorage.setItem(ONBOARD_KEY, "1"); modal.classList.add("hidden"); switchCat("sigo"); updateQuickActions(); if (settings.locationEnabled) fetchWeather();
     });
   }
 
@@ -3706,11 +3502,11 @@
     renderCustomBadgeSettings();
 
     if (el("quickEditWhoBtn")) el("quickEditWhoBtn").addEventListener("click", function () {
-      if (!lastUndo) return; var order = activeCat === "sigo" ? ["utku", "gozde", "both", "hepberaber"] : ["utku", "gozde"];
+      if (!lastUndo) return; var order = ["utku", "gozde", "both", "hepberaber"];
       var next = order[(order.indexOf(lastUndo.who) + 1) % order.length]; patchEntry(lastUndo.id, { who: next }); lastUndo.who = next; render();
     });
     if (el("quickEditKindBtn")) el("quickEditKindBtn").addEventListener("click", function () {
-      if (!lastUndo) return; var order = activeCat === "sigo" ? Object.keys(KINDS) : (activeCat === "icki" ? Object.keys(DRINK_TYPES) : ["sigara"]);
+      if (!lastUndo) return; var order = Object.keys(KINDS);
       var next = order[(order.indexOf(entryKind(lastUndo)) + 1) % order.length]; patchEntry(lastUndo.id, { kind: next }); lastUndo.kind = next; render();
     });
 
@@ -3734,11 +3530,6 @@
       sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + location.pathname } }).then(function (res) { el("authStatus").textContent = res.error ? res.error.message : "Giriş bağlantısı e-postana gönderildi."; });
     });
 
-    var swipeStart = 0, home = el("view-home");
-    if (home) {
-      home.addEventListener("touchstart", function (ev) { swipeStart = ev.touches[0].clientX; }, { passive: true });
-      home.addEventListener("touchend", function (ev) { var dx = ev.changedTouches[0].clientX - swipeStart; if (Math.abs(dx) < 70) return; var idx = CAT_ORDER.indexOf(activeCat); switchCat(CAT_ORDER[(idx + (dx < 0 ? 1 : CAT_ORDER.length - 1)) % CAT_ORDER.length]); }, { passive: true });
-    }
   }
 
   function bind() {
@@ -3901,15 +3692,12 @@
     bindAddDial();
     updateQuickActions();
     function quickKind() {
-      if (activeCat === "sigo") return KINDS[selectedAddKind] ? selectedAddKind : "sigo";
-      if (activeCat === "icki") return DRINK_TYPES[selectedAddKind] ? selectedAddKind : "bira";
-      return "sigara";
+      return KINDS[selectedAddKind] ? selectedAddKind : "sigo";
     }
     function addQuick(who, source) {
       var rect = source.getBoundingClientRect();
       var kind = quickKind();
-      var tag = activeCat === "icki" ? (kind === "bira" ? "efes_pilsen:50cl" : "1") : undefined;
-      addEntry(who, rect.left + rect.width / 2, rect.top + rect.height / 2, kind, tag);
+      addEntry(who, rect.left + rect.width / 2, rect.top + rect.height / 2, kind);
     }
     var quickMe = el("quickMeBtn");
     if (quickMe) quickMe.addEventListener(TAP_EVT, function () {
@@ -3918,9 +3706,7 @@
     });
     var quickTogether = el("quickTogetherBtn");
     if (quickTogether) quickTogether.addEventListener(TAP_EVT, function () {
-      if (activeCat === "sigo") { addQuick("both", quickTogether); return; }
-      if (!settings.owner) { openAddDial(); return; }
-      addQuick(settings.owner === "utku" ? "gozde" : "utku", quickTogether);
+      addQuick("both", quickTogether);
     });
     var quickMore = el("quickMoreBtn");
     if (quickMore) quickMore.addEventListener(TAP_EVT, openAddDial);
@@ -4391,14 +4177,14 @@
     var hour = new Date().getHours();
     var msg = "Bugün nasıl hissediyoruz?";
     if (currentTemp !== null) {
-      if (currentTemp > 28) msg = "Hava " + Math.round(currentTemp) + "°C! Buz gibi bir Bira harika gider 🍺";
+      if (currentTemp > 28) msg = "Hava " + Math.round(currentTemp) + "°C! Serin bir köşe bulup keyfine bakalım 🌿";
       else if (currentTemp < 10) msg = "Dışarısı " + Math.round(currentTemp) + "°C, çok soğuk! Sigo'yu içeride mi sarsak? 🥶";
       else if (currentCode >= 51 && currentCode <= 67) msg = "Yağmur yağıyor 🌧️ Tam cam kenarı Sigo havası!";
-      else if (hour < 12) msg = "Günaydın! Sabahın ilk sigarası yandı mı? 🌅";
+      else if (hour < 12) msg = "Günaydın! Sabahın ilk sigosu yandı mı? 🌅";
       else if (hour > 22) msg = "Gece uzun... Dumanaltı mesaisi devam ediyor 🌙";
       else msg = "Günün keyfini çıkar! Hava mis gibi " + Math.round(currentTemp) + "°C.";
     } else {
-      if (hour < 12) msg = "Günaydın! Sabahın ilk sigarası yandı mı? 🌅";
+      if (hour < 12) msg = "Günaydın! Sabahın ilk sigosu yandı mı? 🌅";
       else if (hour > 22) msg = "Gece uzun... Dumanaltı mesaisi devam ediyor 🌙";
       else msg = "Zıvana düşünüyor... Bugün ne içsek?";
     }

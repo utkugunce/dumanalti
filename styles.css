@@ -54,68 +54,12 @@ body {
   overflow-x: hidden;
 }
 
-/* Sigara teması: Derin Dumanlı Mavi / Gece Mavisi Zemin */
-body[data-cat="sigara"] {
-  --bg: #090f1d;
-  --accent: #3a86ff;
-  background:
-    radial-gradient(80% 50% at 50% 118%, rgba(40, 100, 240, 0.35), transparent 65%),
-    radial-gradient(60% 45% at 88% -8%, rgba(58, 134, 255, 0.22), transparent 60%),
-    #090f1d;
-  background-attachment: fixed;
-}
-body[data-cat="sigara"] .today-hero {
-  background: linear-gradient(160deg, rgba(58, 134, 255, 0.22), rgba(58, 134, 255, 0.05));
-  border-color: rgba(58, 134, 255, 0.35);
-}
-
-/* Bira teması: Sıcak Kehribar / Sıcak Bronz Zemin */
-body[data-cat="bira"] {
-  --bg: #160e07;
-  --accent: #f7a072;
-  background:
-    radial-gradient(80% 50% at 50% 118%, rgba(220, 120, 30, 0.38), transparent 65%),
-    radial-gradient(60% 45% at 88% -8%, rgba(247, 160, 114, 0.22), transparent 60%),
-    #160e07;
-  background-attachment: fixed;
-}
-body[data-cat="bira"] .today-hero {
-  background: linear-gradient(160deg, rgba(247, 160, 114, 0.24), rgba(247, 160, 114, 0.06));
-  border-color: rgba(247, 160, 114, 0.38);
-}
-
 [data-theme="light"] body {
   background:
     radial-gradient(80% 50% at 50% 118%, rgba(16, 120, 96, 0.09), transparent 62%),
     radial-gradient(60% 45% at 88% -8%, rgba(34, 195, 154, 0.06), transparent 60%),
     var(--bg);
   background-attachment: fixed;
-}
-
-[data-theme="light"] body[data-cat="sigara"] {
-  --bg: #edf3ff;
-  --accent: #2563eb;
-  background:
-    radial-gradient(80% 50% at 50% 118%, rgba(37, 99, 235, 0.18), transparent 65%),
-    radial-gradient(60% 45% at 88% -8%, rgba(59, 130, 246, 0.12), transparent 60%),
-    #edf3ff;
-}
-[data-theme="light"] body[data-cat="sigara"] .today-hero {
-  background: linear-gradient(160deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.04));
-  border-color: rgba(37, 99, 235, 0.25);
-}
-
-[data-theme="light"] body[data-cat="bira"] {
-  --bg: #fff8f0;
-  --accent: #ea580c;
-  background:
-    radial-gradient(80% 50% at 50% 118%, rgba(234, 88, 12, 0.18), transparent 65%),
-    radial-gradient(60% 45% at 88% -8%, rgba(249, 115, 22, 0.12), transparent 60%),
-    #fff8f0;
-}
-[data-theme="light"] body[data-cat="bira"] .today-hero {
-  background: linear-gradient(160deg, rgba(234, 88, 12, 0.15), rgba(234, 88, 12, 0.04));
-  border-color: rgba(234, 88, 12, 0.25);
 }
 
 .app {
@@ -140,7 +84,7 @@ body[data-active-tab="portal"] .app {
    Zıvana'nın butonunun üstüne kaydırılabilsin */
 #view-stats, #view-history, #view-settings { padding-bottom: 110px; }
 
-/* Bugün ve Son sigaradan beri kutuları uzun ekranlarda aşağı doğru genişler */
+/* Bugün ve Son sigodan beri kutuları uzun ekranlarda aşağı doğru genişler */
 #view-home .today-card,
 #view-home .since-card { flex-grow: 1; display: flex; flex-direction: column; }
 #view-home .today-card .today-top { flex: 1; }
@@ -290,7 +234,7 @@ body[data-active-tab="portal"] .assistant {
 
 .portal-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -336,32 +280,6 @@ body[data-active-tab="portal"] .assistant {
   border-radius: 8px;
 }
 
-/* Make 3rd card (Bira) span full width and layout horizontally for symmetry */
-.portal-card:nth-child(3) {
-  grid-column: span 2;
-  flex-direction: row;
-  align-items: center;
-}
-.portal-card:nth-child(3) .portal-ico {
-  margin-bottom: 0;
-  margin-right: 16px;
-}
-.portal-text-group {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.portal-card:nth-child(3) .portal-title {
-  font-size: 16px;
-  margin-bottom: 2px;
-}
-.portal-card:nth-child(3) .portal-sub {
-  margin-bottom: 0;
-}
-.portal-card:nth-child(3) .portal-count {
-  margin-top: 0;
-  margin-left: auto;
-}
 .portal-duel {
   background: rgba(255, 215, 0, 0.1);
   border: 1px solid rgba(255, 215, 0, 0.2);
@@ -432,18 +350,10 @@ body[data-active-tab="portal"] {
 }
 
 .sigo-card { background: linear-gradient(160deg, rgba(34, 195, 154, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(34, 195, 154, 0.2); }
-.sigara-card { background: linear-gradient(160deg, rgba(58, 134, 255, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(58, 134, 255, 0.2); }
-.icki-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.15), rgba(20, 24, 22, 0.6)); border-color: rgba(247, 160, 114, 0.2); }
 .sigo-card .portal-title { color: #4fbf7a; }
-.sigara-card .portal-title { color: #60a5fa; }
-.icki-card .portal-title { color: #f7a072; }
 
 [data-theme="light"] .sigo-card { background: linear-gradient(160deg, rgba(34, 195, 154, 0.12), var(--bg-elev)); border-color: rgba(34, 195, 154, 0.25); }
-[data-theme="light"] .sigara-card { background: linear-gradient(160deg, rgba(58, 134, 255, 0.12), var(--bg-elev)); border-color: rgba(58, 134, 255, 0.25); }
-[data-theme="light"] .icki-card { background: linear-gradient(160deg, rgba(247, 160, 114, 0.12), var(--bg-elev)); border-color: rgba(247, 160, 114, 0.25); }
 [data-theme="light"] .sigo-card .portal-title { color: #15803d; }
-[data-theme="light"] .sigara-card .portal-title { color: #1d4ed8; }
-[data-theme="light"] .icki-card .portal-title { color: #c2410c; }
 [data-theme="light"] .duel-text { color: #d49500; }
 .cat-page {
   flex: 0 0 100%;
@@ -1344,50 +1254,6 @@ body[data-active-tab="portal"] {
   text-align: right;
 }
 
-/* Beer options in add-dial */
-.beer-opt-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: rgba(20, 24, 22, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  -webkit-backdrop-filter: blur(14px) saturate(1.6);
-  backdrop-filter: blur(14px) saturate(1.6);
-  padding: 10px 14px;
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  opacity: 0; transform: translateY(14px) scale(0.85);
-  transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-[data-theme="light"] .beer-opt-wrap { background: rgba(255, 255, 255, 0.92); }
-.add-dial.open .beer-opt-wrap { opacity: 1; transform: none; }
-.beer-opt-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.beer-opt-row label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-}
-.beer-select {
-  background: var(--bg-elev-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  cursor: pointer;
-}
-.beer-select option {
-  background: #1a1e24;
-  color: #fff;
-}
-
 /* Footer */
 .footer { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0 8px; }
 
@@ -1972,22 +1838,17 @@ body[data-active-tab="settings"] .assistant { display: none; }
 .home-category-picker .portal-time { font-size: 24px; }
 .home-category-picker .portal-weather { padding: 6px 10px; border-radius: 12px; box-shadow: none; }
 .home-category-picker .portal-grid {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0;
+  display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0;
 }
-.home-category-picker .portal-card,
-.home-category-picker .portal-card:nth-child(3) {
+.home-category-picker .portal-card {
   min-height: 70px; padding: 10px; border-radius: 15px; display: flex;
   grid-column: auto; flex-direction: column; align-items: flex-start; gap: 2px; box-shadow: none;
 }
 .home-category-picker .portal-card.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.home-category-picker .portal-ico,
-.home-category-picker .portal-card:nth-child(3) .portal-ico { font-size: 20px; margin: 0 0 3px; }
-.home-category-picker .portal-title,
-.home-category-picker .portal-card:nth-child(3) .portal-title { font-size: 13px; margin: 0; }
+.home-category-picker .portal-ico { font-size: 20px; margin: 0 0 3px; }
+.home-category-picker .portal-title { font-size: 13px; margin: 0; }
 .home-category-picker .portal-sub { display: none; }
-.home-category-picker .portal-text-group { display: block; }
-.home-category-picker .portal-count,
-.home-category-picker .portal-card:nth-child(3) .portal-count {
+.home-category-picker .portal-count {
   margin: 0; padding: 0; background: transparent; font-size: 10px; color: var(--muted);
 }
 
