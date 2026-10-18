@@ -37,6 +37,7 @@ interface Settings {
   owner: "" | "utku" | "gozde";
   sound: "on" | "off";
   locationEnabled: boolean;
+  manualRecordDays?: number;
 }
 
 /** Bulut yapılandırması (config.js). */

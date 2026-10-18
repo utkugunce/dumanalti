@@ -52,12 +52,34 @@
         <span class="duel-text" id="portalDuelText">Haftalık düello durumu...</span>
       </div>
       <div class="portal-grid">
-        <button class="portal-card sigo-card" data-cat="sigo">
-          <span class="portal-ico">🍃</span>
-          <span class="portal-title">Sigo</span>
-          <span class="portal-sub">Sarma & Filtre</span>
-          <span class="portal-count" id="portalSigoCount">Bugün: 0</span>
-        </button>
+        <div class="portal-hero-card sigo-hero-card" id="sigoHeroCard" data-cat="sigo">
+          <div class="phc-left">
+            <div class="phc-badge-wrap">
+              <span class="phc-ico">🍃</span>
+            </div>
+            <div class="phc-titles">
+              <div class="phc-title-row">
+                <span class="phc-title">Sigo</span>
+                <span class="phc-badge">Aktif</span>
+              </div>
+              <span class="phc-desc">Sarma &amp; Bong</span>
+            </div>
+          </div>
+          <div class="phc-right">
+            <div class="phc-stat-box">
+              <span class="phc-stat-lbl">Bugün</span>
+              <div class="phc-stat-val-row">
+                <strong class="phc-stat-val" id="portalSigoCount">0</strong>
+                <span class="phc-stat-unit">sigo</span>
+              </div>
+            </div>
+            <div class="phc-duo-chips">
+              <span class="phc-chip utku-chip" title="Utku"><img class="avatar avatar-micro" src="icons/avatar-utku.png" alt="" /> <b id="portalUtkuCount">0</b></span>
+              <span class="phc-chip gozde-chip" title="Gözde"><img class="avatar avatar-micro" src="icons/avatar-gozde.png" alt="" /> <b id="portalGozdeCount">0</b></span>
+              <span class="phc-chip both-chip" title="Ortak"><img class="avatar avatar-micro" src="icons/avatar-both.png" alt="" /> <b id="portalBothCount">0</b></span>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div class="portal-last-action" id="portalLastAction">
@@ -68,23 +90,7 @@
 
     <main id="view-home" class="view hidden">
     <section id="backupReminder" class="backup-reminder hidden"><span>Haftalık yedeğin hazır.</span><button id="backupReminderBtn" type="button">Yedekle</button><button id="backupDismissBtn" type="button" aria-label="Bu hafta kapat">×</button></section>
-    <section class="card session-card" id="sessionCard">
-      <div class="session-copy"><span class="eyebrow">Ortak oturum</span><strong id="sessionStatus">Aktif oturum yok</strong><span id="sessionMeta" class="muted">Birlikte geçirilen kayıtları grupla.</span></div>
-      <button id="sessionToggleBtn" class="ghost-btn small" type="button">Oturum başlat</button>
-    </section>
     <section id="weeklySummary" class="card weekly-summary"></section>
-    <section class="home-quick" aria-labelledby="quickAddTitle">
-      <div class="home-quick-copy">
-        <span class="eyebrow">Hızlı kayıt</span>
-        <h2 id="quickAddTitle">Tek dokunuşla ekle</h2>
-      </div>
-      <div class="home-quick-actions">
-        <button id="quickMeBtn" class="quick-action primary" type="button">Ben içtim</button>
-        <button id="quickTogetherBtn" class="quick-action" type="button">Ortak içtik</button>
-        <button id="quickMoreBtn" class="quick-action icon" type="button" aria-label="Diğer kayıt seçenekleri">•••</button>
-      </div>
-      <p id="quickOwnerHint" class="quick-owner-hint"></p>
-    </section>
     <!-- Today summary -->
     <section class="card today-card">
       <div class="card-head">
@@ -93,26 +99,37 @@
       </div>
       <div class="today-top">
         <div class="today-hero">
-          <div class="today-hero-num">
-            <span class="today-num" id="todayTotal">0</span>
+          <div class="today-hero-header">
+            <span class="today-hero-tag">GÜNLÜK TOPLAM</span>
             <span class="trend-chip" id="todayTrend">＝</span>
           </div>
-          <span class="today-hero-sub" id="todayHeroSub">toplam sigo</span>
+          <div class="today-hero-num-row">
+            <span class="today-num" id="todayTotal">0</span>
+            <span class="today-unit">sigo</span>
+          </div>
+          <div class="today-hero-pills">
+            <span class="mini-chip sigo-chip" id="todayKindSigo">🚬 0 sigo</span>
+            <span class="mini-chip bong-chip" id="todayKindBong">🫧 0 bong</span>
+          </div>
+          <div class="today-compare-row" id="todayCompareRow">
+            <span class="comp-icon">⏱️</span>
+            <span class="comp-text" id="todayCompareText">Dün bu saatte 0</span>
+          </div>
         </div>
         <div class="today-duo">
-          <div class="duo-row">
+          <div class="duo-row utku-row">
             <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</span>
             <strong class="duo-num" id="todayUtku">0</strong>
           </div>
-          <div class="duo-row">
+          <div class="duo-row gozde-row">
             <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</span>
             <strong class="duo-num" id="todayGozde">0</strong>
           </div>
-          <div class="duo-row">
+          <div class="duo-row both-row">
             <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</span>
             <strong class="duo-num" id="todayBoth">0</strong>
           </div>
-          <div class="duo-row">
+          <div class="duo-row hepberaber-row">
             <span class="duo-who"><img class="avatar avatar-tiny" src="icons/avatar-hepberaber.svg" alt="" /> Hep beraber</span>
             <strong class="duo-num" id="todayHepberaber">0</strong>
           </div>
@@ -123,7 +140,7 @@
         <div class="flow-labels"><span>04</span><span>10</span><span>16</span><span>22</span><span>04</span></div>
       </div>
       <div class="last-row">
-        <span id="lastRowLabel">Son sigo:</span>
+        <span id="lastRowLabel" class="last-row-tag">⏱️ Son sigo:</span>
         <strong id="lastSmoke">—</strong>
       </div>
     </section>
@@ -451,6 +468,10 @@
         </div>
       </div>
       <label class="set-row"><span>Yeni kayıtlara konum ekle</span><input id="locationSetting" type="checkbox" /></label>
+      <div class="set-row">
+        <label for="manualRecordInput">Geçmiş sigosuz rekoru (gün)</label>
+        <input id="manualRecordInput" class="set-input" type="number" min="0" max="365" value="9" style="width:70px;text-align:right" />
+      </div>
     </section>
 
     <h3 class="group-title settings-sync-title">☁️ Senkronizasyon</h3>

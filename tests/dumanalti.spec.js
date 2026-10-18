@@ -342,12 +342,10 @@ test.describe('Dumanaltı App Tests', () => {
       await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'light');
     });
 
-    test('device owner enables one-tap quick logging', async ({ page }) => {
-      await page.click('nav.tabbar button[data-tab="settings"]');
-      await page.dispatchEvent('#ownerSeg button[data-owner="utku"]', 'pointerdown');
+    test('add dial enables logging through plus button', async ({ page }) => {
       await page.click('nav.tabbar button[data-tab="home"]');
-      await expect(page.locator('#quickOwnerHint')).toContainText('Utku');
-      await page.dispatchEvent('#quickMeBtn', 'pointerdown');
+      await page.click('#addFab');
+      await page.click('.add-opt[data-who="utku"]');
       await expect(page.locator('#todayUtku')).toHaveText('1');
       await expect(page.locator('#todayTotal')).toHaveText('1');
     });

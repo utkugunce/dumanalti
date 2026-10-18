@@ -171,16 +171,12 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     expect(state).toEqual({ owner: 'utku', done: '1' });
   });
 
-  test('Ortak oturum yeni kaydı gruplar ve hızlı düzeltmeyi açar', async ({ page }) => {
-    await page.click('nav.tabbar button[data-tab="settings"]');
-    await page.dispatchEvent('#ownerSeg button[data-owner="utku"]', 'pointerdown');
+  test('AddFab yeni kaydı ekler ve hızlı düzeltmeyi açar', async ({ page }) => {
     await page.click('nav.tabbar button[data-tab="home"]');
-    await page.click('#sessionToggleBtn');
-    await page.click('#quickMeBtn');
-    await expect(page.locator('#sessionMeta')).toContainText('1 kayıt');
+    await page.click('#addFab');
+    await page.click('.add-opt[data-who="utku"]');
     await expect(page.locator('#quickEditBar')).toBeVisible();
-    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('dumanalti.entries.v1') || '[]').slice(-1)[0]);
-    expect(stored.sessionId).toBeTruthy();
+    await expect(page.locator('#todayUtku')).toHaveText('1');
   });
 
   test('Dönem karşılaştırması 30 gün ve özel aralık modlarını açar', async ({ page }) => {

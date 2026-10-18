@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.5.1";
-  var APP_BUILD = 145;
+  var APP_VERSION = "7.6.0";
+  var APP_BUILD = 146;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -73,7 +73,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", sound: "off", locationEnabled: false };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", sound: "off", locationEnabled: false, manualRecordDays: 9 };
 
   function updateQuickActions() {
     var me = el("quickMeBtn");
@@ -303,9 +303,9 @@
         settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
         settings.sound = s.sound === "on" ? "on" : "off";
         settings.locationEnabled = s.locationEnabled === true;
+        settings.manualRecordDays = typeof s.manualRecordDays === "number" ? s.manualRecordDays : 9;
       }
     } catch (e) {}
-    try { activeSession = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e2) { activeSession = null; }
     try {
       trash = JSON.parse(localStorage.getItem(TRASH_KEY) || "[]");
       if (!Array.isArray(trash)) trash = [];
@@ -463,22 +463,7 @@
     return run;
   }
 
-  function renderSession() {
-    var title = el("sessionStatus"), meta = el("sessionMeta"), btn = el("sessionToggleBtn");
-    if (!title || !meta || !btn) return;
-    if (activeSession) {
-      title.textContent = activeSession.label || "Aktif oturum";
-      var count = entries.filter(function (e) { return e.sessionId === activeSession.id; }).length;
-      meta.textContent = "Başlangıç " + formatTime(activeSession.startedAt) + " · " + count + " kayıt";
-      btn.textContent = "Oturumu bitir";
-      btn.classList.add("active");
-    } else {
-      title.textContent = "Birlikte oturum başlat";
-      meta.textContent = "Bu sırada eklenen kayıtları tek grupta gör.";
-      btn.textContent = "Başlat";
-      btn.classList.remove("active");
-    }
-  }
+  function renderSession() {}
 
   function renderWeeklySummary() {
     var box = el("weeklySummary"); if (!box) return;
@@ -569,49 +554,88 @@
     var tEnts = todayEntries();
     var t = countWho(tEnts);
     var tk = countKinds(tEnts);
-    el("todayUtku").textContent = String(t.utku + t.both + t.hepberaber);
-    el("todayGozde").textContent = String(t.gozde + t.both + t.hepberaber);
-    el("todayBoth").textContent = String(t.both);
-    el("todayHepberaber").textContent = String(t.hepberaber);
-    el("todayTotal").textContent = String(t.total);
+    var uTotal = t.utku + t.both + t.hepberaber;
+    var gTotal = t.gozde + t.both + t.hepberaber;
+    var bothTotal = t.both;
+    var hepTotal = t.hepberaber;
+
+    var elUtku = el("todayUtku");
+    if (elUtku) {
+      elUtku.textContent = String(uTotal);
+      var pU = elUtku.closest(".duo-row");
+      if (pU) pU.classList.toggle("zero", uTotal === 0);
+    }
+    var elGozde = el("todayGozde");
+    if (elGozde) {
+      elGozde.textContent = String(gTotal);
+      var pG = elGozde.closest(".duo-row");
+      if (pG) pG.classList.toggle("zero", gTotal === 0);
+    }
+    var elBoth = el("todayBoth");
+    if (elBoth) {
+      elBoth.textContent = String(bothTotal);
+      var pB = elBoth.closest(".duo-row");
+      if (pB) pB.classList.toggle("zero", bothTotal === 0);
+    }
+    var elHep = el("todayHepberaber");
+    if (elHep) {
+      elHep.textContent = String(hepTotal);
+      var pH = elHep.closest(".duo-row");
+      if (pH) pH.classList.toggle("zero", hepTotal === 0);
+    }
+    if (el("todayTotal")) el("todayTotal").textContent = String(t.total);
 
     // Tarih çipi mantıksal günü gösterir; 04:00 öncesi 🌙 ile "gece devam ediyor"
     var now = new Date();
     var dayRef = logicalDate(now);
-    el("todayDate").textContent =
-      ("0" + dayRef.getDate()).slice(-2) + "." + ("0" + (dayRef.getMonth() + 1)).slice(-2) + "." + dayRef.getFullYear() +
-      (now.getHours() < DAY_START_HOUR ? " 🌙" : "");
+    if (el("todayDate")) {
+      el("todayDate").textContent =
+        ("0" + dayRef.getDate()).slice(-2) + "." + ("0" + (dayRef.getMonth() + 1)).slice(-2) + "." + dayRef.getFullYear() +
+        (now.getHours() < DAY_START_HOUR ? " 🌙" : "");
+    }
 
     // Dün bu saate kadar içilenle kıyasla: azsa yeşil, fazlaysa kırmızı rozet
     var yStart = startOfDay(now).getTime() - 86400000;
     var yCut = now.getTime() - 86400000;
     var ySame = entries.filter(function (e) { return e.ts >= yStart && e.ts <= yCut; }).length;
     var trend = el("todayTrend");
-    var diff = t.total - ySame;
-    trend.classList.remove("up", "down");
-    if (diff > 0) { trend.classList.add("up"); trend.textContent = "▲ " + diff; }
-    else if (diff < 0) { trend.classList.add("down"); trend.textContent = "▼ " + (-diff); }
-    else { trend.textContent = "＝"; }
+    if (trend) {
+      var diff = t.total - ySame;
+      trend.classList.remove("up", "down");
+      if (diff > 0) { trend.classList.add("up"); trend.textContent = "▲ " + diff; }
+      else if (diff < 0) { trend.classList.add("down"); trend.textContent = "▼ " + (-diff); }
+      else { trend.textContent = "＝"; }
+    }
+
+    var elSigo = el("todayKindSigo");
+    if (elSigo) elSigo.textContent = "🚬 " + tk.sigo + " sigo";
+    var elBong = el("todayKindBong");
+    if (elBong) elBong.textContent = "🫧 " + tk.bong + " bong";
+    var elComp = el("todayCompareText");
+    if (elComp) elComp.textContent = "Dün bu saatte " + ySame;
 
     var catInfo = CATS.sigo;
-    var kindText = "(" + tk.sigo + " sigo · " + tk.bong + " bong) · ";
-    el("todayHeroSub").textContent = "toplam " + catInfo.unit + " " + kindText + "· dün bu saatte " + ySame;
+    var oldHeroSub = el("todayHeroSub");
+    if (oldHeroSub) {
+      oldHeroSub.textContent = "toplam " + catInfo.unit + " (" + tk.sigo + " sigo · " + tk.bong + " bong) · dün bu saatte " + ySame;
+    }
 
     renderTodayFlow();
 
     var lastLbl = el("lastRowLabel");
-    if (lastLbl) lastLbl.textContent = "Son " + catInfo.unit + ":";
+    if (lastLbl) lastLbl.textContent = "⏱️ Son " + catInfo.unit + ":";
 
     var lastSmoke = el("lastSmoke");
-    lastSmoke.innerHTML = "";
-    if (entries.length) {
-      var last = entries[entries.length - 1];
-      lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
-      var extraText = "";
-      extraText = " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")";
-      lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + extraText + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
-    } else {
-      lastSmoke.textContent = "Henüz kayıt yok";
+    if (lastSmoke) {
+      lastSmoke.innerHTML = "";
+      if (entries.length) {
+        var last = entries[entries.length - 1];
+        lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
+        var extraText = " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")";
+        lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + extraText + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
+      } else {
+        lastSmoke.textContent = "Henüz kayıt yok";
+      }
     }
   }
 
@@ -621,11 +645,19 @@
     CAT_ORDER.forEach(function (cat) {
       if (!catStore[cat]) return;
       allEntries = allEntries.concat(catStore[cat].entries.map(function(e) { e._cat = cat; return e; }));
+      var todayEnts = catStore[cat].entries.filter(function (e) { return isSameDay(e.ts, now); });
+      var todayCount = todayEnts.length;
       var elCount = el("portal" + cat.charAt(0).toUpperCase() + cat.slice(1) + "Count");
       if (elCount) {
-        var todayCount = catStore[cat].entries.filter(function (e) { return isSameDay(e.ts, now); }).length;
-        elCount.textContent = "Bugün: " + todayCount;
+        elCount.textContent = String(todayCount);
       }
+      var cWho = countWho(todayEnts);
+      var elU = el("portalUtkuCount");
+      if (elU) elU.textContent = String(cWho.utku + cWho.both + cWho.hepberaber);
+      var elG = el("portalGozdeCount");
+      if (elG) elG.textContent = String(cWho.gozde + cWho.both + cWho.hepberaber);
+      var elB = el("portalBothCount");
+      if (elB) elB.textContent = String(cWho.both);
     });
 
     var pDuel = el("portalDuel");
@@ -1067,8 +1099,7 @@
 
     var time = document.createElement("span");
     time.className = "h-time";
-    var tagStr = "";
-    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (e.sessionId ? " · 🫶 oturum" : "") + (pending ? " · ⏳ bekliyor" : "");
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
     main.appendChild(who);
     main.appendChild(time);
 
@@ -1281,7 +1312,8 @@
       var g = sub[i].ts - sub[i - 1].ts;
       if (g > maxGap) maxGap = g;
     }
-    return { since: since, record: Math.max(maxGap, since) };
+    var manualMs = (settings.manualRecordDays || 0) * 86400000;
+    return { since: since, record: Math.max(maxGap, since, manualMs) };
   }
 
   function renderSince() {
@@ -2404,7 +2436,6 @@
       if (!confirm("Aynı kayıt son 30 saniye içinde eklendi. Yine de eklensin mi?")) return;
     }
     var entry = { id: uuid(), who: who, kind: k, ts: Date.now() };
-    if (activeSession) entry.sessionId = activeSession.id;
     if (tag) entry.tag = tag;
     if (settings.locationEnabled && lastKnownLocation) {
       entry.lat = lastKnownLocation.lat;
@@ -3002,6 +3033,22 @@
           Object.keys(op.fields).forEach(function (k) { map[op.id][k] = op.fields[k]; });
         }
       });
+      // Yerel kurtarma: Eğer yerelde uzakta henüz bulunmayan geçerli kayıtlar varsa (yeni veritabanına geçiş),
+      // uzaktaki veriyi ezmeyelim; yereldeki eski kayıtları outbox'a ekleyip yeni veritabanına aktaralım.
+      var hadLocalRecovery = false;
+      if (catStore[cat].entries && catStore[cat].entries.length > res.data.length) {
+        catStore[cat].entries.forEach(function (localE) {
+          if (localE && localE.id && !map[localE.id] && !localE.deletedAt) {
+            map[localE.id] = localE;
+            catOutbox.push({ type: "insert", row: localE });
+            hadLocalRecovery = true;
+          }
+        });
+        if (hadLocalRecovery) {
+          saveCatOutbox(cat);
+          flushOutbox(cat);
+        }
+      }
       catStore[cat].entries = Object.keys(map).map(function (k) { return map[k]; });
       catStore[cat].entries.sort(function (a, b) { return a.ts - b.ts; });
       saveCatCache(cat);
@@ -3679,6 +3726,17 @@
     bindSeg("ownerSeg", "data-owner", settings.owner, function (v) {
       settings.owner = v; saveSettings(); updateQuickActions();
     });
+
+    var manRec = /** @type {HTMLInputElement|null} */ (el("manualRecordInput"));
+    if (manRec) {
+      manRec.value = String(settings.manualRecordDays !== undefined ? settings.manualRecordDays : 9);
+      manRec.addEventListener("change", function () {
+        var val = Math.max(0, parseInt(manRec.value, 10) || 0);
+        settings.manualRecordDays = val;
+        saveSettings();
+        renderSince();
+      });
+    }
 
     if (el("syncNowBtn")) el("syncNowBtn").addEventListener(TAP_EVT, syncNow);
     if (el("exportCsvBtn")) el("exportCsvBtn").addEventListener("click", exportCsv);
