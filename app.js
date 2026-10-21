@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.7.1";
-  var APP_BUILD = 148;
+  var APP_VERSION = "7.7.2";
+  var APP_BUILD = 149;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -76,7 +76,7 @@
   }
 
   /** @type {Settings} */
-  var settings = { dailyLimit: 0, confetti: "full", owner: "", sound: "off", locationEnabled: false, manualRecordDays: 9 };
+  var settings = { dailyLimit: 0, confetti: "full", owner: "", sound: "off", locationEnabled: false };
 
   function updateQuickActions() {
     var me = el("quickMeBtn");
@@ -312,7 +312,7 @@
         settings.owner = s.owner === "utku" || s.owner === "gozde" ? s.owner : "";
         settings.sound = s.sound === "on" ? "on" : "off";
         settings.locationEnabled = s.locationEnabled === true;
-        settings.manualRecordDays = typeof s.manualRecordDays === "number" ? s.manualRecordDays : 9;
+        
       }
     } catch (e) {}
     try {
@@ -1316,7 +1316,7 @@
   function sinceData(who) {
     // Ortak veya hep beraber içilen sigo, Utku ve Gözde'nin de sayacını sıfırlar.
     var sub = entries.filter(function (e) {
-      return e.who === who || ((who === "utku" || who === "gozde") && isShared(e.who));
+      return (e.ts >= EPOCH_TS) && (e.who === who || ((who === "utku" || who === "gozde") && isShared(e.who)));
     });
     if (!sub.length) return null;
     var since = Date.now() - sub[sub.length - 1].ts;
@@ -1325,8 +1325,7 @@
       var g = sub[i].ts - sub[i - 1].ts;
       if (g > maxGap) maxGap = g;
     }
-    var manualMs = (settings.manualRecordDays || 0) * 86400000;
-    return { since: since, record: Math.max(maxGap, since, manualMs) };
+    return { since: since, record: Math.max(maxGap, since) };
   }
 
   function renderSince() {
@@ -3740,16 +3739,7 @@
       settings.owner = v; saveSettings(); updateQuickActions();
     });
 
-    var manRec = /** @type {HTMLInputElement|null} */ (el("manualRecordInput"));
-    if (manRec) {
-      manRec.value = String(settings.manualRecordDays !== undefined ? settings.manualRecordDays : 9);
-      manRec.addEventListener("change", function () {
-        var val = Math.max(0, parseInt(manRec.value, 10) || 0);
-        settings.manualRecordDays = val;
-        saveSettings();
-        renderSince();
-      });
-    }
+
 
     if (el("syncNowBtn")) el("syncNowBtn").addEventListener(TAP_EVT, syncNow);
     if (el("exportCsvBtn")) el("exportCsvBtn").addEventListener("click", exportCsv);
