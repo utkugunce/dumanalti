@@ -2240,3 +2240,279 @@ body:not([data-active-tab="home"]) .add-dial { display: none; }
   .pace-ring-wrap { width: 24px; height: 24px; }
   .pace-badge { font-size: 9.5px; padding: 1px 5px; }
 }
+
+
+/* ========================================================
+   DUMANALTI v8.1.0 — 6 PAKETLİ TAM UI/UX REFORMU (P1-P6)
+   ======================================================== */
+
+/* P1: Bugün Ekranı — Mükerrer Sigo AKTİF kartını gizle, üst saati kompaktlaştır */
+.home-category-picker .portal-grid {
+  display: none !important;
+}
+.home-category-picker .portal-header {
+  margin: 0;
+  padding: 2px 4px;
+}
+.home-category-picker .portal-time {
+  font-size: 20px;
+}
+.home-category-picker .portal-date {
+  font-size: 11px;
+}
+
+/* P1: Son sigo satırı ve Hero karşılaştırma satırı tek satır kilidi */
+.last-row {
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.last-row-tag {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.last-row strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.today-compare-row {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+#todayCompareText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10.5px;
+}
+
+/* P1: Son sigodan beri — Su Seviyesi Mola İlerleme Barı & Liquid Glass 2.0 */
+.card {
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.since-row {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.since-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--pace-pct, 0%);
+  background: linear-gradient(90deg, rgba(34, 195, 154, 0.14), rgba(34, 195, 154, 0.02));
+  pointer-events: none;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+}
+.since-row[data-pace-tone="charging"]::before {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.02));
+}
+.since-row[data-pace-tone="calm"]::before {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), transparent);
+}
+.since-who, .since-vals {
+  position: relative;
+  z-index: 1;
+}
+
+/* P2: Geçmiş Ekranı — Kartlar Arası Zaman Köprüsü (Timeline Connector) */
+.hist-connector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 2px 32px;
+  margin: -2px 0;
+}
+.hc-line {
+  width: 2px;
+  height: 18px;
+  border-left: 2px dashed rgba(34, 195, 154, 0.5);
+  flex-shrink: 0;
+}
+.hc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(34, 195, 154, 0.1);
+  border: 1px solid rgba(34, 195, 154, 0.22);
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.hc-pill b {
+  font-weight: 800;
+}
+.hc-range {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+/* P2: Geçmiş Arama + Tarih Butonu ve Tek Satır Kaydırılabilir Filtreler */
+.history-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.history-search-row .history-search {
+  flex: 1;
+  margin-bottom: 0;
+}
+.hist-date-btn {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.hist-date-btn.active {
+  background: rgba(34, 195, 154, 0.18);
+  color: var(--accent);
+  border-color: rgba(34, 195, 154, 0.4);
+}
+.hist-filters, .hist-kind-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  gap: 6px;
+}
+.hist-filters::-webkit-scrollbar, .hist-kind-filters::-webkit-scrollbar {
+  display: none;
+}
+.hist-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* P3: Atomik Kişi Kapsülleri (.bd-pills) & Seçili Dönem Kartı */
+.bd-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.bd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+.bd-pill.utku { background: rgba(100, 207, 160, 0.15); color: #64cfa0; }
+.bd-pill.gozde { background: rgba(204, 160, 230, 0.15); color: #cca0e6; }
+.bd-pill.both { background: rgba(82, 190, 222, 0.15); color: #52bede; }
+.bd-pill.hep { background: rgba(238, 184, 104, 0.15); color: #eeb868; }
+[data-theme="light"] .bd-pill.utku { color: #15803d; }
+[data-theme="light"] .bd-pill.gozde { color: #7e22ce; }
+[data-theme="light"] .bd-pill.both { color: #0369a1; }
+[data-theme="light"] .bd-pill.hep { color: #b45309; }
+
+.period-compare {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.period-delta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pd-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+.period-delta.good .pd-badge {
+  background: rgba(34, 195, 154, 0.16);
+  color: #22c39a;
+}
+
+/* P4: Karanlık Harita Karoları (API Key gerektirmeyen OSM Dark Filter) */
+html:not([data-theme="light"]) .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(88%);
+}
+html:not([data-theme="light"]) .leaflet-container {
+  background: #12151c;
+}
+
+/* P5: Ayarlar Formları, Checkbox Hizası ve Tam Genişlik Inputlar */
+.set-row input[type="checkbox"] {
+  width: 22px !important;
+  height: 22px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.set-row.set-row-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.set-row input.wide,
+.set-row.set-row-stack input {
+  width: 100% !important;
+  text-align: left !important;
+}
+.set-row.set-row-stack .ghost-btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+/* P6: Duotone Vektör SVG Tabbar & Sağ Alt Dengeli FAB */
+.tab-svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s;
+}
+.tab-svg .svg-fill {
+  fill: currentColor;
+  fill-opacity: 0;
+  transition: fill-opacity 0.25s ease;
+}
+.tab.active {
+  color: var(--accent);
+}
+.tab.active .tab-svg .svg-fill {
+  fill-opacity: 0.22;
+}
+
+.add-dial {
+  left: auto !important;
+  right: 16px !important;
+  align-items: flex-end !important;
+  bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+}
+body[data-active-tab="history"] .add-dial,
+body[data-active-tab="stats"] .add-dial {
+  display: flex !important;
+}

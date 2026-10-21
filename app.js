@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "8.0.2";
-  var APP_BUILD = 155;
+  var APP_VERSION = "8.1.0";
+  var APP_BUILD = 156;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -557,8 +557,22 @@
     var r = periodRange();
     var current = entries.filter(function (e) { return e.ts >= r.start && e.ts <= r.end; });
     var previous = entries.filter(function (e) { return e.ts >= r.start - r.span && e.ts < r.start; });
-    var c = countWho(current), p = countWho(previous), diff = current.length - previous.length;
-    card.innerHTML = '<div><span class="eyebrow">Seçili dönem</span><strong>' + current.length + '</strong><small>' + c.utku + ' Utku · ' + c.gozde + ' Gözde · ' + (c.both + c.hepberaber) + ' ortak</small></div><div class="period-delta ' + (diff <= 0 ? 'good' : 'warn') + '">' + (diff === 0 ? 'Önceki dönemle aynı' : 'Önceki dönemden ' + Math.abs(diff) + (diff > 0 ? ' fazla' : ' az')) + '<small>Önceki: ' + previous.length + '</small></div>';
+    var c = countWho(current), diff = current.length - previous.length;
+    var deltaTxt = diff === 0 ? "Önceki dönemle aynı" : ("Önceki dönemden " + Math.abs(diff) + (diff > 0 ? " fazla" : " az"));
+    card.innerHTML =
+      '<div class="pc-left">' +
+        '<span class="eyebrow">Seçili dönem</span>' +
+        '<strong>' + current.length + '</strong>' +
+        '<div class="bd-pills">' +
+          '<span class="bd-pill utku">🧔 ' + (c.utku + c.both + c.hepberaber) + '</span>' +
+          '<span class="bd-pill gozde">👩 ' + (c.gozde + c.both + c.hepberaber) + '</span>' +
+          '<span class="bd-pill both">👫 ' + (c.both + c.hepberaber) + ' ortak</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="period-delta ' + (diff <= 0 ? 'good' : 'warn') + '">' +
+        '<span class="pd-badge">' + deltaTxt + '</span>' +
+        '<small>Önceki dönem: ' + previous.length + '</small>' +
+      '</div>';
   }
 
   function renderTrash() {
@@ -718,7 +732,7 @@
     if (elComp) {
       var tGaps = calcIntraDayGaps(tEnts);
       var bestTodayGap = tGaps.length ? Math.max.apply(null, tGaps) : 0;
-      elComp.textContent = "Dün bu saatte " + ySame + (bestTodayGap > 0 ? (" · 🧘 En uzun: " + (fmtGap(bestTodayGap) || "")) : "");
+      elComp.textContent = "Dün bu saatte " + ySame + (bestTodayGap > 0 ? (" · 🧘 " + (fmtGap(bestTodayGap) || "")) : "");
     }
 
     var catInfo = CATS.sigo;
@@ -738,8 +752,8 @@
       if (entries.length) {
         var last = entries[entries.length - 1];
         lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
-        var extraText = " (" + (KINDS[entryKind(last)] || KINDS.sigo).emoji + " " + (KINDS[entryKind(last)] || KINDS.sigo).label + ")";
-        lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + extraText + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
+        var kEmoji = (KINDS[entryKind(last)] || KINDS.sigo).emoji;
+        lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " " + kEmoji + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
       } else {
         lastSmoke.textContent = "Henüz kayıt yok";
       }
@@ -844,6 +858,16 @@
     return s;
   }
 
+  function breakdownHtml(c) {
+    var h = '<span class="bd-pills">' +
+      '<span class="bd-pill utku">🧔 ' + (c.utku + c.both + c.hepberaber) + '</span>' +
+      '<span class="bd-pill gozde">👩 ' + (c.gozde + c.both + c.hepberaber) + '</span>' +
+      '<span class="bd-pill both">👫 ' + c.both + '</span>';
+    if (c.hepberaber) h += '<span class="bd-pill hep">🎉 ' + c.hepberaber + '</span>';
+    h += '</span>';
+    return h;
+  }
+
   // Küçük trend rozeti: bu dönem vs geçen dönem (az = iyi → düşüş yeşil)
   function setTrend(id, cur, prev) {
     var n = el(id); if (!n) return;
@@ -863,7 +887,7 @@
     var week = countWho(list.filter(function (e) { return e.ts >= wStart; }));
     var lastWeek = list.filter(function (e) { return e.ts >= wStart - 7 * 86400000 && e.ts < wStart; }).length;
     el("weekTotal").textContent = String(week.total);
-    el("weekBreakdown").textContent = showBreakdown ? (week.total ? breakdownText(week) : "—") : "";
+    el("weekBreakdown").innerHTML = showBreakdown ? (week.total ? breakdownHtml(week) : "—") : "";
     setTrend("weekTrend", week.total, lastWeek);
 
     var mStart = startOfMonth();
@@ -874,18 +898,18 @@
       return d.getFullYear() === py + Math.floor(pm / 12) && d.getMonth() === ((pm % 12) + 12) % 12;
     }).length;
     el("monthTotal").textContent = String(month.total);
-    el("monthBreakdown").textContent = showBreakdown ? (month.total ? breakdownText(month) : "—") : "";
+    el("monthBreakdown").innerHTML = showBreakdown ? (month.total ? breakdownHtml(month) : "—") : "";
     setTrend("monthTrend", month.total, lastMonthN);
 
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
     var last7 = list.filter(function (e) { return e.ts >= sevenAgo; });
     var avg7Info = calcAverages(last7, 7);
     el("dailyAvg").textContent = showBreakdown ? (avg7Info.utkuStr + " / " + avg7Info.gozdeStr) : avg7Info.totalStr;
-    el("dailyAvgSub").textContent = showBreakdown ? avg7Info.breakdown : "son 7 gün";
+    el("dailyAvgSub").innerHTML = showBreakdown ? ('<span class="bd-pills"><span class="bd-pill utku">🧔 ' + avg7Info.utkuStr + '</span><span class="bd-pill gozde">👩 ' + avg7Info.gozdeStr + '</span></span>') : "son 7 gün";
 
     var all = countWho(list);
     el("allTotal").textContent = String(all.total);
-    el("allBreakdown").textContent = showBreakdown ? (all.total ? breakdownText(all) : "—") : "";
+    el("allBreakdown").innerHTML = showBreakdown ? (all.total ? breakdownHtml(all) : "—") : "";
 
     // Arc UI: Mini Sparkline trend grafikleri
     var sparkDays = [];
@@ -1384,15 +1408,6 @@
     kindBadge.textContent = kInfo.emoji + " " + kInfo.label;
     who.appendChild(kindBadge);
 
-    // Günün ilk sigarası değilse aralık rozetini üst satıra (who yanına) ekle
-    var gapMs = entryPrevGap(e, historyFilter === "all" ? entries : (list || entries));
-    var gapText = fmtGap(gapMs);
-    if (gapText) {
-      var gapChip = document.createElement("span");
-      gapChip.className = "h-gap-chip";
-      gapChip.textContent = "⏱️ " + gapText;
-      who.appendChild(gapChip);
-    }
     main.appendChild(who);
 
     var time = document.createElement("div");
@@ -1583,9 +1598,20 @@
       }
       head.appendChild(cnt);
       list.appendChild(head);
-      g.items.forEach(function (e) {
+      g.items.forEach(function (e, idx) {
         list.appendChild(historyItem(e, filtered));
         if (editingId === e.id) list.appendChild(historyEditPanel(e));
+        var gapMs = entryPrevGap(e, historyFilter === "all" ? entries : (filtered || entries));
+        var gapText = fmtGap(gapMs);
+        if (gapText && idx < g.items.length - 1) {
+          var conn = document.createElement("div");
+          conn.className = "hist-connector";
+          var prevTs = e.ts - (gapMs || 0);
+          conn.innerHTML =
+            '<span class="hc-line"></span>' +
+            '<span class="hc-pill">↕️ <b>' + gapText + '</b> mola <i class="hc-range">(' + formatTime(prevTs) + ' → ' + formatTime(e.ts) + ')</i></span>';
+          list.appendChild(conn);
+        }
       });
     });
   }
@@ -1668,6 +1694,7 @@
       }
       if (t) t.textContent = fmtDuration(d.since);
       if (r) r.textContent = "🏆 " + fmtDuration(d.record);
+      var rowEl = /** @type {HTMLElement | null} */ (t ? t.closest(".since-row") : null);
       if (ring && badge) {
         ring.style.strokeDasharray = String(circ);
         if (!d.smokedToday) {
@@ -1675,17 +1702,21 @@
           ring.setAttribute("class", "pace-ring-fg calm");
           badge.className = "pace-badge calm";
           badge.textContent = "🌅 Yeni gün";
+          if (rowEl) { rowEl.style.setProperty("--pace-pct", "100%"); rowEl.setAttribute("data-pace-tone", "calm"); }
         } else {
           var ratio = Math.min(1, Math.max(0.05, d.since / d.avgGap));
           ring.style.strokeDashoffset = String(Math.round((1 - ratio) * circ * 10) / 10);
+          var pctStr = Math.round(ratio * 100) + "%";
           if (d.since >= d.avgGap) {
             ring.setAttribute("class", "pace-ring-fg bonus");
             badge.className = "pace-badge bonus";
             badge.textContent = "✨ +" + (fmtGap(d.since - d.avgGap) || "1 dk");
+            if (rowEl) { rowEl.style.setProperty("--pace-pct", "100%"); rowEl.setAttribute("data-pace-tone", "bonus"); }
           } else {
             ring.setAttribute("class", "pace-ring-fg charging");
             badge.className = "pace-badge charging";
             badge.textContent = "🎯 " + (fmtGap(d.avgGap - d.since) || "1 dk") + " kaldı";
+            if (rowEl) { rowEl.style.setProperty("--pace-pct", pctStr); rowEl.setAttribute("data-pace-tone", "charging"); }
           }
         }
       }
@@ -2537,12 +2568,14 @@
     var scoped = scopedEntries();
     var now = Date.now();
     var eow = startOfDay(now).getTime() + 86400000;
-    var sow = eow - 30 * 86400000; // last 30 days
+    var epochDayStart = startOfDay(EPOCH_TS).getTime();
+    var sow = Math.max(epochDayStart, eow - 30 * 86400000);
+    var numDays = Math.max(2, Math.round((eow - sow) / 86400000));
     var list = scoped.filter(function(e) { return e.ts >= sow && e.ts < eow; });
 
-    var MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var MONTH_NAMES = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
     var days = [];
-    for (var i = 0; i < 30; i++) {
+    for (var i = 0; i < numDays; i++) {
       var d = new Date(sow + i * 86400000);
       days.push({
         date: d,
@@ -2553,7 +2586,7 @@
 
     list.forEach(function(e) {
       var idx = Math.floor((e.ts - sow) / 86400000);
-      if (idx >= 0 && idx < 30) days[idx].count++;
+      if (idx >= 0 && idx < numDays) days[idx].count++;
     });
 
     var maxTotal = d3.max(days, function(d) { return d.count; }) || 1;
@@ -2661,7 +2694,7 @@
       .text(function(d) { return d; });
 
     // X Axis ticks & labels
-    var xTickIndices = [0, 7, 14, 21, 29];
+    var xTickIndices = [0, Math.floor((numDays - 1) * 0.25), Math.floor((numDays - 1) * 0.5), Math.floor((numDays - 1) * 0.75), numDays - 1];
     var xTickData = days.filter(function(d, i) { return xTickIndices.indexOf(i) !== -1; });
 
     g.selectAll(".t-x-tick")
@@ -3706,9 +3739,8 @@
       container.innerHTML = ""; // Clear "henüz kayıt yok" text
       leafletMap = L.map("mapContainer").setView([last.lat, last.lng], 14);
       
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors',
-        subdomains: 'abcd',
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
         maxZoom: 19
       }).addTo(leafletMap);
     }
@@ -3919,6 +3951,7 @@
     }
     if (el("historyFrom")) el("historyFrom").addEventListener("change", applyHistoryDates);
     if (el("historyTo")) el("historyTo").addEventListener("change", applyHistoryDates);
+    if (el("historyDateToggle")) el("historyDateToggle").addEventListener("click", function () { var df = el("historyDateFilter"); if (df) { df.classList.toggle("hidden"); el("historyDateToggle").classList.toggle("active", !df.classList.contains("hidden")); } });
     if (el("historyDateClear")) el("historyDateClear").addEventListener("click", function () { /** @type {HTMLInputElement} */ (el("historyFrom")).value = ""; /** @type {HTMLInputElement} */ (el("historyTo")).value = ""; applyHistoryDates(); });
     if (el("trashToggleBtn")) el("trashToggleBtn").addEventListener("click", function () { el("trashList").classList.toggle("hidden"); renderTrash(); });
     if (el("syncCenterBtn")) el("syncCenterBtn").addEventListener("click", function () { el("syncCenter").classList.toggle("hidden"); renderSyncCenter(); });
