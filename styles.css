@@ -2510,7 +2510,35 @@ html:not([data-theme="light"]) .leaflet-container {
   left: auto !important;
   right: 16px !important;
   align-items: flex-end !important;
-  bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+  bottom: 62px !important;
+}
+.tabbar {
+  bottom: 4px !important;
+  padding: 5px 8px;
+}
+.tab {
+  padding: 6px 0;
+}
+.undo-bar {
+  bottom: 126px;
+}
+body[data-active-tab="home"] .app {
+  padding-bottom: 68px;
+}
+@media (display-mode: standalone) {
+  .tabbar {
+    bottom: calc(6px + env(safe-area-inset-bottom)) !important;
+  }
+  .add-dial {
+    bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+  }
+  .undo-bar {
+    bottom: calc(130px + env(safe-area-inset-bottom));
+  }
+  body[data-active-tab="home"] .app {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+
 }
 body[data-active-tab="history"] .add-dial,
 body[data-active-tab="stats"] .add-dial {
