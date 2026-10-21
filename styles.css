@@ -1013,7 +1013,8 @@ body[data-active-tab="portal"] {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
-  font-size: 12px;
+  font-size: 11.5px;
+  line-height: 1.4;
   color: var(--muted);
   text-align: center;
 }
@@ -2054,11 +2055,11 @@ body:not([data-active-tab="home"]) .add-dial { display: none; }
 .stat-sparkline {
   position: absolute;
   bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 26px;
+  right: 0;
+  width: 62%;
+  height: 22px;
   pointer-events: none;
-  opacity: 0.65;
+  opacity: 0.32;
   transition: opacity 0.25s ease;
   z-index: 1;
 }
@@ -2185,34 +2186,40 @@ body:not([data-active-tab="home"]) .add-dial { display: none; }
 /* M3: Derin Aralık Analizi (Sigo vs Bong & Gece/Gündüz) */
 .interval-deep-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 .int-deep-box {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-elev-2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 [data-theme="light"] .int-deep-box {
-  background: rgba(0, 0, 0, 0.025);
+  background: rgba(0, 0, 0, 0.03);
   border-color: rgba(0, 0, 0, 0.06);
 }
 .int-deep-lbl {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .int-deep-val {
-  font-size: 12.5px;
+  font-size: 17px;
   font-weight: 800;
+  letter-spacing: -0.4px;
   color: var(--text);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
