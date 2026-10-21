@@ -15,7 +15,7 @@ Kullanıcıya görünen her değişiklikte, commit'ten önce ÜÇ yeri birden g�
 
 Sürüm Ayarlar > Hakkında kartında "vX.Y.Z · derleme NN" olarak görünür.
 
-Güncel sürüm sayacı: **v8.0.1 · derleme 154 · SW cache `dumanalti-v154`** — buradan devam et.
+Güncel sürüm sayacı: **v8.0.2 · derleme 155 · SW cache `dumanalti-v155`** — buradan devam et.
 
 Tamamlanan ve doğrulanan her uygulama değişikliğini ayrıca kullanıcı onayı beklemeden commit et ve doğrudan `origin/main` dalına pushla.
 
