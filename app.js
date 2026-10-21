@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.8.0";
-  var APP_BUILD = 150;
+  var APP_VERSION = "7.8.1";
+  var APP_BUILD = 151;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -423,28 +423,33 @@
     return day + " gün önce";
   }
 
-  // İki sigara arasındaki süreyi formatlar (ör. "1 sa 18 dk ara")
+  // İki sigara arasındaki süreyi formatlar (ör. "1 sa 18 dk")
   function fmtGap(ms) {
     if (!ms || ms <= 0 || !isFinite(ms)) return null;
     var min = Math.floor(ms / 60000);
-    if (min < 1) return "<1 dk ara";
-    if (min < 60) return min + " dk ara";
+    if (min < 1) return "<1 dk";
+    if (min < 60) return min + " dk";
     var hr = Math.floor(min / 60);
     var remMin = min % 60;
     if (hr < 24) {
-      return remMin > 0 ? hr + " sa " + remMin + " dk ara" : hr + " sa ara";
+      return remMin > 0 ? hr + " sa " + remMin + " dk" : hr + " sa";
     }
     var day = Math.floor(hr / 24);
     var remHr = hr % 24;
-    return remHr > 0 ? day + "g " + remHr + " sa ara" : day + "g ara";
+    return remHr > 0 ? day + "g " + remHr + " sa" : day + "g";
   }
 
-  // Bir kaydın kendisinden önceki sigarayla arasındaki süreyi hesaplar
+  // Bir kaydın kendisinden önceki sigarayla arasındaki süreyi hesaplar (günün ilk sigarasında sayılmaz)
   function entryPrevGap(e, list) {
     var arr = list || entries;
     for (var i = 0; i < arr.length; i++) {
       if (arr[i].id === e.id) {
-        if (i > 0) return e.ts - arr[i - 1].ts;
+        if (i > 0) {
+          var prev = arr[i - 1];
+          // Günün ilk sigarası: önceki kayıt farklı bir mantıksal güne aitse sayma
+          if (dayKey(e.ts) !== dayKey(prev.ts)) return null;
+          return e.ts - prev.ts;
+        }
         return null;
       }
     }
@@ -1238,30 +1243,34 @@
 
     var main = document.createElement("div");
     main.className = "h-main";
-    var who = document.createElement("span");
+    var who = document.createElement("div");
     who.className = "h-who";
-    who.textContent = WHO[e.who].label + " içti";
+
+    var whoTitle = document.createElement("span");
+    whoTitle.className = "h-who-title";
+    whoTitle.textContent = WHO[e.who].label + " içti";
+    who.appendChild(whoTitle);
+
     var kInfo = KINDS[entryKind(e)] || KINDS.sigo;
     var kindBadge = document.createElement("span");
     kindBadge.className = "h-kind " + kInfo.cls;
     kindBadge.textContent = kInfo.emoji + " " + kInfo.label;
     who.appendChild(kindBadge);
 
-    var time = document.createElement("span");
-    time.className = "h-time";
-    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
-
-    // Kendisinden bir önceki sigarayla arasındaki süre göstergesi
+    // Günün ilk sigarası değilse aralık rozetini üst satıra (who yanına) ekle
     var gapMs = entryPrevGap(e, historyFilter === "all" ? entries : (list || entries));
     var gapText = fmtGap(gapMs);
     if (gapText) {
       var gapChip = document.createElement("span");
       gapChip.className = "h-gap-chip";
       gapChip.textContent = "⏱️ " + gapText;
-      time.appendChild(document.createTextNode(" · "));
-      time.appendChild(gapChip);
+      who.appendChild(gapChip);
     }
     main.appendChild(who);
+
+    var time = document.createElement("div");
+    time.className = "h-time";
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
     main.appendChild(time);
 
     var openHint = document.createElement("span");

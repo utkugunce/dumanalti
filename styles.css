@@ -968,14 +968,32 @@ body[data-active-tab="portal"] {
 .history-item .h-emoji.avatar { width: 36px; height: 36px; }
 .history-item .h-main { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .history-item .h-who { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+.history-item .h-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+.history-item .h-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+.history-item .h-who-title {
+  white-space: nowrap;
+}
 .history-item .h-time {
   font-size: 11.5px;
   color: var(--muted);
   opacity: 0.9;
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 .h-gap-chip {
   display: inline-flex;
@@ -985,10 +1003,11 @@ body[data-active-tab="portal"] {
   border-radius: 999px;
   background: rgba(46, 204, 113, 0.12);
   border: 1px solid rgba(46, 204, 113, 0.25);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--accent);
   letter-spacing: -0.1px;
+  white-space: nowrap;
 }
 .interval-detail {
   margin-top: 10px;
