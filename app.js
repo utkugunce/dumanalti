@@ -9,8 +9,11 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.6.0";
-  var APP_BUILD = 146;
+  var APP_VERSION = "7.7.0";
+  var APP_BUILD = 147;
+
+  // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
+  var EPOCH_TS = 1791061200000;
 
   var THEME_KEY = "dumanalti.theme";
   var SETTINGS_KEY = "dumanalti.settings.v1";
@@ -257,14 +260,20 @@
         var parsedEntries = raw ? JSON.parse(raw) : [];
         catStore[c].entries = Array.isArray(parsedEntries) ? parsedEntries.map(function (e) {
           return normalizeEntry(e, c, false);
-        }).filter(function (e) { return !!e; }) : [];
+        }).filter(function (e) { return !!e && e.ts >= EPOCH_TS; }) : [];
         if (!Array.isArray(catStore[c].entries)) catStore[c].entries = [];
         catStore[c].entries.sort(function (a, b) { return a.ts - b.ts; });
+        saveCatCache(c);
       } catch (e) { catStore[c].entries = []; }
       try {
         var ob = localStorage.getItem(cfg.outboxKey);
         catStore[c].outbox = ob ? JSON.parse(ob) : [];
         if (!Array.isArray(catStore[c].outbox)) catStore[c].outbox = [];
+        catStore[c].outbox = catStore[c].outbox.filter(function (op) {
+          if (op.row && op.row.ts && op.row.ts < EPOCH_TS) return false;
+          return true;
+        });
+        saveCatOutbox(c);
       } catch (e) { catStore[c].outbox = []; }
     });
     // Aktif kategoriyi alias'a bağla
@@ -327,6 +336,7 @@
     if (!raw || typeof raw !== "object" || !WHO[raw.who]) return null;
     var ts = Number(raw.ts);
     if (!isFinite(ts) || ts <= 0) return null;
+    if (ts < EPOCH_TS) return null; // Milat: 4 Ekim öncesi kayıtlar elenir
     var validId = typeof raw.id === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(raw.id);
     if (!validId && !allowNewId) return null;
     var kind = KINDS[raw.kind] ? raw.kind : "sigo";
@@ -3038,7 +3048,7 @@
       var hadLocalRecovery = false;
       if (catStore[cat].entries && catStore[cat].entries.length > res.data.length) {
         catStore[cat].entries.forEach(function (localE) {
-          if (localE && localE.id && !map[localE.id] && !localE.deletedAt) {
+          if (localE && localE.id && !map[localE.id] && !localE.deletedAt && localE.ts >= EPOCH_TS) {
             map[localE.id] = localE;
             catOutbox.push({ type: "insert", row: localE });
             hadLocalRecovery = true;
