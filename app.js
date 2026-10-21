@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.8.1";
-  var APP_BUILD = 151;
+  var APP_VERSION = "7.9.0";
+  var APP_BUILD = 152;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -596,6 +596,44 @@
 
 
 
+  // ---------- Arc UI Motion Helpers ----------
+  function updateNumberWithRoll(elem, newNum) {
+    if (!elem) return;
+    var str = String(newNum);
+    if (elem.textContent !== str) {
+      elem.textContent = str;
+      elem.classList.remove("num-roll-animate");
+      void elem.offsetWidth; // Force reflow
+      elem.classList.add("num-roll-animate");
+    }
+  }
+
+  function renderSparkline(svgId, vals, strokeColor) {
+    var svg = el(svgId);
+    if (!svg || !vals || vals.length < 2) return;
+    var max = Math.max(1, Math.max.apply(null, vals));
+    var w = 100, h = 24;
+    var pts = [];
+    for (var i = 0; i < vals.length; i++) {
+      var x = Math.round((i / (vals.length - 1)) * w);
+      var y = Math.round(h - 3 - ((vals[i] / max) * (h - 6)));
+      pts.push(x + "," + y);
+    }
+    var lineD = "M " + pts.join(" L ");
+    var areaD = lineD + " L " + w + "," + h + " L 0," + h + " Z";
+    var color = strokeColor || "var(--accent)";
+    var gradId = "sg_" + svgId;
+    svg.innerHTML =
+      '<defs>' +
+        '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.38"/>' +
+          '<stop offset="100%" stop-color="' + color + '" stop-opacity="0.0"/>' +
+        '</linearGradient>' +
+      '</defs>' +
+      '<path d="' + areaD + '" fill="url(#' + gradId + ')"/>' +
+      '<path d="' + lineD + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+
   function renderToday() {
     var tEnts = todayEntries();
     var t = countWho(tEnts);
@@ -607,29 +645,29 @@
 
     var elUtku = el("todayUtku");
     if (elUtku) {
-      elUtku.textContent = String(uTotal);
+      updateNumberWithRoll(elUtku, uTotal);
       var pU = elUtku.closest(".duo-row");
       if (pU) pU.classList.toggle("zero", uTotal === 0);
     }
     var elGozde = el("todayGozde");
     if (elGozde) {
-      elGozde.textContent = String(gTotal);
+      updateNumberWithRoll(elGozde, gTotal);
       var pG = elGozde.closest(".duo-row");
       if (pG) pG.classList.toggle("zero", gTotal === 0);
     }
     var elBoth = el("todayBoth");
     if (elBoth) {
-      elBoth.textContent = String(bothTotal);
+      updateNumberWithRoll(elBoth, bothTotal);
       var pB = elBoth.closest(".duo-row");
       if (pB) pB.classList.toggle("zero", bothTotal === 0);
     }
     var elHep = el("todayHepberaber");
     if (elHep) {
-      elHep.textContent = String(hepTotal);
+      updateNumberWithRoll(elHep, hepTotal);
       var pH = elHep.closest(".duo-row");
       if (pH) pH.classList.toggle("zero", hepTotal === 0);
     }
-    if (el("todayTotal")) el("todayTotal").textContent = String(t.total);
+    updateNumberWithRoll(el("todayTotal"), t.total);
 
     // Tarih çipi mantıksal günü gösterir; 04:00 öncesi 🌙 ile "gece devam ediyor"
     var now = new Date();
@@ -805,6 +843,19 @@
     var all = countWho(list);
     el("allTotal").textContent = String(all.total);
     el("allBreakdown").textContent = showBreakdown ? (all.total ? breakdownText(all) : "—") : "";
+
+    // Arc UI: Mini Sparkline trend grafikleri
+    var sparkDays = [];
+    for (var sdi = 6; sdi >= 0; sdi--) {
+      var sDate = startOfDay(Date.now());
+      sDate.setDate(sDate.getDate() - sdi);
+      var sKey = dayKey(sDate);
+      var sDayCount = list.filter(function (e) { return dayKey(e.ts) === sKey; }).length;
+      sparkDays.push(sDayCount);
+    }
+    renderSparkline("sparkWeek", sparkDays, "var(--accent)");
+    renderSparkline("sparkAvg", sparkDays, "var(--accent)");
+
   }
 
   // ⏱️ Sigara arası süre analizi (Bugün, Son 7 gün, En kısa/uzun aralıklar)
@@ -872,11 +923,15 @@
         weekAvgEl.textContent = fmtIntDur(wSum / weekGaps.length);
         var wsub = el("intervalWeekSub");
         if (wsub) wsub.textContent = "haftalık tempo (" + weekGaps.length + " ara)";
+        renderSparkline("sparkInterval", weekGaps.map(function(g){ return Math.round(g / 60000); }), "var(--accent)");
       } else {
         weekAvgEl.textContent = "—";
         var wsub = el("intervalWeekSub");
         if (wsub) wsub.textContent = "yeterli veri yok";
       }
+    }
+    if (todayGaps.length >= 2) {
+      renderSparkline("sparkTodayInt", todayGaps.map(function(g){ return Math.round(g / 60000); }), "#22c39a");
     }
 
     // Gün içi en kısa ve en uzun aralıklar
@@ -3554,6 +3609,9 @@
     var scrim = null;
     function open() {
       dial.classList.add("open");
+      fab.classList.remove("morph-pop");
+      void fab.offsetWidth;
+      fab.classList.add("morph-pop");
       var ub = el("undoBar"); if (ub) ub.classList.add("hidden"); // menü açılınca toast'ı kapat
       if (!scrim) {
         scrim = document.createElement("div");
@@ -3565,6 +3623,7 @@
     }
     function close() {
       dial.classList.remove("open");
+      fab.classList.remove("morph-pop");
       if (scrim) { var s = scrim; scrim = null; s.classList.remove("show"); setTimeout(function () { s.remove(); }, 200); }
     }
     closeAddDial = close;
@@ -3595,9 +3654,13 @@
         var who = b.getAttribute("data-who");
         if (!who) return;
         b.dataset.lock = "1"; setTimeout(function () { b.dataset.lock = "0"; }, 350);
+        b.classList.add("morph-tap");
         var r = b.getBoundingClientRect();
-        close();
-        addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind);
+        setTimeout(function () {
+          b.classList.remove("morph-tap");
+          close();
+          addEntry(who, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind);
+        }, 160);
       });
     });
 

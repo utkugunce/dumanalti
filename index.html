@@ -243,6 +243,7 @@
           <span class="stat-label">📅 Bu hafta <span class="stat-trend" id="weekTrend"></span></span>
           <span class="stat-value" id="weekTotal">0</span>
           <span class="stat-sub" id="weekBreakdown">—</span>
+          <svg id="sparkWeek" class="stat-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg>
         </div>
         <div class="stat-mini">
           <span class="stat-label">🗓️ Bu ay <span class="stat-trend" id="monthTrend"></span></span>
@@ -253,6 +254,7 @@
           <span class="stat-label">📊 Günlük ort.</span>
           <span class="stat-value" id="dailyAvg">0</span>
           <span class="stat-sub" id="dailyAvgSub">son 7 gün</span>
+          <svg id="sparkAvg" class="stat-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg>
         </div>
         <div class="stat-mini">
           <span class="stat-label">♾️ Tüm zamanlar</span>
@@ -270,11 +272,13 @@
           <span class="stat-label">⚡ Bugün ortalama</span>
           <span class="stat-value" id="intervalTodayAvg">—</span>
           <span class="stat-sub" id="intervalTodaySub">0 aralık</span>
+          <svg id="sparkTodayInt" class="stat-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg>
         </div>
         <div class="stat-mini">
           <span class="stat-label">📅 Son 7 gün ort.</span>
           <span class="stat-value" id="intervalWeekAvg">—</span>
           <span class="stat-sub" id="intervalWeekSub">haftalık tempo</span>
+          <svg id="sparkInterval" class="stat-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg>
         </div>
         <div class="stat-mini">
           <span class="stat-label">🚀 En kısa ara</span>
