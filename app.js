@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.7.2";
-  var APP_BUILD = 149;
+  var APP_VERSION = "7.8.0";
+  var APP_BUILD = 150;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -423,6 +423,34 @@
     return day + " gün önce";
   }
 
+  // İki sigara arasındaki süreyi formatlar (ör. "1 sa 18 dk ara")
+  function fmtGap(ms) {
+    if (!ms || ms <= 0 || !isFinite(ms)) return null;
+    var min = Math.floor(ms / 60000);
+    if (min < 1) return "<1 dk ara";
+    if (min < 60) return min + " dk ara";
+    var hr = Math.floor(min / 60);
+    var remMin = min % 60;
+    if (hr < 24) {
+      return remMin > 0 ? hr + " sa " + remMin + " dk ara" : hr + " sa ara";
+    }
+    var day = Math.floor(hr / 24);
+    var remHr = hr % 24;
+    return remHr > 0 ? day + "g " + remHr + " sa ara" : day + "g ara";
+  }
+
+  // Bir kaydın kendisinden önceki sigarayla arasındaki süreyi hesaplar
+  function entryPrevGap(e, list) {
+    var arr = list || entries;
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i].id === e.id) {
+        if (i > 0) return e.ts - arr[i - 1].ts;
+        return null;
+      }
+    }
+    return null;
+  }
+
   // ---------- Stats ----------
   function countWho(list) {
     var c = { utku: 0, gozde: 0, both: 0, hepberaber: 0, total: 0 };
@@ -774,6 +802,115 @@
     el("allBreakdown").textContent = showBreakdown ? (all.total ? breakdownText(all) : "—") : "";
   }
 
+  // ⏱️ Sigara arası süre analizi (Bugün, Son 7 gün, En kısa/uzun aralıklar)
+  function renderIntervalStats() {
+    var todayAvgEl = el("intervalTodayAvg");
+    if (!todayAvgEl) return;
+
+    var scoped = scopedEntries();
+
+    function calcDayGaps(list) {
+      var byD = {};
+      list.forEach(function (e) {
+        var k = dayKey(e.ts);
+        if (!byD[k]) byD[k] = [];
+        byD[k].push(e);
+      });
+      var gaps = [];
+      Object.keys(byD).forEach(function (k) {
+        var dayList = byD[k];
+        for (var i = 1; i < dayList.length; i++) {
+          var g = dayList[i].ts - dayList[i - 1].ts;
+          if (g > 0) gaps.push(g);
+        }
+      });
+      return gaps;
+    }
+
+    function fmtIntDur(ms) {
+      if (!ms || ms <= 0 || !isFinite(ms)) return "—";
+      var min = Math.round(ms / 60000);
+      if (min < 60) return min + " dk";
+      var hr = Math.floor(min / 60);
+      var rem = min % 60;
+      return rem > 0 ? (hr + " sa " + rem + " dk") : (hr + " sa");
+    }
+
+    // Bugünün gün içi aralıkları
+    var todayKeyStr = dayKey(Date.now());
+    var todayList = scoped.filter(function (e) { return dayKey(e.ts) === todayKeyStr; });
+    var todayGaps = [];
+    for (var i = 1; i < todayList.length; i++) {
+      var g = todayList[i].ts - todayList[i - 1].ts;
+      if (g > 0) todayGaps.push(g);
+    }
+
+    if (todayGaps.length) {
+      var tSum = todayGaps.reduce(function (a, b) { return a + b; }, 0);
+      todayAvgEl.textContent = fmtIntDur(tSum / todayGaps.length);
+      var sub = el("intervalTodaySub");
+      if (sub) sub.textContent = todayGaps.length + " aralık ölçüldü";
+    } else {
+      todayAvgEl.textContent = "—";
+      var sub = el("intervalTodaySub");
+      if (sub) sub.textContent = todayList.length ? "tek sigo (ara yok)" : "henüz kayıt yok";
+    }
+
+    // Son 7 günün gün içi ortalaması
+    var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
+    var last7List = scoped.filter(function (e) { return e.ts >= sevenAgo; });
+    var weekGaps = calcDayGaps(last7List);
+    var weekAvgEl = el("intervalWeekAvg");
+    if (weekAvgEl) {
+      if (weekGaps.length) {
+        var wSum = weekGaps.reduce(function (a, b) { return a + b; }, 0);
+        weekAvgEl.textContent = fmtIntDur(wSum / weekGaps.length);
+        var wsub = el("intervalWeekSub");
+        if (wsub) wsub.textContent = "haftalık tempo (" + weekGaps.length + " ara)";
+      } else {
+        weekAvgEl.textContent = "—";
+        var wsub = el("intervalWeekSub");
+        if (wsub) wsub.textContent = "yeterli veri yok";
+      }
+    }
+
+    // Gün içi en kısa ve en uzun aralıklar
+    var allGaps = calcDayGaps(scoped);
+    var minEl = el("intervalMin");
+    var maxEl = el("intervalMax");
+    if (minEl && maxEl) {
+      if (allGaps.length) {
+        var minG = Math.min.apply(null, allGaps);
+        var maxG = Math.max.apply(null, allGaps);
+        minEl.textContent = fmtIntDur(minG);
+        var minSub = el("intervalMinSub");
+        if (minSub) minSub.textContent = "en hızlı sigo";
+        maxEl.textContent = fmtIntDur(maxG);
+        var maxSub = el("intervalMaxSub");
+        if (maxSub) maxSub.textContent = "en uzun gün içi mola";
+      } else {
+        minEl.textContent = "—";
+        maxEl.textContent = "—";
+      }
+    }
+
+    // Detay satırı: kişi bazlı kırılım
+    var detailEl = el("intervalDetail");
+    if (detailEl) {
+      if (statsScope === "all") {
+        var uList = entries.filter(function (e) { return (e.ts >= EPOCH_TS) && (e.who === "utku" || isShared(e.who)); });
+        var gList = entries.filter(function (e) { return (e.ts >= EPOCH_TS) && (e.who === "gozde" || isShared(e.who)); });
+        var uGaps = calcDayGaps(uList.filter(function (e) { return e.ts >= sevenAgo; }));
+        var gGaps = calcDayGaps(gList.filter(function (e) { return e.ts >= sevenAgo; }));
+        var uAvgStr = uGaps.length ? fmtIntDur(uGaps.reduce(function(a,b){return a+b;},0)/uGaps.length) : "—";
+        var gAvgStr = gGaps.length ? fmtIntDur(gGaps.reduce(function(a,b){return a+b;},0)/gGaps.length) : "—";
+        detailEl.innerHTML = '<span class="int-tag">7 Günlük Tempo:</span> 🧔 Utku: <b>' + uAvgStr + '</b> · 👩 Gözde: <b>' + gAvgStr + '</b>';
+      } else {
+        detailEl.textContent = WHO[statsScope] ? (WHO[statsScope].label + " için gün içi ortalama sigo aralıkları") : "";
+      }
+    }
+  }
+
   function renderChart() {
     var chart = el("chart");
     if (!chart) return;
@@ -1092,7 +1229,7 @@
     return d.getDate() + " " + MONTHS[d.getMonth()] + " " + ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][d.getDay()];
   }
 
-  function historyItem(e) {
+  function historyItem(e, list) {
     var pending = isPending(e.id);
     var row = document.createElement("div");
     row.className = "history-item who-" + e.who + (pending ? " is-pending" : "");
@@ -1113,6 +1250,17 @@
     var time = document.createElement("span");
     time.className = "h-time";
     time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
+
+    // Kendisinden bir önceki sigarayla arasındaki süre göstergesi
+    var gapMs = entryPrevGap(e, historyFilter === "all" ? entries : (list || entries));
+    var gapText = fmtGap(gapMs);
+    if (gapText) {
+      var gapChip = document.createElement("span");
+      gapChip.className = "h-gap-chip";
+      gapChip.textContent = "⏱️ " + gapText;
+      time.appendChild(document.createTextNode(" · "));
+      time.appendChild(gapChip);
+    }
     main.appendChild(who);
     main.appendChild(time);
 
@@ -1292,7 +1440,7 @@
       head.appendChild(cnt);
       list.appendChild(head);
       g.items.forEach(function (e) {
-        list.appendChild(historyItem(e));
+        list.appendChild(historyItem(e, filtered));
         if (editingId === e.id) list.appendChild(historyEditPanel(e));
       });
     });
@@ -2389,6 +2537,7 @@
     renderDuel();
     renderWrapped();
     renderStatCards();
+    renderIntervalStats();
     renderBadges();
     renderChart();
     renderWeeklyComparison();
