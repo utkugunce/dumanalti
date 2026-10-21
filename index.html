@@ -160,16 +160,16 @@
       </div>
     </section>
 
-    <!-- Live since-last timers -->
+    <!-- Live since-last timers & Pacing Coach (v8.0) -->
     <section class="card since-card">
-      <div class="card-head"><h2 id="sinceCardHead">Son sigodan beri</h2></div>
+      <div class="card-head"><h2 id="sinceCardHead">Son sigodan beri</h2><span class="pace-head-chip" id="paceHeadChip"></span></div>
       <div class="since-list">
         <div class="since-row">
-          <span class="since-who"><img class="avatar avatar-sm" src="icons/avatar-utku.png" alt="" /> Utku</span>
+          <span class="since-who"><span class="pace-ring-wrap"><svg class="pace-ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="pace-ring-bg" cx="18" cy="18" r="15"></circle><circle class="pace-ring-fg" id="paceRingUtku" cx="18" cy="18" r="15"></circle></svg><img class="avatar avatar-sm" src="icons/avatar-utku.png" alt="" /></span><span class="since-who-meta"><span>Utku</span><span class="pace-badge" id="paceBadgeUtku"></span></span></span>
           <div class="since-vals"><span class="since-time" id="sinceUtku">—</span><span class="since-rec" id="recUtku"></span></div>
         </div>
         <div class="since-row">
-          <span class="since-who"><img class="avatar avatar-sm" src="icons/avatar-gozde.png" alt="" /> Gözde</span>
+          <span class="since-who"><span class="pace-ring-wrap"><svg class="pace-ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="pace-ring-bg" cx="18" cy="18" r="15"></circle><circle class="pace-ring-fg" id="paceRingGozde" cx="18" cy="18" r="15"></circle></svg><img class="avatar avatar-sm" src="icons/avatar-gozde.png" alt="" /></span><span class="since-who-meta"><span>Gözde</span><span class="pace-badge" id="paceBadgeGozde"></span></span></span>
           <div class="since-vals"><span class="since-time" id="sinceGozde">—</span><span class="since-rec" id="recGozde"></span></div>
         </div>
       </div>
@@ -289,6 +289,24 @@
           <span class="stat-label">🧘 En uzun mola</span>
           <span class="stat-value" id="intervalMax">—</span>
           <span class="stat-sub" id="intervalMaxSub">günün nefesi</span>
+        </div>
+      </div>
+      <div class="interval-deep-grid" id="intervalDeepGrid">
+        <div class="int-deep-box">
+          <span class="int-deep-lbl">🚬 Sigo sonrası ara</span>
+          <strong class="int-deep-val" id="intAfterSigo">—</strong>
+        </div>
+        <div class="int-deep-box">
+          <span class="int-deep-lbl">🫧 Bong sonrası ara</span>
+          <strong class="int-deep-val" id="intAfterBong">—</strong>
+        </div>
+        <div class="int-deep-box">
+          <span class="int-deep-lbl">☀️ Gündüz (04–20)</span>
+          <strong class="int-deep-val" id="intDayPace">—</strong>
+        </div>
+        <div class="int-deep-box">
+          <span class="int-deep-lbl">🌙 Gece (20–04)</span>
+          <strong class="int-deep-val" id="intNightPace">—</strong>
         </div>
       </div>
       <div class="interval-detail" id="intervalDetail"></div>
@@ -549,7 +567,7 @@
       <button class="add-opt" data-who="gozde" aria-label="Gözde ekle"><img class="avatar" src="icons/avatar-gozde.png" alt="Gözde" /><span>Gözde</span></button>
       <button class="add-opt" data-who="utku" aria-label="Utku ekle"><img class="avatar" src="icons/avatar-utku.png" alt="Utku" /><span>Utku</span></button>
     </div>
-    <button id="addFab" class="add-fab" aria-label="Kayıt ekle">＋</button>
+    <button id="addFab" class="add-fab" title="Dokun: Menü · Basılı tut: Hızlı ekle" aria-label="Kayıt ekle">＋</button>
   </div>
 
   <!-- Global geri-al + etiket toast'ı (tüm sayfalarda) -->

@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.9.0";
-  var APP_BUILD = 152;
+  var APP_VERSION = "8.0.0";
+  var APP_BUILD = 153;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -456,6 +456,25 @@
     return null;
   }
 
+  // Gün içi sigo aralıklarını (gece uykusunu hariç tutarak) dizi olarak döndürür
+  function calcIntraDayGaps(list) {
+    var byD = {};
+    (list || []).forEach(function (e) {
+      var k = dayKey(e.ts);
+      if (!byD[k]) byD[k] = [];
+      byD[k].push(e);
+    });
+    var gaps = [];
+    Object.keys(byD).forEach(function (k) {
+      var dayList = byD[k].slice().sort(function (a, b) { return a.ts - b.ts; });
+      for (var i = 1; i < dayList.length; i++) {
+        var g = dayList[i].ts - dayList[i - 1].ts;
+        if (g > 0) gaps.push(g);
+      }
+    });
+    return gaps;
+  }
+
   // ---------- Stats ----------
   function countWho(list) {
     var c = { utku: 0, gozde: 0, both: 0, hepberaber: 0, total: 0 };
@@ -696,7 +715,11 @@
     var elBong = el("todayKindBong");
     if (elBong) elBong.textContent = "🫧 " + tk.bong + " bong";
     var elComp = el("todayCompareText");
-    if (elComp) elComp.textContent = "Dün bu saatte " + ySame;
+    if (elComp) {
+      var tGaps = calcIntraDayGaps(tEnts);
+      var bestTodayGap = tGaps.length ? Math.max.apply(null, tGaps) : 0;
+      elComp.textContent = "Dün bu saatte " + ySame + (bestTodayGap > 0 ? (" · 🧘 En uzun: " + (fmtGap(bestTodayGap) || "")) : "");
+    }
 
     var catInfo = CATS.sigo;
     var oldHeroSub = el("todayHeroSub");
@@ -782,7 +805,27 @@
     if (!track) return;
     track.innerHTML = "";
     var dayStart = startOfDay(Date.now()).getTime();
-    todayEntries().forEach(function (e) {
+    var tList = todayEntries().slice().sort(function (a, b) { return a.ts - b.ts; });
+    if (tList.length >= 2) {
+      var bestI = 1, bestG = tList[1].ts - tList[0].ts;
+      for (var fi = 2; fi < tList.length; fi++) {
+        var fg = tList[fi].ts - tList[fi - 1].ts;
+        if (fg > bestG) { bestG = fg; bestI = fi; }
+      }
+      if (bestG > 0) {
+        var p1 = Math.min(100, Math.max(0, (tList[bestI - 1].ts - dayStart) / 86400000 * 100));
+        var p2 = Math.min(100, Math.max(0, (tList[bestI].ts - dayStart) / 86400000 * 100));
+        if (p2 > p1) {
+          var bridge = document.createElement("span");
+          bridge.className = "flow-bridge";
+          bridge.style.left = p1 + "%";
+          bridge.style.width = (p2 - p1) + "%";
+          bridge.title = "🧘 En uzun mola: " + (fmtGap(bestG) || "");
+          track.appendChild(bridge);
+        }
+      }
+    }
+    tList.forEach(function (e) {
       var dot = document.createElement("span");
       dot.className = "flow-dot " + WHO[e.who].cls;
       dot.style.left = Math.min(100, Math.max(0, (e.ts - dayStart) / 86400000 * 100)) + "%";
@@ -953,6 +996,35 @@
         maxEl.textContent = "—";
       }
     }
+
+    // v8.0 M3: Sigo vs Bong sonrası mola & Gündüz (04-20) vs Gece (20-04) mola analizi
+    var afterSigoGaps = [], afterBongGaps = [], daytimeGaps = [], nighttimeGaps = [];
+    var byDayDeep = {};
+    scoped.forEach(function (e) {
+      var k = dayKey(e.ts);
+      if (!byDayDeep[k]) byDayDeep[k] = [];
+      byDayDeep[k].push(e);
+    });
+    Object.keys(byDayDeep).forEach(function (k) {
+      var dl = byDayDeep[k].slice().sort(function (a, b) { return a.ts - b.ts; });
+      for (var di = 1; di < dl.length; di++) {
+        var prevE = dl[di - 1], curE = dl[di];
+        var gp = curE.ts - prevE.ts;
+        if (gp <= 0) continue;
+        if (entryKind(prevE) === "bong") afterBongGaps.push(gp);
+        else afterSigoGaps.push(gp);
+        var hr = new Date(curE.ts).getHours();
+        if (hr >= 4 && hr < 20) daytimeGaps.push(gp);
+        else nighttimeGaps.push(gp);
+      }
+    });
+    var avgGapFmt = function (arr) {
+      return arr.length ? fmtIntDur(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length) : "—";
+    };
+    if (el("intAfterSigo")) el("intAfterSigo").textContent = avgGapFmt(afterSigoGaps);
+    if (el("intAfterBong")) el("intAfterBong").textContent = avgGapFmt(afterBongGaps);
+    if (el("intDayPace")) el("intDayPace").textContent = avgGapFmt(daytimeGaps);
+    if (el("intNightPace")) el("intNightPace").textContent = avgGapFmt(nighttimeGaps);
 
     // Detay satırı: kişi bazlı kırılım
     var detailEl = el("intervalDetail");
@@ -1498,9 +1570,17 @@
       });
       var cnt = document.createElement("span");
       cnt.className = "hist-day-count";
-      cnt.textContent = g.items.length;
+      cnt.textContent = String(g.items.length);
       head.appendChild(lbl);
       head.appendChild(dots);
+      var dayGaps = calcIntraDayGaps(g.items);
+      if (dayGaps.length > 0) {
+        var dayAvgMs = dayGaps.reduce(function (a, b) { return a + b; }, 0) / dayGaps.length;
+        var paceSpan = document.createElement("span");
+        paceSpan.className = "hist-day-pace";
+        paceSpan.textContent = "⏱️ Ort. " + (fmtGap(dayAvgMs) || "");
+        head.appendChild(paceSpan);
+      }
       head.appendChild(cnt);
       list.appendChild(head);
       g.items.forEach(function (e) {
@@ -1531,13 +1611,26 @@
       return (e.ts >= EPOCH_TS) && (e.who === who || ((who === "utku" || who === "gozde") && isShared(e.who)));
     });
     if (!sub.length) return null;
-    var since = Date.now() - sub[sub.length - 1].ts;
+    var lastTs = sub[sub.length - 1].ts;
+    var since = Date.now() - lastTs;
     var maxGap = 0;
     for (var i = 1; i < sub.length; i++) {
       var g = sub[i].ts - sub[i - 1].ts;
       if (g > maxGap) maxGap = g;
     }
-    return { since: since, record: Math.max(maxGap, since) };
+    var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
+    var recentGaps = calcIntraDayGaps(sub.filter(function (e) { return e.ts >= sevenAgo; }));
+    if (recentGaps.length < 2) recentGaps = calcIntraDayGaps(sub);
+    var avgGap = recentGaps.length
+      ? (recentGaps.reduce(function (a, b) { return a + b; }, 0) / recentGaps.length)
+      : 90 * 60000;
+    var smokedToday = dayKey(lastTs) === dayKey(Date.now());
+    return {
+      since: since,
+      record: Math.max(maxGap, since),
+      avgGap: avgGap,
+      smokedToday: smokedToday
+    };
   }
 
   function renderSince() {
@@ -1547,14 +1640,55 @@
       var catUnit = (CATS[activeCat] || CATS.sigo).unit;
       head.textContent = "Son " + catUnit + "dan beri";
     }
+    var headChip = el("paceHeadChip");
+    if (headChip) {
+      var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
+      var allRecentGaps = calcIntraDayGaps(entries.filter(function (e) { return e.ts >= Math.max(EPOCH_TS, sevenAgo); }));
+      if (allRecentGaps.length) {
+        var avgAll = allRecentGaps.reduce(function (a, b) { return a + b; }, 0) / allRecentGaps.length;
+        headChip.textContent = "🎯 7G Ort: " + (fmtGap(avgAll) || "—");
+      } else {
+        headChip.textContent = "";
+      }
+    }
+    var circ = 94.25;
     var ids = { utku: "Utku", gozde: "Gozde" };
     Object.keys(ids).forEach(function (who) {
-      var t = el("since" + ids[who]);
-      var r = el("rec" + ids[who]);
+      var sfx = ids[who];
+      var t = el("since" + sfx);
+      var r = el("rec" + sfx);
+      var ring = el("paceRing" + sfx);
+      var badge = el("paceBadge" + sfx);
       var d = sinceData(who);
-      if (!d) { t.textContent = "—"; if (r) r.textContent = ""; return; }
-      t.textContent = fmtDuration(d.since);
+      if (!d) {
+        if (t) t.textContent = "—";
+        if (r) r.textContent = "";
+        if (badge) badge.textContent = "";
+        return;
+      }
+      if (t) t.textContent = fmtDuration(d.since);
       if (r) r.textContent = "🏆 " + fmtDuration(d.record);
+      if (ring && badge) {
+        ring.style.strokeDasharray = String(circ);
+        if (!d.smokedToday) {
+          ring.style.strokeDashoffset = "0";
+          ring.setAttribute("class", "pace-ring-fg calm");
+          badge.className = "pace-badge calm";
+          badge.textContent = "🌅 Yeni gün";
+        } else {
+          var ratio = Math.min(1, Math.max(0.05, d.since / d.avgGap));
+          ring.style.strokeDashoffset = String(Math.round((1 - ratio) * circ * 10) / 10);
+          if (d.since >= d.avgGap) {
+            ring.setAttribute("class", "pace-ring-fg bonus");
+            badge.className = "pace-badge bonus";
+            badge.textContent = "✨ +" + (fmtGap(d.since - d.avgGap) || "1 dk");
+          } else {
+            ring.setAttribute("class", "pace-ring-fg charging");
+            badge.className = "pace-badge charging";
+            badge.textContent = "🎯 " + (fmtGap(d.avgGap - d.since) || "1 dk") + " kaldı";
+          }
+        }
+      }
     });
   }
 
@@ -2247,12 +2381,11 @@
     var peakH = 0; for (h = 1; h < 24; h++) if (byHour[h] > byHour[peakH]) peakH = h;
     var peakHStr = ("0" + peakH).slice(-2) + ":00 - " + ("0" + ((peakH + 1) % 24)).slice(-2) + ":00";
 
-    var maxGap = 0;
-    for (var i = 1; i < monthList.length; i++) {
-      var g = monthList[i].ts - monthList[i - 1].ts;
-      if (g > maxGap) maxGap = g;
-    }
-    var maxGapStr = maxGap > 0 ? fmtCoarse(maxGap) : "—";
+    var monthDayGaps = calcIntraDayGaps(monthList);
+    var maxGap = monthDayGaps.length ? Math.max.apply(null, monthDayGaps) : 0;
+    var avgGap = monthDayGaps.length ? (monthDayGaps.reduce(function (a, b) { return a + b; }, 0) / monthDayGaps.length) : 0;
+    var maxGapStr = maxGap > 0 ? (fmtGap(maxGap) || fmtCoarse(maxGap)) : "—";
+    var avgGapStr = avgGap > 0 ? (fmtGap(avgGap) || fmtCoarse(avgGap)) : "—";
 
     var whoChamp = "Dengeli 🎉";
     if (counts.utku > counts.gozde + 3) whoChamp = "Utku 🧔";
@@ -2278,14 +2411,14 @@
         '<span class="wrapped-item-sub">Zirve zamanı</span>' +
       '</div>' +
       '<div class="wrapped-item">' +
-        '<span class="wrapped-item-ico">🌱</span>' +
-        '<span class="wrapped-item-title">En Uzun Mola</span>' +
-        '<span class="wrapped-item-val">' + maxGapStr + '</span>' +
-        '<span class="wrapped-item-sub">En uzun ara</span>' +
+        '<span class="wrapped-item-ico">⏱️</span>' +
+        '<span class="wrapped-item-title">Mola &amp; Ritim</span>' +
+        '<span class="wrapped-item-val">' + avgGapStr + '</span>' +
+        '<span class="wrapped-item-sub">En uzun: ' + maxGapStr + '</span>' +
       '</div>';
 
     if (activeCat === "sigo") {
-      letter.innerHTML = '<strong>Aylık not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız. Favori zamanınız saat ' + peakHStr + ' arası görünüyor. Uyumunuz harika! 🌿✨';
+      letter.innerHTML = '<strong>Aylık not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak ' + total + ' kez dumanaltı oldunuz! Sigolarınızın %' + sharedPct + '\'ini birlikte yaktınız, gün içi ortalama molanız <b>' + avgGapStr + '</b> oldu. Favori zamanınız saat ' + peakHStr + ' arası görünüyor! 🌿✨';
     } else {
       letter.innerHTML = '<strong>Özet Not 💌:</strong> ' + monthName + ' ayında Utku ve Gözde olarak toplam ' + total + ' ' + catUnit + ' kaydettiniz. Favori saat aralığınız ' + peakHStr + ' olarak öne çıkıyor! ✨';
     }
@@ -2726,7 +2859,9 @@
     ctx.fillText("Utku  " + (counts.utku + counts.both + counts.hepberaber), 130, 610);
     ctx.fillText("Gözde  " + (counts.gozde + counts.both + counts.hepberaber), 130, 710);
     ctx.fillText("Birlikte  " + (counts.both + counts.hepberaber), 130, 810);
-    ctx.fillStyle = "#bdfcf2"; ctx.font = "700 36px system-ui"; ctx.fillText("🔥 Ortak seri: " + commonStreak() + " gün", 80, 1000);
+    var mGaps = calcIntraDayGaps(monthList);
+    var mAvgStr = mGaps.length ? (fmtGap(mGaps.reduce(function(a,b){return a+b;},0)/mGaps.length) || "—") : "—";
+    ctx.fillStyle = "#bdfcf2"; ctx.font = "700 36px system-ui"; ctx.fillText("🔥 Ortak seri: " + commonStreak() + " gün  ·  ⏱️ Ort. mola: " + mAvgStr, 80, 1000);
     ctx.fillStyle = "#cfc7e8"; ctx.font = "500 30px system-ui"; ctx.fillText("Utku & Gözde · " + new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" }), 80, 1215);
     canvas.toBlob(function (blob) {
       if (!blob) return;
@@ -3628,10 +3763,29 @@
     }
     closeAddDial = close;
     openAddDial = open;
+    var lpTimer = null;
+    function clearLp() {
+      if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+    }
     fab.addEventListener(TAP_EVT, function (ev) {
       ev.stopPropagation();
       dial.classList.contains("open") ? close() : open();
+      clearLp();
+      lpTimer = setTimeout(function () {
+        lpTimer = null;
+        var quickWho = (settings && (settings.owner === "utku" || settings.owner === "gozde")) ? settings.owner : "both";
+        var r = fab.getBoundingClientRect();
+        close();
+        fab.classList.remove("quick-shock");
+        void fab.offsetWidth;
+        fab.classList.add("quick-shock");
+        setTimeout(function () { fab.classList.remove("quick-shock"); }, 500);
+        addEntry(quickWho, r.left + r.width / 2, r.top + r.height / 2, selectedAddKind);
+      }, 450);
     });
+    fab.addEventListener("pointerup", clearLp);
+    fab.addEventListener("pointercancel", clearLp);
+    fab.addEventListener("pointerleave", clearLp);
     var kindBtns = dial.querySelectorAll(".add-kind-btn");
     kindBtns.forEach(function (b) {
       b.addEventListener(TAP_EVT, function (ev) {
