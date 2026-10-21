@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "7.7.0";
-  var APP_BUILD = 147;
+  var APP_VERSION = "7.7.1";
+  var APP_BUILD = 148;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -414,7 +414,10 @@
     if (min < 1) return "az önce";
     if (min < 60) return min + " dk önce";
     var hr = Math.floor(min / 60);
-    if (hr < 24) return hr + " sa önce";
+    var remMin = min % 60;
+    if (hr < 24) {
+      return remMin > 0 ? hr + " sa " + remMin + " dk önce" : hr + " sa önce";
+    }
     var day = Math.floor(hr / 24);
     if (day === 1) return "dün";
     return day + " gün önce";

@@ -247,7 +247,7 @@ test.describe('Dumanaltı — yeni özellikler', () => {
         };
       });
       expect(r.justNow).toBe('az önce');
-      expect(r.hours).toBe('1 sa önce');
+      expect(r.hours).toBe('1 sa 30 dk önce');
       expect(r.days).toBe('3 gün önce');
     });
   });
