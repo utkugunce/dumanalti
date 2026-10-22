@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "8.2.1";
-  var APP_BUILD = 159;
+  var APP_VERSION = "8.3.0";
+  var APP_BUILD = 160;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -49,19 +49,13 @@
   };
 
   var KINDS = {
-    sigo: { label: "Sigo", emoji: "🚬", cls: "kind-sigo" },
-    bong: { label: "Bong", emoji: "🫧", cls: "kind-bong" }
+    sigo: { label: "Sigo", emoji: "🚬", cls: "kind-sigo" }
   };
 
-  function entryKind(e) { return (e && e.kind) || "sigo"; }
+  function entryKind(e) { return "sigo"; }
 
   function countKinds(list) {
-    var c = { sigo: 0, bong: 0 };
-    for (var i = 0; i < list.length; i++) {
-      var k = entryKind(list[i]);
-      c[k] = (c[k] || 0) + 1;
-    }
-    return c;
+    return { sigo: (list || []).length };
   }
 
   // Ortak ve hep beraber içilenler ikisinin de kişisel sayacına işlenir
@@ -118,7 +112,7 @@
   var historyToTs = Infinity;
   var editingId = null; // Geçmişte düzenleme paneli açık olan kaydın id'si
   var statsScope = "all"; // İstatistik kişi filtresi: all | both | hepberaber | gozde | utku
-  var statsKind = "all"; // İstatistik tür filtresi: all | sigo | bong
+
   var scopeIncludeBoth = true; // Gözde/Utku seçiliyken ortak/beraber içilenler dahil mi
   var comparisonPeriod = "7";
   var activeSession = null;
@@ -184,8 +178,6 @@
 
   function scopedEntries() {
     var list = entries;
-    if (statsKind === "sigo") list = list.filter(function (e) { return entryKind(e) === "sigo"; });
-    else if (statsKind === "bong") list = list.filter(function (e) { return entryKind(e) === "bong"; });
 
     if (statsScope === "both") return list.filter(function (e) { return e.who === "both"; });
     if (statsScope === "hepberaber") return list.filter(function (e) { return e.who === "hepberaber"; });
@@ -813,11 +805,6 @@
       else if (diff < 0) { trend.classList.add("down"); trend.textContent = "▼ " + (-diff); }
       else { trend.textContent = "＝"; }
     }
-
-    var elSigo = el("todayKindSigo");
-    if (elSigo) elSigo.textContent = "🚬 " + tk.sigo + " sigo";
-    var elBong = el("todayKindBong");
-    if (elBong) elBong.textContent = "🫧 " + tk.bong + " bong";
     var elComp = el("todayCompareText");
     if (elComp) {
       var tGaps = calcIntraDayGaps(tEnts);
@@ -828,7 +815,7 @@
     var catInfo = CATS.sigo;
     var oldHeroSub = el("todayHeroSub");
     if (oldHeroSub) {
-      oldHeroSub.textContent = "toplam " + catInfo.unit + " (" + tk.sigo + " sigo · " + tk.bong + " bong) · dün bu saatte " + ySame;
+      oldHeroSub.textContent = "toplam " + catInfo.unit + " · dün bu saatte " + ySame;
     }
 
     renderTodayFlow();
@@ -844,8 +831,7 @@
       if (fsHome.todayFirst) {
         var fe = fsHome.todayFirst.entry;
         firstSmokeEl.appendChild(makeAvatar(fe.who, "avatar-sm"));
-        var fkEmoji = (KINDS[entryKind(fe)] || KINDS.sigo).emoji;
-        firstSmokeEl.appendChild(document.createTextNode(" " + WHO[fe.who].label + " " + fkEmoji + " · " + formatTime(fe.ts)));
+        firstSmokeEl.appendChild(document.createTextNode(" " + WHO[fe.who].label + " 🚬 · " + formatTime(fe.ts)));
         if (firstDeltaEl) {
           firstDeltaEl.classList.remove("hidden");
           if (!isWkDay) {
@@ -899,8 +885,7 @@
       if (entries.length) {
         var last = entries[entries.length - 1];
         lastSmoke.appendChild(makeAvatar(last.who, "avatar-sm"));
-        var kEmoji = (KINDS[entryKind(last)] || KINDS.sigo).emoji;
-        lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " " + kEmoji + " · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
+        lastSmoke.appendChild(document.createTextNode(" " + WHO[last.who].label + " 🚬 · " + formatTime(last.ts) + " · " + relativeTime(last.ts)));
       } else {
         lastSmoke.textContent = "Henüz kayıt yok";
       }
@@ -1168,8 +1153,8 @@
       }
     }
 
-    // v8.0 M3: Sigo vs Bong sonrası mola & Gündüz (04-20) vs Gece (20-04) mola analizi
-    var afterSigoGaps = [], afterBongGaps = [], daytimeGaps = [], nighttimeGaps = [];
+    // Gündüz (04-20) vs Gece (20-04) mola analizi
+    var daytimeGaps = [], nighttimeGaps = [];
     var byDayDeep = {};
     scoped.forEach(function (e) {
       var k = dayKey(e.ts);
@@ -1182,8 +1167,6 @@
         var prevE = dl[di - 1], curE = dl[di];
         var gp = curE.ts - prevE.ts;
         if (gp <= 0) continue;
-        if (entryKind(prevE) === "bong") afterBongGaps.push(gp);
-        else afterSigoGaps.push(gp);
         var hr = new Date(curE.ts).getHours();
         if (hr >= 4 && hr < 20) daytimeGaps.push(gp);
         else nighttimeGaps.push(gp);
@@ -1192,8 +1175,6 @@
     var avgGapFmt = function (arr) {
       return arr.length ? fmtIntDur(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length) : "—";
     };
-    if (el("intAfterSigo")) el("intAfterSigo").textContent = avgGapFmt(afterSigoGaps);
-    if (el("intAfterBong")) el("intAfterBong").textContent = avgGapFmt(afterBongGaps);
     if (el("intDayPace")) el("intDayPace").textContent = avgGapFmt(daytimeGaps);
     if (el("intNightPace")) el("intNightPace").textContent = avgGapFmt(nighttimeGaps);
 
@@ -1591,11 +1572,7 @@
     whoTitle.textContent = WHO[e.who].label + " içti";
     who.appendChild(whoTitle);
 
-    var kInfo = KINDS[entryKind(e)] || KINDS.sigo;
-    var kindBadge = document.createElement("span");
-    kindBadge.className = "h-kind " + kInfo.cls;
-    kindBadge.textContent = kInfo.emoji + " " + kInfo.label;
-    who.appendChild(kindBadge);
+
 
     main.appendChild(who);
 
@@ -1627,25 +1604,12 @@
     return row;
   }
 
-  // Düzenleme paneli: tür (sigo/bong) + kişi seçimi (4 çip) + etiket + tarih/saat + kaydet/vazgeç
+  // Düzenleme paneli: kişi seçimi (4 çip) + etiket + tarih/saat + kaydet/vazgeç
   function historyEditPanel(e) {
     var panel = document.createElement("div");
     panel.className = "hist-edit";
     var selectedWho = e.who;
-    var selectedKind = entryKind(e);
-    var topControlSection = document.createElement("div");
-    topControlSection.className = "hist-edit-who";
-
-    Object.keys(KINDS).forEach(function (k) {
-      var b = document.createElement("button");
-      b.className = "hist-chip" + (k === selectedKind ? " active" : "");
-      b.textContent = KINDS[k].emoji + " " + KINDS[k].label;
-      b.addEventListener("click", function () {
-        selectedKind = k;
-        topControlSection.querySelectorAll(".hist-chip").forEach(function (c) { c.classList.toggle("active", c === b); });
-      });
-      topControlSection.appendChild(b);
-    });
+    var selectedKind = "sigo";
 
     var chips = document.createElement("div");
     chips.className = "hist-edit-who";
@@ -1693,7 +1657,7 @@
     btns.appendChild(cancel);
     btns.appendChild(remove);
 
-    if (topControlSection.childNodes.length > 0) panel.appendChild(topControlSection);
+    
     panel.appendChild(chips);
     panel.appendChild(timeRow);
     panel.appendChild(btns);
@@ -1725,15 +1689,14 @@
 
     var filtered = entries.filter(function (e) {
       var whoMatch = historyFilter === "all" || e.who === historyFilter;
-      var kindMatch = historyKind === "all" || entryKind(e) === historyKind;
       var searchMatch = true;
       if (historyQuery) {
-        var kindLabel = activeCat === "sigo" && KINDS[entryKind(e)] ? KINDS[entryKind(e)].label : CATS[activeCat].label;
+        var kindLabel = "sigo";
         var haystack = (WHO[e.who].label + " " + kindLabel + " " + dayLabel(e.ts) + " " + new Date(e.ts).toLocaleDateString("tr-TR")).toLocaleLowerCase("tr-TR");
         searchMatch = haystack.indexOf(historyQuery) !== -1;
       }
       var dateMatch = e.ts >= historyFromTs && e.ts <= historyToTs;
-      return whoMatch && kindMatch && searchMatch && dateMatch;
+      return whoMatch && searchMatch && dateMatch;
     });
     el("historyCount").textContent = filtered.length ? filtered.length + " kayıt" : "";
     var moreBtn = el("historyMoreBtn");
@@ -1936,11 +1899,7 @@
     // Actually, comparison usually implies ignoring the current 'who' filter to show both.
     // Wait, if the user is looking at 'Utku' scope, showing Utku vs Gözde might be weird or intended.
     // Let's use the unfiltered global `entries` but filter by time/kind.
-    var currentKind = statsKind || "all";
-    var filtered = entries.filter(function(e) {
-      if (currentKind !== "all" && e.kind !== currentKind) return false;
-      return true;
-    });
+    var filtered = entries;
 
     var days = [];
     var maxTotal = 1;
@@ -4021,20 +3980,7 @@
     fab.addEventListener("pointerup", clearLp);
     fab.addEventListener("pointercancel", clearLp);
     fab.addEventListener("pointerleave", clearLp);
-    var kindBtns = dial.querySelectorAll(".add-kind-btn");
-    kindBtns.forEach(function (b) {
-      b.addEventListener(TAP_EVT, function (ev) {
-        ev.stopPropagation();
-        var k = b.getAttribute("data-kind");
-        if (k && KINDS[k]) {
-          selectedAddKind = k;
-          var seg = b.parentElement;
-          if (seg) {
-            seg.querySelectorAll(".add-kind-btn").forEach(function (btn) { btn.classList.toggle("active", btn === b); });
-          }
-        }
-      });
-    });
+
 
     dial.querySelectorAll(".add-opt").forEach(function (bEl) {
       var b = /** @type {HTMLElement} */ (bEl);
@@ -4176,10 +4122,6 @@
       if (!lastUndo) return; var order = ["utku", "gozde", "both", "hepberaber"];
       var next = order[(order.indexOf(lastUndo.who) + 1) % order.length]; patchEntry(lastUndo.id, { who: next }); lastUndo.who = next; render();
     });
-    if (el("quickEditKindBtn")) el("quickEditKindBtn").addEventListener("click", function () {
-      if (!lastUndo) return; var order = Object.keys(KINDS);
-      var next = order[(order.indexOf(entryKind(lastUndo)) + 1) % order.length]; patchEntry(lastUndo.id, { kind: next }); lastUndo.kind = next; render();
-    });
 
     if (el("pinSetupBtn")) el("pinSetupBtn").addEventListener("click", function () {
       if (localStorage.getItem(PIN_KEY) && confirm("Bu cihazdaki PIN kilidi kaldırılsın mı?")) { localStorage.removeItem(PIN_KEY); el("pinSetupBtn").textContent = "PIN oluştur"; return; }
@@ -4260,15 +4202,7 @@
       });
     });
 
-    // Geçmiş tür filtreleri (Sigo vs Bong)
-    document.querySelectorAll("#histKindFilters .hist-chip").forEach(function (chip) {
-      chip.addEventListener("click", function () {
-        historyKind = chip.getAttribute("data-kf");
-        historyVisible = 30;
-        document.querySelectorAll("#histKindFilters .hist-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
-        renderHistory();
-      });
-    });
+
 
     // İstatistik kişi filtreleri
     document.querySelectorAll(".scope-chip").forEach(function (chip) {
@@ -4281,14 +4215,7 @@
       });
     });
 
-    // İstatistik tür filtreleri (Sigo vs Bong)
-    document.querySelectorAll(".kind-chip").forEach(function (chip) {
-      chip.addEventListener("click", function () {
-        statsKind = chip.getAttribute("data-kind-scope");
-        document.querySelectorAll(".kind-chip").forEach(function (c) { c.classList.toggle("active", c === chip); });
-        renderStats();
-      });
-    });
+
 
     // Gözde/Utku seçiliyken: ortak sigoyu dahil et/etme
     document.querySelectorAll("#scopeToggle .seg-btn").forEach(function (b) {
@@ -4600,11 +4527,11 @@
       setEntries: function (val) { entries = val; },
       outbox: function () { return outbox; },
       setOutbox: function (val) { outbox = val; },
-      selectedAddKind: function () { return selectedAddKind; },
-      setSelectedAddKind: function (k) { selectedAddKind = k; },
-      statsKind: function () { return statsKind; },
-      setStatsKind: function (k) { statsKind = k; },
-      setHistoryKind: function (k) { historyKind = k; },
+
+
+
+
+
       settings: settings,
       saveCache: saveCache,
       loadCache: loadCache,

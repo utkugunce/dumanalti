@@ -62,7 +62,7 @@
                 <span class="phc-title">Sigo</span>
                 <span class="phc-badge">Aktif</span>
               </div>
-              <span class="phc-desc">Sarma &amp; Bong</span>
+              <span class="phc-desc">Sarma sigo</span>
             </div>
           </div>
           <div class="phc-right">
@@ -106,10 +106,6 @@
           <div class="today-hero-num-row">
             <span class="today-num" id="todayTotal">0</span>
             <span class="today-unit">sigo</span>
-          </div>
-          <div class="today-hero-pills">
-            <span class="mini-chip sigo-chip" id="todayKindSigo">🚬 0 sigo</span>
-            <span class="mini-chip bong-chip" id="todayKindBong">🫧 0 bong</span>
           </div>
           <div class="today-compare-row" id="todayCompareRow">
             <span class="comp-icon">⏱️</span>
@@ -205,13 +201,6 @@
       <button class="scope-chip" data-scope="hepberaber"><img class="avatar avatar-tiny" src="icons/avatar-hepberaber.svg" alt="" /> Beraber</button>
       <button class="scope-chip" data-scope="gozde"><img class="avatar avatar-tiny" src="icons/avatar-gozde.png" alt="" /> Gözde</button>
       <button class="scope-chip" data-scope="utku"><img class="avatar avatar-tiny" src="icons/avatar-utku.png" alt="" /> Utku</button>
-    </div>
-
-    <!-- Tür seçici (Sigo vs Bong) -->
-    <div class="kind-scope-bar" id="kindScopeBar">
-      <button class="kind-chip active" data-kind-scope="all">Tüm türler</button>
-      <button class="kind-chip" data-kind-scope="sigo">🚬 Sigo</button>
-      <button class="kind-chip" data-kind-scope="bong">🫧 Bong</button>
     </div>
 
     <!-- Kişi seçiliyken: ortak sigoyu dahil et / etme -->
@@ -310,14 +299,6 @@
         </div>
       </div>
       <div class="interval-deep-grid" id="intervalDeepGrid">
-        <div class="int-deep-box">
-          <span class="int-deep-lbl">🚬 Sigo sonrası ara</span>
-          <strong class="int-deep-val" id="intAfterSigo">—</strong>
-        </div>
-        <div class="int-deep-box">
-          <span class="int-deep-lbl">🫧 Bong sonrası ara</span>
-          <strong class="int-deep-val" id="intAfterBong">—</strong>
-        </div>
         <div class="int-deep-box">
           <span class="int-deep-lbl">☀️ Gündüz (04–20)</span>
           <strong class="int-deep-val" id="intDayPace">—</strong>
@@ -468,11 +449,6 @@
         <button class="hist-chip" data-f="both"><img class="avatar avatar-tiny" src="icons/avatar-both.png" alt="" /> Ortak</button>
         <button class="hist-chip" data-f="hepberaber"><img class="avatar avatar-tiny" src="icons/avatar-hepberaber.svg" alt="" /> Hep beraber</button>
       </div>
-      <div class="hist-kind-filters" id="histKindFilters">
-        <button class="hist-chip active" data-kf="all">Tüm türler</button>
-        <button class="hist-chip" data-kf="sigo">🚬 Sigo</button>
-        <button class="hist-chip" data-kf="bong">🫧 Bong</button>
-      </div>
       <div id="historyList" class="history-list"></div>
       <button id="historyMoreBtn" class="ghost-btn history-more hidden" type="button">Daha fazla göster</button>
       <button id="trashToggleBtn" class="ghost-btn history-more" type="button">🗑️ Çöp kutusu <span id="trashCount">0</span></button>
@@ -578,10 +554,6 @@
   <!-- Global sigo ekleme: her sayfada açılan hızlı buton -->
   <div id="addDial" class="add-dial">
     <div id="addOptions" class="add-options">
-      <div id="sigoKindSeg" class="add-kind-seg" role="group" aria-label="Kayıt türü">
-        <button class="add-kind-btn active" data-kind="sigo" type="button">🚬 Sigo</button>
-        <button class="add-kind-btn" data-kind="bong" type="button">🫧 Bong</button>
-      </div>
 
       <button class="add-opt" data-who="hepberaber" aria-label="Hep beraber ekle"><img class="avatar" src="icons/avatar-hepberaber.svg" alt="Hep beraber" /><span>Hep beraber</span></button>
       <button class="add-opt" data-who="both" aria-label="Ortak ekle"><img class="avatar" src="icons/avatar-both.png" alt="Ortak" /><span>Ortak</span></button>
@@ -597,7 +569,7 @@
       <span id="undoText">Eklendi</span>
       <button id="undoBtn" class="undo-btn">Geri al</button>
     </div>
-    <div id="quickEditBar" class="quick-edit-bar hidden"><button id="quickEditWhoBtn" type="button">Kişiyi değiştir</button><button id="quickEditKindBtn" type="button">Türü değiştir</button></div>
+    <div id="quickEditBar" class="quick-edit-bar hidden"><button id="quickEditWhoBtn" type="button">Kişiyi değiştir</button></div>
   </div>
 
   <div id="onboarding" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle"><div class="modal-card"><span class="eyebrow">İlk kurulum</span><h2 id="onboardingTitle">Dumanaltı'nı sana göre ayarlayalım</h2><div class="onboarding-step" data-step="1"><p>Bu cihaz kimin?</p><div class="choice-grid"><button data-onboard-owner="utku">🧔 Utku</button><button data-onboard-owner="gozde">👩 Gözde</button></div></div><div class="onboarding-step hidden" data-step="2"><p>İzinler daha sonra Ayarlar'dan değiştirilebilir.</p><label class="check-row"><input id="onboardLocation" type="checkbox" /> Yeni kayıtlara konum ekle</label><button id="onboardingFinish" class="quick-action primary" type="button">Başlayalım</button></div></div></div>
