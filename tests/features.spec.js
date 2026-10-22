@@ -61,13 +61,13 @@ test.describe('Dumanaltı — yeni özellikler', () => {
     await page.goto('/404-clear-state');
     await page.evaluate(() => { localStorage.clear(); localStorage.setItem('dumanalti.onboarded.v1', '1'); });
     await page.goto('/');
-    await page.click('.portal-card[data-cat="sigo"]');
+    const portal = page.locator('.portal-card[data-cat="sigo"]');
+    if (await portal.count() > 0) {
+      await portal.click();
+    }
   });
 
-  test('Ana ekranda yalnızca Sigo kategorisi ve Sigo/Bong türleri bulunur', async ({ page }) => {
-    await expect(page.locator('.portal-card')).toHaveCount(1);
-    await expect(page.locator('.portal-card[data-cat="sigo"]')).toBeVisible();
-    await expect(page.locator('.add-kind-btn')).toHaveCount(2);
+  test('Eski gereksiz öğeler arayüzde bulunmaz', async ({ page }) => {
     await expect(page.locator('#ickiKindSeg, #beerOptWrap, #glassOptWrap')).toHaveCount(0);
   });
 

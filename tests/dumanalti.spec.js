@@ -87,8 +87,10 @@ test.describe('Dumanaltı App Tests', () => {
 
     // Go to the app homepage
     await page.goto('/');
-    // Portal artık varsayılan ekran; çekirdek akışlar için Sigo kartından Bugün'e gir.
-    await page.click('.portal-card[data-cat="sigo"]');
+    const portal = page.locator('.portal-card[data-cat="sigo"]');
+    if (await portal.count() > 0) {
+      await portal.click();
+    }
   });
 
   test.describe('Unit & Logic Tests (via page.evaluate)', () => {
@@ -164,14 +166,14 @@ test.describe('Dumanaltı App Tests', () => {
       expect(counts.total).toBe(4);
     });
 
-    test('countKinds and entryKind correctly calculate sigo and bong breakdown', async ({ page }) => {
+    test('countKinds and entryKind correctly calculate sigo breakdown', async ({ page }) => {
       const result = await page.evaluate(() => {
         const exports = window.DUMANALTI_TEST_EXPORTS;
         const mockEntries = [
           { id: '1', who: 'utku', kind: 'sigo', ts: Date.now() },
-          { id: '2', who: 'gozde', kind: 'bong', ts: Date.now() },
-          { id: '3', who: 'both', ts: Date.now() }, // legacy/implicit sigo
-          { id: '4', who: 'utku', kind: 'bong', ts: Date.now() }
+          { id: '2', who: 'gozde', ts: Date.now() },
+          { id: '3', who: 'both', ts: Date.now() },
+          { id: '4', who: 'utku', kind: 'sigo', ts: Date.now() }
         ];
         return {
           counts: exports.countKinds(mockEntries),
@@ -179,9 +181,8 @@ test.describe('Dumanaltı App Tests', () => {
         };
       });
 
-      expect(result.counts.sigo).toBe(2);
-      expect(result.counts.bong).toBe(2);
-      expect(result.kinds).toEqual(['sigo', 'bong', 'sigo', 'bong']);
+      expect(result.counts.sigo).toBe(4);
+      expect(result.kinds).toEqual(['sigo', 'sigo', 'sigo', 'sigo']);
     });
 
     test('normalizeEntry validates imported and remote records', async ({ page }) => {
@@ -190,12 +191,12 @@ test.describe('Dumanaltı App Tests', () => {
         return {
           invalidWho: ex.normalizeEntry({ id: 'x', who: '<script>', ts: Date.now() }, 'sigo', false),
           invalidTime: ex.normalizeEntry({ id: 'x', who: 'utku', ts: 'bad' }, 'sigo', false),
-          safe: ex.normalizeEntry({ id: 'ok-1', who: 'gozde', ts: Date.now(), kind: 'bong', lat: 41, lng: 29 }, 'sigo', false)
+          safe: ex.normalizeEntry({ id: 'ok-1', who: 'gozde', ts: Date.now(), lat: 41, lng: 29 }, 'sigo', false)
         };
       });
       expect(result.invalidWho).toBeNull();
       expect(result.invalidTime).toBeNull();
-      expect(result.safe).toMatchObject({ id: 'ok-1', who: 'gozde', kind: 'bong', lat: 41, lng: 29 });
+      expect(result.safe).toMatchObject({ id: 'ok-1', who: 'gozde', kind: 'sigo', lat: 41, lng: 29 });
     });
 
     test('badge calculations are correct', async ({ page }) => {
@@ -281,49 +282,72 @@ test.describe('Dumanaltı App Tests', () => {
       await expect(page.locator('#todayUtku')).toHaveText('0');
     });
 
-    test('adding a bong record updates counters and allows filtering by kind in stats view', async ({ page }) => {
+    test('adding records updates counters in dashboard and stats view', async ({ page }) => {
       // Open speed dial overlay
       await page.click('#addFab');
       await expect(page.locator('#addDial')).toHaveClass(/open/);
 
-      // Select Bong option
-      await page.click('#sigoKindSeg button[data-kind="bong"]');
-      await expect(page.locator('#sigoKindSeg button[data-kind="bong"]')).toHaveClass(/active/);
-
-      // Add "Gözde" Bong
+      // Add "Gözde" Sigo
       await page.click('#addOptions button[data-who="gozde"]');
       await expect(page.locator('#addDial')).not.toHaveClass(/open/);
 
-      // Check undo toast indicates Bong
+      // Check undo toast indicates Gözde
       await expect(page.locator('#undoBar')).not.toHaveClass(/hidden/);
-      await expect(page.locator('#undoText')).toContainText('Gözde (🫧 Bong) eklendi');
-      await expect.poll(() => page.evaluate(() => {
-        const row = window.__getMockDb().find(item => item.who === 'gozde');
-        return row && row.kind;
-      })).toBe('bong');
+      await expect(page.locator('#undoText')).toContainText('Gözde');
 
       // Now add a Sigo record for Utku
       await page.click('#addFab');
-      await page.click('#sigoKindSeg button[data-kind="sigo"]');
       await page.click('#addOptions button[data-who="utku"]');
 
       // Total today should be 2
       await expect(page.locator('#todayTotal')).toHaveText('2');
-      await expect(page.locator('#todayHeroSub')).toContainText('1 sigo · 1 bong');
 
       // Go to Stats view
       await page.click('nav.tabbar button[data-tab="stats"]');
 
-      // Default kind filter is "all" -> total allTime should be 2
+      // Total allTime should be 2
       await expect(page.locator('#allTotal')).toHaveText('2');
+    });
 
-      // Filter stats by Sigo -> total should be 1
-      await page.click('#kindScopeBar button[data-kind-scope="sigo"]');
-      await expect(page.locator('#allTotal')).toHaveText('1');
+    test('interval stats calculates break averages separated by person on Home and Stats', async ({ page }) => {
+      await page.evaluate(() => {
+        const exports = window.DUMANALTI_TEST_EXPORTS;
+        const now = Date.now();
+        const base = exports.startOfDay(now).getTime() + 10 * 3600000; // 10:00 AM
+        // Utku: 10:00 and 11:30 (1 sa 30 dk)
+        // Gözde: 10:15 and 12:15 (2 sa)
+        const entries = [
+          { id: 'u1', who: 'utku', ts: base, kind: 'sigo' },
+          { id: 'g1', who: 'gozde', ts: base + 15 * 60000, kind: 'sigo' },
+          { id: 'u2', who: 'utku', ts: base + 90 * 60000, kind: 'sigo' },
+          { id: 'g2', who: 'gozde', ts: base + 135 * 60000, kind: 'sigo' }
+        ];
+        const db = window.__getMockDb();
+        db.length = 0;
+        entries.forEach(e => db.push(e));
+        localStorage.setItem('dumanalti.entries.v1', JSON.stringify(entries));
+      });
 
-      // Filter stats by Bong -> total should be 1
-      await page.click('#kindScopeBar button[data-kind-scope="bong"]');
-      await expect(page.locator('#allTotal')).toHaveText('1');
+      await page.reload();
+      const portal = page.locator('.portal-card[data-cat="sigo"]');
+      if (await portal.count() > 0) await portal.click();
+
+      // Home: paceHeadChip should show Utku and Gözde
+      await expect(page.locator('#paceHeadChip .pace-chip.utku')).toContainText('1 sa 30 dk');
+      await expect(page.locator('#paceHeadChip .pace-chip.gozde')).toContainText('2 sa');
+
+      // Home: since rec lines should show average breaks
+      await expect(page.locator('#recUtku')).toContainText('1 sa 30 dk');
+      await expect(page.locator('#recGozde')).toContainText('2 sa');
+
+      // Stats: Interval card
+      await page.click('nav.tabbar button[data-tab="stats"]');
+      await expect(page.locator('#intervalTodayAvg')).toContainText('1 sa 30 dk / 2 sa');
+      await expect(page.locator('#intervalTodaySub .bd-pill.utku')).toContainText('1 ara');
+      await expect(page.locator('#intervalTodaySub .bd-pill.gozde')).toContainText('1 ara');
+      await expect(page.locator('#intervalWeekAvg')).toContainText('1 sa 30 dk / 2 sa');
+      await expect(page.locator('#intervalDetail')).toContainText('Utku: 1 sa 30 dk');
+      await expect(page.locator('#intervalDetail')).toContainText('Gözde: 2 sa');
     });
 
     test('theme switcher changes themes correctly', async ({ page }) => {

@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "8.3.0";
-  var APP_BUILD = 160;
+  var APP_VERSION = "8.3.1";
+  var APP_BUILD = 161;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -1057,30 +1057,13 @@
 
   }
 
-  // ⏱️ Sigara arası süre analizi (Bugün, Son 7 gün, En kısa/uzun aralıklar)
+  // ⏱️ Sigara arası süre analizi (Bugün, Son 7 gün, En kısa/uzun aralıklar - Kişi Bazlı Kırılım v8.3.1)
   function renderIntervalStats() {
     var todayAvgEl = el("intervalTodayAvg");
     if (!todayAvgEl) return;
 
     var scoped = scopedEntries();
-
-    function calcDayGaps(list) {
-      var byD = {};
-      list.forEach(function (e) {
-        var k = dayKey(e.ts);
-        if (!byD[k]) byD[k] = [];
-        byD[k].push(e);
-      });
-      var gaps = [];
-      Object.keys(byD).forEach(function (k) {
-        var dayList = byD[k];
-        for (var i = 1; i < dayList.length; i++) {
-          var g = dayList[i].ts - dayList[i - 1].ts;
-          if (g > 0) gaps.push(g);
-        }
-      });
-      return gaps;
-    }
+    var showBreakdown = statsScope === "all";
 
     function fmtIntDur(ms) {
       if (!ms || ms <= 0 || !isFinite(ms)) return "—";
@@ -1091,92 +1074,170 @@
       return rem > 0 ? (hr + " sa " + rem + " dk") : (hr + " sa");
     }
 
-    // Bugünün gün içi aralıkları
+    function calcDayNightGaps(list) {
+      var dayGaps = [], nightGaps = [];
+      var byD = {};
+      (list || []).forEach(function (e) {
+        var k = dayKey(e.ts);
+        if (!byD[k]) byD[k] = [];
+        byD[k].push(e);
+      });
+      Object.keys(byD).forEach(function (k) {
+        var dl = byD[k].slice().sort(function (a, b) { return a.ts - b.ts; });
+        for (var di = 1; di < dl.length; di++) {
+          var gp = dl[di].ts - dl[di - 1].ts;
+          if (gp <= 0) continue;
+          var hr = new Date(dl[di].ts).getHours();
+          if (hr >= 4 && hr < 20) dayGaps.push(gp);
+          else nightGaps.push(gp);
+        }
+      });
+      return { day: dayGaps, night: nightGaps };
+    }
+
+    var avgGapFmt = function (arr) {
+      return (arr && arr.length) ? fmtIntDur(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length) : "—";
+    };
+
     var todayKeyStr = dayKey(Date.now());
-    var todayList = scoped.filter(function (e) { return dayKey(e.ts) === todayKeyStr; });
-    var todayGaps = [];
-    for (var i = 1; i < todayList.length; i++) {
-      var g = todayList[i].ts - todayList[i - 1].ts;
-      if (g > 0) todayGaps.push(g);
-    }
-
-    if (todayGaps.length) {
-      var tSum = todayGaps.reduce(function (a, b) { return a + b; }, 0);
-      todayAvgEl.textContent = fmtIntDur(tSum / todayGaps.length);
-      var sub = el("intervalTodaySub");
-      if (sub) sub.textContent = todayGaps.length + " aralık ölçüldü";
-    } else {
-      todayAvgEl.textContent = "—";
-      var sub = el("intervalTodaySub");
-      if (sub) sub.textContent = todayList.length ? "tek sigo (ara yok)" : "henüz kayıt yok";
-    }
-
-    // Son 7 günün gün içi ortalaması
     var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-    var last7List = scoped.filter(function (e) { return e.ts >= sevenAgo; });
-    var weekGaps = calcDayGaps(last7List);
-    var weekAvgEl = el("intervalWeekAvg");
-    if (weekAvgEl) {
-      if (weekGaps.length) {
-        var wSum = weekGaps.reduce(function (a, b) { return a + b; }, 0);
-        weekAvgEl.textContent = fmtIntDur(wSum / weekGaps.length);
-        var wsub = el("intervalWeekSub");
-        if (wsub) wsub.textContent = "haftalık tempo (" + weekGaps.length + " ara)";
-        renderSparkline("sparkInterval", weekGaps.map(function(g){ return Math.round(g / 60000); }), "var(--accent)");
+
+    var uList = entries.filter(function (e) { return (e.ts >= EPOCH_TS) && (e.who === "utku" || isShared(e.who)); });
+    var gList = entries.filter(function (e) { return (e.ts >= EPOCH_TS) && (e.who === "gozde" || isShared(e.who)); });
+
+    // 1. Bugünün gün içi aralıkları
+    var sub = el("intervalTodaySub");
+    if (showBreakdown) {
+      var uTodayList = uList.filter(function (e) { return dayKey(e.ts) === todayKeyStr; });
+      var gTodayList = gList.filter(function (e) { return dayKey(e.ts) === todayKeyStr; });
+      var uTodayGaps = calcIntraDayGaps(uTodayList);
+      var gTodayGaps = calcIntraDayGaps(gTodayList);
+      var uTodayAvg = uTodayGaps.length ? (uTodayGaps.reduce(function (a, b) { return a + b; }, 0) / uTodayGaps.length) : 0;
+      var gTodayAvg = gTodayGaps.length ? (gTodayGaps.reduce(function (a, b) { return a + b; }, 0) / gTodayGaps.length) : 0;
+      var uTodayAvgStr = uTodayGaps.length ? fmtIntDur(uTodayAvg) : "—";
+      var gTodayAvgStr = gTodayGaps.length ? fmtIntDur(gTodayAvg) : "—";
+
+      if (!uTodayGaps.length && !gTodayGaps.length) {
+        todayAvgEl.textContent = "—";
       } else {
-        weekAvgEl.textContent = "—";
-        var wsub = el("intervalWeekSub");
-        if (wsub) wsub.textContent = "yeterli veri yok";
+        todayAvgEl.innerHTML = '<span class="val-u">' + uTodayAvgStr + '</span><span class="val-sep"> / </span><span class="val-g">' + gTodayAvgStr + '</span>';
+      }
+      if (sub) {
+        var uTodaySubTxt = uTodayGaps.length ? (uTodayGaps.length + " ara") : (uTodayList.length ? "1 sigo" : "yok");
+        var gTodaySubTxt = gTodayGaps.length ? (gTodayGaps.length + " ara") : (gTodayList.length ? "1 sigo" : "yok");
+        sub.innerHTML = '<span class="bd-pills"><span class="bd-pill utku">🧔 ' + uTodaySubTxt + '</span><span class="bd-pill gozde">👩 ' + gTodaySubTxt + '</span></span>';
+      }
+      var combinedTodayGaps = uTodayGaps.concat(gTodayGaps);
+      if (combinedTodayGaps.length >= 2) {
+        renderSparkline("sparkTodayInt", combinedTodayGaps.map(function(g){ return Math.round(g / 60000); }), "#22c39a");
+      }
+    } else {
+      var todayList = scoped.filter(function (e) { return dayKey(e.ts) === todayKeyStr; });
+      var todayGaps = calcIntraDayGaps(todayList);
+      if (todayGaps.length) {
+        var tSum = todayGaps.reduce(function (a, b) { return a + b; }, 0);
+        todayAvgEl.textContent = fmtIntDur(tSum / todayGaps.length);
+        if (sub) sub.textContent = todayGaps.length + " aralık ölçüldü";
+      } else {
+        todayAvgEl.textContent = "—";
+        if (sub) sub.textContent = todayList.length ? "tek sigo (ara yok)" : "henüz kayıt yok";
+      }
+      if (todayGaps.length >= 2) {
+        renderSparkline("sparkTodayInt", todayGaps.map(function(g){ return Math.round(g / 60000); }), "#22c39a");
       }
     }
-    if (todayGaps.length >= 2) {
-      renderSparkline("sparkTodayInt", todayGaps.map(function(g){ return Math.round(g / 60000); }), "#22c39a");
+
+    // 2. Son 7 günün gün içi ortalaması
+    var weekAvgEl = el("intervalWeekAvg");
+    var wsub = el("intervalWeekSub");
+    if (weekAvgEl) {
+      if (showBreakdown) {
+        var uWeekGaps = calcIntraDayGaps(uList.filter(function (e) { return e.ts >= sevenAgo; }));
+        var gWeekGaps = calcIntraDayGaps(gList.filter(function (e) { return e.ts >= sevenAgo; }));
+        var uWeekAvg = uWeekGaps.length ? (uWeekGaps.reduce(function (a, b) { return a + b; }, 0) / uWeekGaps.length) : 0;
+        var gWeekAvg = gWeekGaps.length ? (gWeekGaps.reduce(function (a, b) { return a + b; }, 0) / gWeekGaps.length) : 0;
+        var uWeekAvgStr = uWeekGaps.length ? fmtIntDur(uWeekAvg) : "—";
+        var gWeekAvgStr = gWeekGaps.length ? fmtIntDur(gWeekAvg) : "—";
+
+        if (!uWeekGaps.length && !gWeekGaps.length) {
+          weekAvgEl.textContent = "—";
+        } else {
+          weekAvgEl.innerHTML = '<span class="val-u">' + uWeekAvgStr + '</span><span class="val-sep"> / </span><span class="val-g">' + gWeekAvgStr + '</span>';
+        }
+        if (wsub) {
+          var uWSubTxt = uWeekGaps.length ? (uWeekGaps.length + " ara") : "yok";
+          var gWSubTxt = gWeekGaps.length ? (gWeekGaps.length + " ara") : "yok";
+          wsub.innerHTML = '<span class="bd-pills"><span class="bd-pill utku">🧔 ' + uWSubTxt + '</span><span class="bd-pill gozde">👩 ' + gWSubTxt + '</span></span>';
+        }
+        var combinedWeekGaps = uWeekGaps.concat(gWeekGaps);
+        if (combinedWeekGaps.length) {
+          renderSparkline("sparkInterval", combinedWeekGaps.map(function(g){ return Math.round(g / 60000); }), "var(--accent)");
+        }
+      } else {
+        var last7List = scoped.filter(function (e) { return e.ts >= sevenAgo; });
+        var weekGaps = calcIntraDayGaps(last7List);
+        if (weekGaps.length) {
+          var wSum = weekGaps.reduce(function (a, b) { return a + b; }, 0);
+          weekAvgEl.textContent = fmtIntDur(wSum / weekGaps.length);
+          if (wsub) wsub.textContent = "haftalık tempo (" + weekGaps.length + " ara)";
+          renderSparkline("sparkInterval", weekGaps.map(function(g){ return Math.round(g / 60000); }), "var(--accent)");
+        } else {
+          weekAvgEl.textContent = "—";
+          if (wsub) wsub.textContent = "yeterli veri yok";
+        }
+      }
     }
 
-    // Gün içi en kısa ve en uzun aralıklar
-    var allGaps = calcDayGaps(scoped);
+    // 3. Gün içi en kısa ve en uzun aralıklar
     var minEl = el("intervalMin");
     var maxEl = el("intervalMax");
+    var minSub = el("intervalMinSub");
+    var maxSub = el("intervalMaxSub");
     if (minEl && maxEl) {
-      if (allGaps.length) {
-        var minG = Math.min.apply(null, allGaps);
-        var maxG = Math.max.apply(null, allGaps);
-        minEl.textContent = fmtIntDur(minG);
-        var minSub = el("intervalMinSub");
-        if (minSub) minSub.textContent = "en hızlı sigo";
-        maxEl.textContent = fmtIntDur(maxG);
-        var maxSub = el("intervalMaxSub");
-        if (maxSub) maxSub.textContent = "en uzun gün içi mola";
+      if (showBreakdown) {
+        var uAllGaps = calcIntraDayGaps(uList);
+        var gAllGaps = calcIntraDayGaps(gList);
+        var uMin = uAllGaps.length ? Math.min.apply(null, uAllGaps) : 0;
+        var gMin = gAllGaps.length ? Math.min.apply(null, gAllGaps) : 0;
+        var uMax = uAllGaps.length ? Math.max.apply(null, uAllGaps) : 0;
+        var gMax = gAllGaps.length ? Math.max.apply(null, gAllGaps) : 0;
+
+        minEl.innerHTML = '<span class="val-u">' + (uMin ? fmtIntDur(uMin) : "—") + '</span><span class="val-sep"> / </span><span class="val-g">' + (gMin ? fmtIntDur(gMin) : "—") + '</span>';
+        if (minSub) minSub.innerHTML = '<span class="bd-pills"><span class="bd-pill utku">🧔 seri</span><span class="bd-pill gozde">👩 seri</span></span>';
+
+        maxEl.innerHTML = '<span class="val-u">' + (uMax ? fmtIntDur(uMax) : "—") + '</span><span class="val-sep"> / </span><span class="val-g">' + (gMax ? fmtIntDur(gMax) : "—") + '</span>';
+        if (maxSub) maxSub.innerHTML = '<span class="bd-pills"><span class="bd-pill utku">🧔 nefes</span><span class="bd-pill gozde">👩 nefes</span></span>';
       } else {
-        minEl.textContent = "—";
-        maxEl.textContent = "—";
+        var allGaps = calcIntraDayGaps(scoped);
+        if (allGaps.length) {
+          var minG = Math.min.apply(null, allGaps);
+          var maxG = Math.max.apply(null, allGaps);
+          minEl.textContent = fmtIntDur(minG);
+          if (minSub) minSub.textContent = "en hızlı sigo";
+          maxEl.textContent = fmtIntDur(maxG);
+          if (maxSub) maxSub.textContent = "en uzun gün içi mola";
+        } else {
+          minEl.textContent = "—";
+          maxEl.textContent = "—";
+        }
       }
     }
 
-    // Gündüz (04-20) vs Gece (20-04) mola analizi
-    var daytimeGaps = [], nighttimeGaps = [];
-    var byDayDeep = {};
-    scoped.forEach(function (e) {
-      var k = dayKey(e.ts);
-      if (!byDayDeep[k]) byDayDeep[k] = [];
-      byDayDeep[k].push(e);
-    });
-    Object.keys(byDayDeep).forEach(function (k) {
-      var dl = byDayDeep[k].slice().sort(function (a, b) { return a.ts - b.ts; });
-      for (var di = 1; di < dl.length; di++) {
-        var prevE = dl[di - 1], curE = dl[di];
-        var gp = curE.ts - prevE.ts;
-        if (gp <= 0) continue;
-        var hr = new Date(curE.ts).getHours();
-        if (hr >= 4 && hr < 20) daytimeGaps.push(gp);
-        else nighttimeGaps.push(gp);
+    // 4. Gündüz (04-20) vs Gece (20-04) mola analizi
+    if (showBreakdown) {
+      var uDN = calcDayNightGaps(uList);
+      var gDN = calcDayNightGaps(gList);
+      if (el("intDayPace")) {
+        el("intDayPace").innerHTML = '<span class="val-u">' + avgGapFmt(uDN.day) + '</span><span class="val-sep"> / </span><span class="val-g">' + avgGapFmt(gDN.day) + '</span>';
       }
-    });
-    var avgGapFmt = function (arr) {
-      return arr.length ? fmtIntDur(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length) : "—";
-    };
-    if (el("intDayPace")) el("intDayPace").textContent = avgGapFmt(daytimeGaps);
-    if (el("intNightPace")) el("intNightPace").textContent = avgGapFmt(nighttimeGaps);
+      if (el("intNightPace")) {
+        el("intNightPace").innerHTML = '<span class="val-u">' + avgGapFmt(uDN.night) + '</span><span class="val-sep"> / </span><span class="val-g">' + avgGapFmt(gDN.night) + '</span>';
+      }
+    } else {
+      var scDN = calcDayNightGaps(scoped);
+      if (el("intDayPace")) el("intDayPace").textContent = avgGapFmt(scDN.day);
+      if (el("intNightPace")) el("intNightPace").textContent = avgGapFmt(scDN.night);
+    }
 
     // v8.2.1: Günün İlk Sigosu (Sadece Hafta İçi Ölçümü)
     var fsScoped = avgFirstSmokeOffset(scoped, true);
@@ -1218,18 +1279,16 @@
     // Detay satırı: kişi bazlı kırılım
     var detailEl = el("intervalDetail");
     if (detailEl) {
-      if (statsScope === "all") {
-        var uList = entries.filter(function (e) { return (e.ts >= EPOCH_TS) && (e.who === "utku" || isShared(e.who)); });
-        var gList = entries.filter(function (e) { return (e.ts >= EPOCH_TS) && (e.who === "gozde" || isShared(e.who)); });
-        var uGaps = calcDayGaps(uList.filter(function (e) { return e.ts >= sevenAgo; }));
-        var gGaps = calcDayGaps(gList.filter(function (e) { return e.ts >= sevenAgo; }));
-        var uAvgStr = uGaps.length ? fmtIntDur(uGaps.reduce(function(a,b){return a+b;},0)/uGaps.length) : "—";
-        var gAvgStr = gGaps.length ? fmtIntDur(gGaps.reduce(function(a,b){return a+b;},0)/gGaps.length) : "—";
+      if (showBreakdown) {
+        var uWGaps = calcIntraDayGaps(uList.filter(function (e) { return e.ts >= sevenAgo; }));
+        var gWGaps = calcIntraDayGaps(gList.filter(function (e) { return e.ts >= sevenAgo; }));
+        var uAvgStr = uWGaps.length ? fmtIntDur(uWGaps.reduce(function(a,b){return a+b;},0)/uWGaps.length) : "—";
+        var gAvgStr = gWGaps.length ? fmtIntDur(gWGaps.reduce(function(a,b){return a+b;},0)/gWGaps.length) : "—";
         var uFs = avgFirstSmokeOffset(uList, false);
         var gFs = avgFirstSmokeOffset(gList, false);
         var uFsStr = uFs.avgOffsetMs !== null ? fmtOffsetClock(uFs.avgOffsetMs) : "—";
         var gFsStr = gFs.avgOffsetMs !== null ? fmtOffsetClock(gFs.avgOffsetMs) : "—";
-        detailEl.innerHTML = '<span class="int-tag">7G Mola:</span> 🧔 Utku: <b>' + uAvgStr + '</b> · 👩 Gözde: <b>' + gAvgStr + '</b><br>' +
+        detailEl.innerHTML = '<span class="int-tag">7G Mola Ortalaması:</span> 🧔 Utku: <b>' + uAvgStr + '</b> · 👩 Gözde: <b>' + gAvgStr + '</b><br>' +
           '<span class="int-tag">🌅 H.içi İlk Sigo:</span> 🧔 Utku: <b>' + uFsStr + '</b> · 👩 Gözde: <b>' + gFsStr + '</b>';
       } else {
         detailEl.textContent = WHO[statsScope] ? (WHO[statsScope].label + " için gün içi ortalama sigo aralıkları") : "";
@@ -1825,14 +1884,12 @@
     }
     var headChip = el("paceHeadChip");
     if (headChip) {
-      var sevenAgo = startOfDay(Date.now()).getTime() - 6 * 86400000;
-      var allRecentGaps = calcIntraDayGaps(entries.filter(function (e) { return e.ts >= Math.max(EPOCH_TS, sevenAgo); }));
-      if (allRecentGaps.length) {
-        var avgAll = allRecentGaps.reduce(function (a, b) { return a + b; }, 0) / allRecentGaps.length;
-        headChip.textContent = "🎯 7G Ort: " + (fmtGap(avgAll) || "—");
-      } else {
-        headChip.textContent = "";
-      }
+      var dU = sinceData("utku");
+      var dG = sinceData("gozde");
+      var uGapStr = (dU && dU.avgGap) ? (fmtGap(dU.avgGap) || "—") : "—";
+      var gGapStr = (dG && dG.avgGap) ? (fmtGap(dG.avgGap) || "—") : "—";
+      headChip.innerHTML = '<span class="pace-chip utku">🧔 ' + uGapStr + '</span>' +
+                           '<span class="pace-chip gozde">👩 ' + gGapStr + '</span>';
     }
     var circ = 94.25;
     var ids = { utku: "Utku", gozde: "Gozde" };
@@ -1850,7 +1907,10 @@
         return;
       }
       if (t) t.textContent = fmtDuration(d.since);
-      if (r) r.textContent = "🏆 " + fmtDuration(d.record);
+      if (r) {
+        var avgStr = fmtGap(d.avgGap) || "—";
+        r.innerHTML = '<span class="since-rec-avg">🎯 Ort: ' + avgStr + '</span> <span class="since-rec-dot">·</span> <span>🏆 ' + fmtDuration(d.record) + '</span>';
+      }
       var rowEl = /** @type {HTMLElement | null} */ (t ? t.closest(".since-row") : null);
       if (ring && badge) {
         ring.style.strokeDasharray = String(circ);

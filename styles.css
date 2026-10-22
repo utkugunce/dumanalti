@@ -2023,13 +2023,39 @@ body:not([data-active-tab="home"]) .add-dial { display: none; }
 
 /* M1: Canlı Mola & Tempo Halkası (Pacing Coach) */
 .pace-head-chip {
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  padding: 0;
+}
+.pace-head-chip .pace-chip {
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(34, 195, 154, 0.12);
-  color: var(--accent);
-  letter-spacing: 0.2px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+}
+.pace-head-chip .pace-chip.utku {
+  background: rgba(100, 207, 160, 0.14);
+  color: #64cfa0;
+  border: 1px solid rgba(100, 207, 160, 0.25);
+}
+.pace-head-chip .pace-chip.gozde {
+  background: rgba(204, 160, 230, 0.14);
+  color: #cca0e6;
+  border: 1px solid rgba(204, 160, 230, 0.25);
+}
+[data-theme="light"] .pace-head-chip .pace-chip.utku {
+  color: #15803d;
+  background: rgba(21, 128, 61, 0.1);
+  border-color: rgba(21, 128, 61, 0.25);
+}
+[data-theme="light"] .pace-head-chip .pace-chip.gozde {
+  color: #7e22ce;
+  background: rgba(126, 34, 206, 0.1);
+  border-color: rgba(126, 34, 206, 0.25);
 }
 .pace-ring-wrap {
   position: relative;
@@ -2524,4 +2550,33 @@ body[data-active-tab="stats"] .add-dial {
 .first-smoke-mini {
   background: linear-gradient(145deg, rgba(251, 191, 36, 0.08), rgba(34, 195, 154, 0.05));
   border: 1px solid rgba(251, 191, 36, 0.18);
+}
+
+/* v8.3.1: Kişi Bazlı Mola & Aralık Değerleri */
+.interval-card .stat-value {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.interval-card .int-deep-val {
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.val-u { color: #64cfa0; }
+.val-g { color: #cca0e6; }
+.val-sep { color: var(--muted); opacity: 0.6; font-weight: 500; font-size: 12px; margin: 0 1px; }
+
+[data-theme="light"] .val-u { color: #15803d; }
+[data-theme="light"] .val-g { color: #7e22ce; }
+
+.since-rec-avg {
+  color: var(--accent);
+  font-weight: 600;
+}
+.since-rec-dot {
+  opacity: 0.5;
+  margin: 0 2px;
 }
