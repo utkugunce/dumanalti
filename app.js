@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "8.1.1";
-  var APP_BUILD = 157;
+  var APP_VERSION = "8.2.0";
+  var APP_BUILD = 158;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -476,6 +476,87 @@
   }
 
   // ---------- Stats ----------
+  function fmtOffsetClock(offsetMs) {
+    if (offsetMs === null || offsetMs === undefined || !isFinite(offsetMs) || offsetMs < 0) return "—";
+    var totalMin = (DAY_START_HOUR * 60 + Math.round(offsetMs / 60000)) % 1440;
+    var h = Math.floor(totalMin / 60);
+    var m = totalMin % 60;
+    return ("0" + h).slice(-2) + ":" + ("0" + m).slice(-2);
+  }
+
+  function calcFirstSmokes(list) {
+    var byD = {};
+    (list || []).forEach(function (e) {
+      if (e.ts < EPOCH_TS) return;
+      var k = dayKey(e.ts);
+      if (!byD[k] || e.ts < byD[k].ts) byD[k] = e;
+    });
+    var res = [];
+    Object.keys(byD).forEach(function (k) {
+      var first = byD[k];
+      var dStart = startOfDay(first.ts).getTime();
+      res.push({
+        key: k,
+        dayStart: dStart,
+        entry: first,
+        offsetMs: Math.max(0, first.ts - dStart)
+      });
+    });
+    res.sort(function (a, b) { return a.dayStart - b.dayStart; });
+    return res;
+  }
+
+  function avgFirstSmokeOffset(list, excludeToday) {
+    var allFirsts = calcFirstSmokes(list);
+    var todayK = dayKey(Date.now());
+    var todayFirst = null;
+    for (var i = 0; i < allFirsts.length; i++) {
+      if (allFirsts[i].key === todayK) { todayFirst = allFirsts[i]; break; }
+    }
+    var sevenAgo = startOfDay(Date.now()).getTime() - 7 * 86400000;
+    var pool = allFirsts.filter(function (f) {
+      if (excludeToday && f.key === todayK) return false;
+      return f.dayStart >= sevenAgo;
+    });
+    if (pool.length < 2) {
+      pool = allFirsts.filter(function (f) {
+        return !(excludeToday && f.key === todayK);
+      });
+    }
+    if (!pool.length && allFirsts.length) pool = allFirsts;
+    var avgOffsetMs = null, minOffsetMs = null, maxOffsetMs = null;
+    if (pool.length) {
+      var sum = 0;
+      minOffsetMs = pool[0].offsetMs;
+      maxOffsetMs = pool[0].offsetMs;
+      pool.forEach(function (f) {
+        sum += f.offsetMs;
+        if (f.offsetMs < minOffsetMs) minOffsetMs = f.offsetMs;
+        if (f.offsetMs > maxOffsetMs) maxOffsetMs = f.offsetMs;
+      });
+      avgOffsetMs = sum / pool.length;
+    }
+    return {
+      avgOffsetMs: avgOffsetMs,
+      minOffsetMs: minOffsetMs,
+      maxOffsetMs: maxOffsetMs,
+      todayFirst: todayFirst,
+      recentFirsts: allFirsts.filter(function (f) { return f.dayStart >= sevenAgo; }),
+      allFirsts: allFirsts
+    };
+  }
+
+  function isDayFirstEntry(e, list) {
+    var arr = list || entries;
+    var k = dayKey(e.ts);
+    var minTs = e.ts;
+    for (var i = 0; i < arr.length; i++) {
+      if (dayKey(arr[i].ts) === k && arr[i].ts < minTs) {
+        minTs = arr[i].ts;
+      }
+    }
+    return e.ts === minTs;
+  }
   function countWho(list) {
     var c = { utku: 0, gozde: 0, both: 0, hepberaber: 0, total: 0 };
     for (var i = 0; i < list.length; i++) {
@@ -742,6 +823,56 @@
     }
 
     renderTodayFlow();
+
+    var firstLbl = el("firstRowLabel");
+    if (firstLbl) firstLbl.textContent = "🌅 İlk " + catInfo.unit + ":";
+    var firstSmokeEl = el("firstSmoke");
+    var firstDeltaEl = el("firstSmokeDelta");
+    if (firstSmokeEl) {
+      firstSmokeEl.innerHTML = "";
+      var fsHome = avgFirstSmokeOffset(entries, true);
+      if (fsHome.todayFirst) {
+        var fe = fsHome.todayFirst.entry;
+        firstSmokeEl.appendChild(makeAvatar(fe.who, "avatar-sm"));
+        var fkEmoji = (KINDS[entryKind(fe)] || KINDS.sigo).emoji;
+        firstSmokeEl.appendChild(document.createTextNode(" " + WHO[fe.who].label + " " + fkEmoji + " · " + formatTime(fe.ts)));
+        if (firstDeltaEl) {
+          if (fsHome.avgOffsetMs !== null) {
+            var fDiff = fsHome.todayFirst.offsetMs - fsHome.avgOffsetMs;
+            firstDeltaEl.classList.remove("hidden");
+            if (fDiff >= 5 * 60000) {
+              firstDeltaEl.className = "first-delta-badge bonus";
+              firstDeltaEl.textContent = "✨ +" + (fmtGap(fDiff) || "5 dk") + " geç";
+            } else if (fDiff <= -5 * 60000) {
+              firstDeltaEl.className = "first-delta-badge charging";
+              firstDeltaEl.textContent = "⚡ " + (fmtGap(-fDiff) || "5 dk") + " erken";
+            } else {
+              firstDeltaEl.className = "first-delta-badge calm";
+              firstDeltaEl.textContent = "🎯 Ort: " + fmtOffsetClock(fsHome.avgOffsetMs);
+            }
+          } else {
+            firstDeltaEl.classList.add("hidden");
+          }
+        }
+      } else {
+        firstSmokeEl.textContent = "Henüz içilmedi 🌿";
+        if (firstDeltaEl) {
+          if (fsHome.avgOffsetMs !== null) {
+            var nowOffMs = Date.now() - startOfDay(Date.now()).getTime();
+            firstDeltaEl.classList.remove("hidden");
+            if (nowOffMs >= fsHome.avgOffsetMs) {
+              firstDeltaEl.className = "first-delta-badge bonus";
+              firstDeltaEl.textContent = "✨ +" + (fmtGap(nowOffMs - fsHome.avgOffsetMs) || "1 dk") + " gecikti";
+            } else {
+              firstDeltaEl.className = "first-delta-badge calm";
+              firstDeltaEl.textContent = "🎯 Ort: " + fmtOffsetClock(fsHome.avgOffsetMs);
+            }
+          } else {
+            firstDeltaEl.classList.add("hidden");
+          }
+        }
+      }
+    }
 
     var lastLbl = el("lastRowLabel");
     if (lastLbl) lastLbl.textContent = "⏱️ Son " + catInfo.unit + ":";
@@ -1050,6 +1181,37 @@
     if (el("intDayPace")) el("intDayPace").textContent = avgGapFmt(daytimeGaps);
     if (el("intNightPace")) el("intNightPace").textContent = avgGapFmt(nighttimeGaps);
 
+    // v8.2: Günün İlk Sigosu (İlk Duman Kontrolü) Analizi
+    var fsScoped = avgFirstSmokeOffset(scoped, true);
+    var fsAll7 = avgFirstSmokeOffset(scoped, false);
+    var ftValEl = el("firstTodayVal");
+    var ftSubEl = el("firstTodaySub");
+    var faValEl = el("firstAvgVal");
+    var faSubEl = el("firstAvgSub");
+    if (ftValEl && ftSubEl) {
+      if (fsScoped.todayFirst) {
+        ftValEl.textContent = formatTime(fsScoped.todayFirst.entry.ts);
+        if (fsScoped.avgOffsetMs !== null) {
+          var fsDiff = fsScoped.todayFirst.offsetMs - fsScoped.avgOffsetMs;
+          if (fsDiff >= 5 * 60000) ftSubEl.textContent = "✨ ort. +" + (fmtGap(fsDiff) || "5 dk") + " geç";
+          else if (fsDiff <= -5 * 60000) ftSubEl.textContent = "⚡ ort. " + (fmtGap(-fsDiff) || "5 dk") + " erken";
+          else ftSubEl.textContent = "🎯 7G ortalamasında";
+        } else {
+          ftSubEl.textContent = WHO[fsScoped.todayFirst.entry.who].label + " açtı";
+        }
+      } else {
+        ftValEl.textContent = "Henüz yok ✨";
+        ftSubEl.textContent = fsScoped.avgOffsetMs !== null ? ("Hedef: " + fmtOffsetClock(fsScoped.avgOffsetMs) + " sonrası") : "bugün kayıt yok";
+      }
+    }
+    if (faValEl && faSubEl) {
+      faValEl.textContent = fsAll7.avgOffsetMs !== null ? fmtOffsetClock(fsAll7.avgOffsetMs) : "—";
+      faSubEl.textContent = fsAll7.maxOffsetMs !== null ? ("🏆 En geç: " + fmtOffsetClock(fsAll7.maxOffsetMs)) : "ilk duman saati";
+    }
+    if (fsAll7.recentFirsts && fsAll7.recentFirsts.length >= 2) {
+      renderSparkline("sparkFirstSmoke", fsAll7.recentFirsts.map(function (f) { return Math.round(f.offsetMs / 60000); }), "#fbbf24");
+    }
+
     // Detay satırı: kişi bazlı kırılım
     var detailEl = el("intervalDetail");
     if (detailEl) {
@@ -1060,7 +1222,12 @@
         var gGaps = calcDayGaps(gList.filter(function (e) { return e.ts >= sevenAgo; }));
         var uAvgStr = uGaps.length ? fmtIntDur(uGaps.reduce(function(a,b){return a+b;},0)/uGaps.length) : "—";
         var gAvgStr = gGaps.length ? fmtIntDur(gGaps.reduce(function(a,b){return a+b;},0)/gGaps.length) : "—";
-        detailEl.innerHTML = '<span class="int-tag">7 Günlük Tempo:</span> 🧔 Utku: <b>' + uAvgStr + '</b> · 👩 Gözde: <b>' + gAvgStr + '</b>';
+        var uFs = avgFirstSmokeOffset(uList, false);
+        var gFs = avgFirstSmokeOffset(gList, false);
+        var uFsStr = uFs.avgOffsetMs !== null ? fmtOffsetClock(uFs.avgOffsetMs) : "—";
+        var gFsStr = gFs.avgOffsetMs !== null ? fmtOffsetClock(gFs.avgOffsetMs) : "—";
+        detailEl.innerHTML = '<span class="int-tag">7G Mola:</span> 🧔 Utku: <b>' + uAvgStr + '</b> · 👩 Gözde: <b>' + gAvgStr + '</b><br>' +
+          '<span class="int-tag">🌅 7G İlk Sigo:</span> 🧔 Utku: <b>' + uFsStr + '</b> · 👩 Gözde: <b>' + gFsStr + '</b>';
       } else {
         detailEl.textContent = WHO[statsScope] ? (WHO[statsScope].label + " için gün içi ortalama sigo aralıkları") : "";
       }
@@ -1412,7 +1579,8 @@
 
     var time = document.createElement("div");
     time.className = "h-time";
-    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (pending ? " · ⏳ bekliyor" : "");
+    var isFirstOfDay = isDayFirstEntry(e, entries);
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (isFirstOfDay ? " · 🌅 Günün ilki" : "") + (pending ? " · ⏳ bekliyor" : "");
     main.appendChild(time);
 
     var openHint = document.createElement("span");
@@ -1651,11 +1819,13 @@
       ? (recentGaps.reduce(function (a, b) { return a + b; }, 0) / recentGaps.length)
       : 90 * 60000;
     var smokedToday = dayKey(lastTs) === dayKey(Date.now());
+    var fsWho = avgFirstSmokeOffset(sub, true);
     return {
       since: since,
       record: Math.max(maxGap, since),
       avgGap: avgGap,
-      smokedToday: smokedToday
+      smokedToday: smokedToday,
+      avgFirstOffset: fsWho.avgOffsetMs
     };
   }
 
@@ -1701,7 +1871,14 @@
           ring.style.strokeDashoffset = "0";
           ring.setAttribute("class", "pace-ring-fg calm");
           badge.className = "pace-badge calm";
-          badge.textContent = "🌅 Yeni gün";
+          var nowOffWho = Date.now() - startOfDay(Date.now()).getTime();
+          if (d.avgFirstOffset !== null && nowOffWho >= d.avgFirstOffset) {
+            ring.setAttribute("class", "pace-ring-fg bonus");
+            badge.className = "pace-badge bonus";
+            badge.textContent = "🌅 İlk +" + (fmtGap(nowOffWho - d.avgFirstOffset) || "1 dk") + " geç";
+          } else {
+            badge.textContent = d.avgFirstOffset !== null ? ("🌅 İlk ort: " + fmtOffsetClock(d.avgFirstOffset)) : "🌅 Yeni gün";
+          }
           if (rowEl) { rowEl.style.setProperty("--pace-pct", "100%"); rowEl.setAttribute("data-pace-tone", "calm"); }
         } else {
           var ratio = Math.min(1, Math.max(0.05, d.since / d.avgGap));
