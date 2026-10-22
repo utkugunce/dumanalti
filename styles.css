@@ -2573,6 +2573,11 @@ body[data-active-tab="stats"] .add-dial {
   color: #38bdf8;
   border: 1px solid rgba(56, 189, 248, 0.28);
 }
+.first-delta-badge.weekend {
+  background: rgba(167, 139, 250, 0.16);
+  color: #c4b5fd;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+}
 
 .first-smoke-grid {
   display: grid;

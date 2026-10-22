@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "8.2.0";
-  var APP_BUILD = 158;
+  var APP_VERSION = "8.2.1";
+  var APP_BUILD = 159;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -484,6 +484,11 @@
     return ("0" + h).slice(-2) + ":" + ("0" + m).slice(-2);
   }
 
+  function isWeekday(d) {
+    var dow = logicalDate(d).getDay();
+    return dow >= 1 && dow <= 5;
+  }
+
   function calcFirstSmokes(list) {
     var byD = {};
     (list || []).forEach(function (e) {
@@ -499,7 +504,8 @@
         key: k,
         dayStart: dStart,
         entry: first,
-        offsetMs: Math.max(0, first.ts - dStart)
+        offsetMs: Math.max(0, first.ts - dStart),
+        isWeekday: isWeekday(first.ts)
       });
     });
     res.sort(function (a, b) { return a.dayStart - b.dayStart; });
@@ -513,17 +519,19 @@
     for (var i = 0; i < allFirsts.length; i++) {
       if (allFirsts[i].key === todayK) { todayFirst = allFirsts[i]; break; }
     }
-    var sevenAgo = startOfDay(Date.now()).getTime() - 7 * 86400000;
-    var pool = allFirsts.filter(function (f) {
+    // İlk sigo hesabı sadece hafta içi günleri (Pazartesi - Cuma) için tutulur
+    var weekdayFirsts = allFirsts.filter(function (f) { return f.isWeekday; });
+    var fourteenAgo = startOfDay(Date.now()).getTime() - 14 * 86400000;
+    var pool = weekdayFirsts.filter(function (f) {
       if (excludeToday && f.key === todayK) return false;
-      return f.dayStart >= sevenAgo;
+      return f.dayStart >= fourteenAgo;
     });
     if (pool.length < 2) {
-      pool = allFirsts.filter(function (f) {
+      pool = weekdayFirsts.filter(function (f) {
         return !(excludeToday && f.key === todayK);
       });
     }
-    if (!pool.length && allFirsts.length) pool = allFirsts;
+    if (!pool.length && weekdayFirsts.length) pool = weekdayFirsts;
     var avgOffsetMs = null, minOffsetMs = null, maxOffsetMs = null;
     if (pool.length) {
       var sum = 0;
@@ -541,8 +549,9 @@
       minOffsetMs: minOffsetMs,
       maxOffsetMs: maxOffsetMs,
       todayFirst: todayFirst,
-      recentFirsts: allFirsts.filter(function (f) { return f.dayStart >= sevenAgo; }),
-      allFirsts: allFirsts
+      isTodayWeekday: isWeekday(Date.now()),
+      recentFirsts: weekdayFirsts.slice(-7),
+      allFirsts: weekdayFirsts
     };
   }
 
@@ -824,8 +833,9 @@
 
     renderTodayFlow();
 
+    var isWkDay = isWeekday(Date.now());
     var firstLbl = el("firstRowLabel");
-    if (firstLbl) firstLbl.textContent = "🌅 İlk " + catInfo.unit + ":";
+    if (firstLbl) firstLbl.textContent = isWkDay ? ("🌅 İlk " + catInfo.unit + " (H.içi):") : ("🌅 İlk " + catInfo.unit + ":");
     var firstSmokeEl = el("firstSmoke");
     var firstDeltaEl = el("firstSmokeDelta");
     if (firstSmokeEl) {
@@ -837,9 +847,12 @@
         var fkEmoji = (KINDS[entryKind(fe)] || KINDS.sigo).emoji;
         firstSmokeEl.appendChild(document.createTextNode(" " + WHO[fe.who].label + " " + fkEmoji + " · " + formatTime(fe.ts)));
         if (firstDeltaEl) {
-          if (fsHome.avgOffsetMs !== null) {
+          firstDeltaEl.classList.remove("hidden");
+          if (!isWkDay) {
+            firstDeltaEl.className = "first-delta-badge weekend";
+            firstDeltaEl.textContent = "🏖️ Hafta sonu";
+          } else if (fsHome.avgOffsetMs !== null) {
             var fDiff = fsHome.todayFirst.offsetMs - fsHome.avgOffsetMs;
-            firstDeltaEl.classList.remove("hidden");
             if (fDiff >= 5 * 60000) {
               firstDeltaEl.className = "first-delta-badge bonus";
               firstDeltaEl.textContent = "✨ +" + (fmtGap(fDiff) || "5 dk") + " geç";
@@ -857,15 +870,18 @@
       } else {
         firstSmokeEl.textContent = "Henüz içilmedi 🌿";
         if (firstDeltaEl) {
-          if (fsHome.avgOffsetMs !== null) {
+          firstDeltaEl.classList.remove("hidden");
+          if (!isWkDay) {
+            firstDeltaEl.className = "first-delta-badge weekend";
+            firstDeltaEl.textContent = "🏖️ Hafta sonu serbest";
+          } else if (fsHome.avgOffsetMs !== null) {
             var nowOffMs = Date.now() - startOfDay(Date.now()).getTime();
-            firstDeltaEl.classList.remove("hidden");
             if (nowOffMs >= fsHome.avgOffsetMs) {
               firstDeltaEl.className = "first-delta-badge bonus";
               firstDeltaEl.textContent = "✨ +" + (fmtGap(nowOffMs - fsHome.avgOffsetMs) || "1 dk") + " gecikti";
             } else {
               firstDeltaEl.className = "first-delta-badge calm";
-              firstDeltaEl.textContent = "🎯 Ort: " + fmtOffsetClock(fsHome.avgOffsetMs);
+              firstDeltaEl.textContent = "🎯 H.içi: " + fmtOffsetClock(fsHome.avgOffsetMs);
             }
           } else {
             firstDeltaEl.classList.add("hidden");
@@ -1181,7 +1197,7 @@
     if (el("intDayPace")) el("intDayPace").textContent = avgGapFmt(daytimeGaps);
     if (el("intNightPace")) el("intNightPace").textContent = avgGapFmt(nighttimeGaps);
 
-    // v8.2: Günün İlk Sigosu (İlk Duman Kontrolü) Analizi
+    // v8.2.1: Günün İlk Sigosu (Sadece Hafta İçi Ölçümü)
     var fsScoped = avgFirstSmokeOffset(scoped, true);
     var fsAll7 = avgFirstSmokeOffset(scoped, false);
     var ftValEl = el("firstTodayVal");
@@ -1191,22 +1207,28 @@
     if (ftValEl && ftSubEl) {
       if (fsScoped.todayFirst) {
         ftValEl.textContent = formatTime(fsScoped.todayFirst.entry.ts);
-        if (fsScoped.avgOffsetMs !== null) {
+        if (!fsScoped.isTodayWeekday) {
+          ftSubEl.textContent = "🏖️ Hafta sonu (ölçüm dışı)";
+        } else if (fsScoped.avgOffsetMs !== null) {
           var fsDiff = fsScoped.todayFirst.offsetMs - fsScoped.avgOffsetMs;
-          if (fsDiff >= 5 * 60000) ftSubEl.textContent = "✨ ort. +" + (fmtGap(fsDiff) || "5 dk") + " geç";
-          else if (fsDiff <= -5 * 60000) ftSubEl.textContent = "⚡ ort. " + (fmtGap(-fsDiff) || "5 dk") + " erken";
-          else ftSubEl.textContent = "🎯 7G ortalamasında";
+          if (fsDiff >= 5 * 60000) ftSubEl.textContent = "✨ h.içi ort. +" + (fmtGap(fsDiff) || "5 dk") + " geç";
+          else if (fsDiff <= -5 * 60000) ftSubEl.textContent = "⚡ h.içi ort. " + (fmtGap(-fsDiff) || "5 dk") + " erken";
+          else ftSubEl.textContent = "🎯 Hafta içi ortalamasında";
         } else {
           ftSubEl.textContent = WHO[fsScoped.todayFirst.entry.who].label + " açtı";
         }
       } else {
         ftValEl.textContent = "Henüz yok ✨";
-        ftSubEl.textContent = fsScoped.avgOffsetMs !== null ? ("Hedef: " + fmtOffsetClock(fsScoped.avgOffsetMs) + " sonrası") : "bugün kayıt yok";
+        if (!fsScoped.isTodayWeekday) {
+          ftSubEl.textContent = "🏖️ Hafta sonu serbest";
+        } else {
+          ftSubEl.textContent = fsScoped.avgOffsetMs !== null ? ("Hedef: " + fmtOffsetClock(fsScoped.avgOffsetMs) + " sonrası") : "bugün kayıt yok";
+        }
       }
     }
     if (faValEl && faSubEl) {
       faValEl.textContent = fsAll7.avgOffsetMs !== null ? fmtOffsetClock(fsAll7.avgOffsetMs) : "—";
-      faSubEl.textContent = fsAll7.maxOffsetMs !== null ? ("🏆 En geç: " + fmtOffsetClock(fsAll7.maxOffsetMs)) : "ilk duman saati";
+      faSubEl.textContent = fsAll7.maxOffsetMs !== null ? ("🏆 En geç h.içi: " + fmtOffsetClock(fsAll7.maxOffsetMs)) : "hafta içi ilk duman";
     }
     if (fsAll7.recentFirsts && fsAll7.recentFirsts.length >= 2) {
       renderSparkline("sparkFirstSmoke", fsAll7.recentFirsts.map(function (f) { return Math.round(f.offsetMs / 60000); }), "#fbbf24");
@@ -1227,7 +1249,7 @@
         var uFsStr = uFs.avgOffsetMs !== null ? fmtOffsetClock(uFs.avgOffsetMs) : "—";
         var gFsStr = gFs.avgOffsetMs !== null ? fmtOffsetClock(gFs.avgOffsetMs) : "—";
         detailEl.innerHTML = '<span class="int-tag">7G Mola:</span> 🧔 Utku: <b>' + uAvgStr + '</b> · 👩 Gözde: <b>' + gAvgStr + '</b><br>' +
-          '<span class="int-tag">🌅 7G İlk Sigo:</span> 🧔 Utku: <b>' + uFsStr + '</b> · 👩 Gözde: <b>' + gFsStr + '</b>';
+          '<span class="int-tag">🌅 H.içi İlk Sigo:</span> 🧔 Utku: <b>' + uFsStr + '</b> · 👩 Gözde: <b>' + gFsStr + '</b>';
       } else {
         detailEl.textContent = WHO[statsScope] ? (WHO[statsScope].label + " için gün içi ortalama sigo aralıkları") : "";
       }
@@ -1580,7 +1602,8 @@
     var time = document.createElement("div");
     time.className = "h-time";
     var isFirstOfDay = isDayFirstEntry(e, entries);
-    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + (isFirstOfDay ? " · 🌅 Günün ilki" : "") + (pending ? " · ⏳ bekliyor" : "");
+    var firstTag = isFirstOfDay ? (isWeekday(e.ts) ? " · 🌅 H.içi ilki" : " · 🌅 Günün ilki") : "";
+    time.textContent = formatTime(e.ts) + " · " + relativeTime(e.ts) + firstTag + (pending ? " · ⏳ bekliyor" : "");
     main.appendChild(time);
 
     var openHint = document.createElement("span");
@@ -1825,7 +1848,8 @@
       record: Math.max(maxGap, since),
       avgGap: avgGap,
       smokedToday: smokedToday,
-      avgFirstOffset: fsWho.avgOffsetMs
+      avgFirstOffset: fsWho.avgOffsetMs,
+      isTodayWeekday: fsWho.isTodayWeekday
     };
   }
 
@@ -1872,12 +1896,14 @@
           ring.setAttribute("class", "pace-ring-fg calm");
           badge.className = "pace-badge calm";
           var nowOffWho = Date.now() - startOfDay(Date.now()).getTime();
-          if (d.avgFirstOffset !== null && nowOffWho >= d.avgFirstOffset) {
+          if (d.isTodayWeekday && d.avgFirstOffset !== null && nowOffWho >= d.avgFirstOffset) {
             ring.setAttribute("class", "pace-ring-fg bonus");
             badge.className = "pace-badge bonus";
             badge.textContent = "🌅 İlk +" + (fmtGap(nowOffWho - d.avgFirstOffset) || "1 dk") + " geç";
+          } else if (d.isTodayWeekday && d.avgFirstOffset !== null) {
+            badge.textContent = "🌅 H.içi ort: " + fmtOffsetClock(d.avgFirstOffset);
           } else {
-            badge.textContent = d.avgFirstOffset !== null ? ("🌅 İlk ort: " + fmtOffsetClock(d.avgFirstOffset)) : "🌅 Yeni gün";
+            badge.textContent = !d.isTodayWeekday ? "🏖️ Hafta sonu" : "🌅 Yeni gün";
           }
           if (rowEl) { rowEl.style.setProperty("--pace-pct", "100%"); rowEl.setAttribute("data-pace-tone", "calm"); }
         } else {
