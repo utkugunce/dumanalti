@@ -430,6 +430,7 @@ test.describe('Dumanaltı App Tests', () => {
     test('offline reset keeps cloud deletes in the outbox', async ({ page, context }) => {
       await page.click('#addFab');
       await page.click('#addOptions button[data-who="utku"]');
+      await expect(page.locator('#todayTotal')).toHaveText('1');
       await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('dumanalti.outbox.v1') || '[]').length)).toBe(0);
 
       await context.setOffline(true);

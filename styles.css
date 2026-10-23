@@ -550,8 +550,7 @@ body[data-active-tab="portal"] {
   gap: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-.today-hero-header { display: flex; align-items: center; justify-content: space-between; }
-.today-hero-tag { font-size: 9.5px; font-weight: 700; letter-spacing: 0.6px; color: #22c39a; text-transform: uppercase; }
+.today-hero-header { display: flex; align-items: center; justify-content: flex-end; }
 .today-hero-num-row { display: flex; align-items: baseline; gap: 5px; }
 .today-num { font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1; color: #22c39a; }
 .today-unit { font-size: 13px; font-weight: 600; color: var(--muted); }
@@ -1430,8 +1429,9 @@ body[data-active-tab="portal"] {
 }
 
 /* ===== Global sigo ekleme (genişleyen buton, sol altta) ===== */
-.add-dial { position: fixed; left: 14px; z-index: 365; bottom: calc(64px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.add-dial { position: fixed; left: 14px; z-index: 365; bottom: calc(64px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; pointer-events: none; }
 .add-fab {
+  pointer-events: auto;
   width: 60px; height: 60px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -1687,15 +1687,9 @@ body[data-active-tab="portal"] {
 body[data-active-tab="home"] .app { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 body:not([data-active-tab="home"]) .add-dial { display: none; }
 .home-category-picker { flex: 0 0 auto; gap: 8px; }
-.home-category-picker .portal-banner,
-.home-category-picker .portal-duel,
-.home-category-picker .portal-last-action { display: none !important; }
 .home-category-picker .portal-header { margin: 0; padding: 0 2px; }
 .home-category-picker .portal-time { font-size: 24px; }
 .home-category-picker .portal-weather { padding: 6px 10px; border-radius: 12px; box-shadow: none; }
-.home-category-picker .portal-grid {
-  display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0;
-}
 .portal-hero-card {
   width: 100%;
   background: linear-gradient(135deg, rgba(34, 195, 154, 0.16), rgba(15, 30, 24, 0.75));
@@ -2206,10 +2200,7 @@ body:not([data-active-tab="home"]) .add-dial { display: none; }
    DUMANALTI v8.1.0 — 6 PAKETLİ TAM UI/UX REFORMU (P1-P6)
    ======================================================== */
 
-/* P1: Bugün Ekranı — Mükerrer Sigo AKTİF kartını gizle, üst saati kompaktlaştır */
-.home-category-picker .portal-grid {
-  display: none !important;
-}
+/* P1: Bugün Ekranı — üst saati kompaktlaştır */
 .home-category-picker .portal-header {
   margin: 0;
   padding: 2px 4px;

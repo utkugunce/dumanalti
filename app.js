@@ -9,8 +9,8 @@
 
   // Semver: majör = büyük yeniden tasarım, minör = yeni özellik, patch = ince ayar.
   // Derleme numarası service worker önbellek sürümüyle (her dağıtımda artar) aynı.
-  var APP_VERSION = "8.3.1";
-  var APP_BUILD = 161;
+  var APP_VERSION = "8.3.2";
+  var APP_BUILD = 162;
 
   // Milat: 4 Ekim 2026 00:00:00 TSI (öncesi kayıtlar kabul edilmez ve temizlenir)
   var EPOCH_TS = 1791061200000;
@@ -893,55 +893,9 @@
   }
 
   function renderPortalSummaries() {
-    var now = Date.now();
-    var allEntries = [];
-    CAT_ORDER.forEach(function (cat) {
-      if (!catStore[cat]) return;
-      allEntries = allEntries.concat(catStore[cat].entries.map(function(e) { e._cat = cat; return e; }));
-      var todayEnts = catStore[cat].entries.filter(function (e) { return isSameDay(e.ts, now); });
-      var todayCount = todayEnts.length;
-      var elCount = el("portal" + cat.charAt(0).toUpperCase() + cat.slice(1) + "Count");
-      if (elCount) {
-        elCount.textContent = String(todayCount);
-      }
-      var cWho = countWho(todayEnts);
-      var elU = el("portalUtkuCount");
-      if (elU) elU.textContent = String(cWho.utku + cWho.both + cWho.hepberaber);
-      var elG = el("portalGozdeCount");
-      if (elG) elG.textContent = String(cWho.gozde + cWho.both + cWho.hepberaber);
-      var elB = el("portalBothCount");
-      if (elB) elB.textContent = String(cWho.both);
-    });
-
-    var pDuel = el("portalDuel");
-    var pDuelText = el("portalDuelText");
-    if (pDuel && pDuelText && catStore.sigo) {
-      var wStart = startOfWeek(now).getTime();
-      var wSigo = catStore.sigo.entries.filter(function (e) { return e.ts >= wStart; });
-      var wC = countWho(wSigo);
-      var wU = wC.utku + wC.both + wC.hepberaber;
-      var wG = wC.gozde + wC.both + wC.hepberaber;
-      if (wU > wG) {
-        pDuelText.innerHTML = "Sigo'da <b>Utku</b> (" + wU + ") önde gidiyor!";
-      } else if (wG > wU) {
-        pDuelText.innerHTML = "Sigo'da <b>Gözde</b> (" + wG + ") önde gidiyor!";
-      } else {
-        pDuelText.innerHTML = "Sigo'da bu hafta <b>Berabere!</b> (" + wU + " - " + wG + ")";
-      }
-      pDuel.classList.remove("hidden");
-    }
-
-    var plaTime = el("portalLastAction").querySelector(".pla-time");
-    var plaDesc = el("portalLastAction").querySelector(".pla-desc");
-    if (allEntries.length > 0) {
-      allEntries.sort(function(a, b) { return b.ts - a.ts; });
-      var last = allEntries[0];
-      plaTime.textContent = formatTime(last.ts);
-      plaDesc.innerHTML = "<b>" + WHO[last.who].label + "</b> az önce bir Sigo yaktı (" + relativeTime(last.ts) + ")";
-    } else {
-      plaTime.textContent = "--:--";
-      plaDesc.textContent = "Henüz bir aktivite yok.";
-    }
+    // Portal grid & banner v8.0 ile emekliye ayrıldı; saat/hava durumu portal-header'da çalışır.
+    var pla = el("portalLastAction");
+    if (!pla) return;
   }
 
   // Günün akışı: mantıksal gün şeridi (04:00 → ertesi 04:00) üzerinde her sigo
@@ -1509,7 +1463,7 @@
       duel.className = "ins-duel";
       var dh = document.createElement("div");
       dh.className = "ins-duel-head";
-      dh.innerHTML = "<span>⚔️ Bu hafta düello</span><span class=\"ins-duel-tip\">az içen önde</span>";
+      dh.innerHTML = "<span>⚔️ Bu hafta düello</span>";
       duel.appendChild(dh);
       [{ who: "utku", val: wk.utku }, { who: "gozde", val: wk.gozde }].forEach(function (p) {
         var who = p.who, val = p.val;
@@ -1761,7 +1715,7 @@
     var moreBtn = el("historyMoreBtn");
     if (filtered.length === 0) {
       empty.classList.remove("hidden");
-      empty.textContent = entries.length ? "Bu filtrede kayıt yok." : "Henüz kayıt yok. Sol alttaki + ile ekle 👆";
+      empty.textContent = entries.length ? "Bu filtrede kayıt yok." : "Henüz kayıt yok.";
       if (moreBtn) moreBtn.classList.add("hidden");
       return;
     }
@@ -2020,7 +1974,16 @@
 
     var tooltip = d3.select("#d3Tooltip");
     var detail = el("comparisonDetail");
-    if (detail) detail.textContent = "Çubuklara dokunarak sayıları gör 👆";
+    var totalU = days.reduce(function(acc, d) { return acc + d.utku; }, 0);
+    var totalG = days.reduce(function(acc, d) { return acc + d.gozde; }, 0);
+    function updateCompDefault() {
+      if (detail) {
+        detail.innerHTML = '<strong>Son 7 gün toplamı:</strong> ' +
+          '<span style="color:var(--utku)">' + totalU + ' Utku</span> · ' +
+          '<span style="color:var(--gozde)">' + totalG + ' Gözde</span>';
+      }
+    }
+    updateCompDefault();
 
     // X Axis Labels
     g.append("g")
@@ -2099,7 +2062,7 @@
                .style("top", (event.pageY - 40) + "px");
       })
       .on("mouseout touchend", function(event) {
-        if (detail) detail.textContent = "Çubuklara dokunarak sayıları gör 👆";
+        updateCompDefault();
         tooltip.classed("visible", false);
         d3.select(this.parentNode).selectAll("rect:not(.interaction-rect)").style("filter", "none");
       });
@@ -2272,6 +2235,7 @@
       })(i);
     }
     el("dowPeak").textContent = list.length ? "en yoğun " + DOW_FULL[peak] : "";
+    if (list.length) selectDow(peak);
   }
 
   function fmtCoarse(ms) {
@@ -2404,6 +2368,7 @@
         grid.appendChild(cell);
       })(day);
     }
+    selectDay(now.getDate());
   }
 
   function weeklyDuelText() {
@@ -2430,7 +2395,7 @@
     if (!card) return;
     var w = weekTotals(0);
     if (w.utku === 0 && w.gozde === 0) {
-      card.innerHTML = '<p class="empty">Bu hafta henüz kayıt yok. İlk içen geride başlar 😏</p>';
+      card.innerHTML = '<p class="empty">Bu hafta henüz kayıt yok.</p>';
       return;
     }
     var leader = w.utku === w.gozde ? "" : (w.utku < w.gozde ? "utku" : "gozde");
@@ -2463,7 +2428,7 @@
 
     var foot = document.createElement("div");
     foot.className = "duel-verdict";
-    var msg = leader ? WHO[leader].label + " önde (az içen kazanır) 🏆" : "Şu an berabere 🤝";
+    var msg = leader ? WHO[leader].label + " önde 🏆" : "Şu an berabere 🤝";
     var lw = weekTotals(-1);
     if (lw.utku !== 0 || lw.gozde !== 0) {
       var lwWin = lw.utku === lw.gozde ? "berabere" : (lw.utku < lw.gozde ? WHO.utku.label : WHO.gozde.label) + " kazandı";
@@ -2566,6 +2531,9 @@
     });
     var cnt = el("badgeCount");
     if (cnt) cnt.textContent = earned + "/" + list.length;
+    if (detail && !detail.querySelector(".bd-emoji")) {
+      detail.innerHTML = '<span class="bd-status on">🏆 ' + earned + ' / ' + list.length + ' rozet kazanıldı</span>';
+    }
   }
 
   var RING_C = 2 * Math.PI * 42; // r=42

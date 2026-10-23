@@ -20,10 +20,7 @@
     <header class="header">
       <div class="brand">
         <img class="brand-logo" src="icons/icon.svg" alt="Dumanaltı" />
-        <div>
-          <h1>Dumanaltı</h1>
-          <p class="subtitle">Utku &amp; Gözde sigo takibi</p>
-        </div>
+        <h1>Dumanaltı</h1>
       </div>
       <div id="presenceStatus" class="presence-status hidden" title="Ortak online durumu">
         <span class="presence-dot"></span>
@@ -43,49 +40,6 @@
           <span id="weatherTemp" class="weather-temp">--°</span>
         </div>
       </div>
-      <div class="portal-banner">
-        <h2>Hoşgeldin!</h2>
-        <p>Bugün neleri takip ediyoruz?</p>
-      </div>
-      <div class="portal-duel hidden" id="portalDuel">
-        <span class="duel-ico">🏆</span>
-        <span class="duel-text" id="portalDuelText">Haftalık düello durumu...</span>
-      </div>
-      <div class="portal-grid">
-        <div class="portal-hero-card sigo-hero-card" id="sigoHeroCard" data-cat="sigo">
-          <div class="phc-left">
-            <div class="phc-badge-wrap">
-              <span class="phc-ico">🍃</span>
-            </div>
-            <div class="phc-titles">
-              <div class="phc-title-row">
-                <span class="phc-title">Sigo</span>
-                <span class="phc-badge">Aktif</span>
-              </div>
-              <span class="phc-desc">Sarma sigo</span>
-            </div>
-          </div>
-          <div class="phc-right">
-            <div class="phc-stat-box">
-              <span class="phc-stat-lbl">Bugün</span>
-              <div class="phc-stat-val-row">
-                <strong class="phc-stat-val" id="portalSigoCount">0</strong>
-                <span class="phc-stat-unit">sigo</span>
-              </div>
-            </div>
-            <div class="phc-duo-chips">
-              <span class="phc-chip utku-chip" title="Utku"><img class="avatar avatar-micro" src="icons/avatar-utku.png" alt="" /> <b id="portalUtkuCount">0</b></span>
-              <span class="phc-chip gozde-chip" title="Gözde"><img class="avatar avatar-micro" src="icons/avatar-gozde.png" alt="" /> <b id="portalGozdeCount">0</b></span>
-              <span class="phc-chip both-chip" title="Ortak"><img class="avatar avatar-micro" src="icons/avatar-both.png" alt="" /> <b id="portalBothCount">0</b></span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="portal-last-action" id="portalLastAction">
-        <span class="pla-time">--:--</span>
-        <span class="pla-desc">Son aktivite bekleniyor...</span>
-      </div>
     </main>
 
     <main id="view-home" class="view hidden">
@@ -100,7 +54,6 @@
       <div class="today-top">
         <div class="today-hero">
           <div class="today-hero-header">
-            <span class="today-hero-tag">GÜNLÜK TOPLAM</span>
             <span class="trend-chip" id="todayTrend">＝</span>
           </div>
           <div class="today-hero-num-row">
@@ -339,7 +292,7 @@
         </span>
       </div>
       <div class="chart" id="weeklyComparisonChart" aria-label="Utku ve Gözde Karşılaştırması"></div>
-      <div class="chart-detail" id="comparisonDetail">Çubuklara dokunarak sayıları gör 👆</div>
+      <div class="chart-detail" id="comparisonDetail"></div>
     </section>
 
     <!-- Time-of-day distribution -->
@@ -365,7 +318,7 @@
         <span class="muted" id="dowPeak"></span>
       </div>
       <div class="dow-chart" id="dowChart" aria-label="Haftanın günleri dağılımı"></div>
-      <div class="chart-detail" id="dowDetail">Güne dokunarak kişi dağılımını gör 👆</div>
+      <div class="chart-detail" id="dowDetail"></div>
     </section>
 
     <!-- Aktivite Analizi -->
@@ -396,7 +349,7 @@
       </div>
       <div class="cal-weekdays"><span>Pt</span><span>Sa</span><span>Ça</span><span>Pe</span><span>Cu</span><span>Ct</span><span>Pz</span></div>
       <div class="cal-grid" id="calGrid"></div>
-      <div class="chart-detail" id="calDetail">Güne dokunarak sigo detayını gör 👆</div>
+      <div class="chart-detail" id="calDetail"></div>
     </section>
 
     </div>
@@ -405,7 +358,7 @@
     <h3 class="group-title">🏅 Rozetler <span class="gt-count" id="badgeCount"></span></h3>
     <section class="card">
       <div class="badge-grid" id="badgeGrid"></div>
-      <div class="badge-detail" id="badgeDetail">Bir rozete dokun, ne olduğunu göstereyim 👆</div>
+      <div class="badge-detail" id="badgeDetail"></div>
     </section>
 
     <!-- Rekorlar -->
@@ -416,10 +369,7 @@
     <h3 class="group-title">🗺️ Konumlar</h3>
     <section class="card map-card">
       <div class="card-head map-head">
-        <div>
-          <h2>Konum Haritası</h2>
-          <span class="muted">Konum izni verilen yeni kayıtlar</span>
-        </div>
+        <h2>Konum Haritası</h2>
       </div>
       <div id="mapContainer"></div>
     </section>
@@ -453,7 +403,7 @@
       <button id="historyMoreBtn" class="ghost-btn history-more hidden" type="button">Daha fazla göster</button>
       <button id="trashToggleBtn" class="ghost-btn history-more" type="button">🗑️ Çöp kutusu <span id="trashCount">0</span></button>
       <div id="trashList" class="trash-list hidden"></div>
-      <p id="historyEmpty" class="empty">Henüz kayıt yok. Anasayfadaki butonlardan birine bas 👆</p>
+      <p id="historyEmpty" class="empty">Henüz kayıt yok.</p>
     </section>
     </main>
 
@@ -463,17 +413,8 @@
     <section class="card about-card settings-about">
       <img class="about-logo" src="icons/icon.svg" alt="Dumanaltı logosu" />
       <div class="about-name">Dumanaltı</div>
-      <div class="about-sub">Utku &amp; Gözde için 💛</div>
-      <div class="about-meta">Çevrimdışı çalışır · veriler bulutta senkronlanır</div>
+      <div class="about-sub" id="profileSub">— kayıt · —</div>
       <div class="about-version" id="appVersion"></div>
-    </section>
-    <!-- Profil özeti -->
-    <section class="card profile-card settings-profile">
-      <img class="profile-logo" src="icons/icon.svg" alt="Dumanaltı" />
-      <div class="profile-main">
-        <div class="profile-name">Utku &amp; Gözde</div>
-        <div class="profile-sub" id="profileSub">— kayıt · —</div>
-      </div>
     </section>
 
     <h3 class="group-title settings-appearance-title">🎨 Görünüm ve ses</h3>
@@ -501,7 +442,6 @@
           <button class="seg-btn" data-sound="off">🔇 Kapalı</button>
         </div>
       </div>
-      <p class="set-note">iPhone titreşimi desteklemez; sigo eklerken minik bir “pop” sesi çalar.</p>
     </section>
 
     <h3 class="group-title settings-owner-title">🙋 Bu cihaz</h3>
@@ -525,12 +465,11 @@
         <button id="syncNowBtn" class="ghost-btn small">🔄 Şimdi senkronla</button>
       </div>
       <p class="set-note" id="syncInfo">Durum: —</p>
-      <p class="set-note">Veriler bulutta tutulur; Utku ve Gözde aynı URL'de ortak veriyi gerçek zamanlı görür.</p>
       <button id="syncCenterBtn" class="ghost-btn" type="button">Senkronizasyon merkezini aç</button><div id="syncCenter" class="sync-center hidden"></div>
     </section>
 
     <h3 class="group-title settings-security-title">🔒 Gizlilik</h3>
-    <section class="card settings-card settings-security"><div class="set-row"><label>Uygulama kilidi</label><button id="pinSetupBtn" class="ghost-btn small" type="button">PIN oluştur</button></div><div class="set-row"><label>Biyometrik kilit</label><button id="biometricSetupBtn" class="ghost-btn small" type="button">Etkinleştir</button></div><div class="set-row set-row-stack"><label for="authEmailInput">Bulut hesabı</label><input id="authEmailInput" type="email" autocomplete="email" class="set-input wide" placeholder="E-posta adresi" /><button id="authEmailBtn" class="ghost-btn" type="button">Giriş bağlantısı gönder</button><p id="authStatus" class="set-note">RLS etkinleştirilmeden önce iki hesapla giriş yapılmalıdır.</p></div><p class="set-note">PIN bu cihazda saklanır. Biyometri destekleniyorsa Face ID/Touch ID kullanılabilir.</p></section>
+    <section class="card settings-card settings-security"><div class="set-row"><label>Uygulama kilidi</label><button id="pinSetupBtn" class="ghost-btn small" type="button">PIN oluştur</button></div><div class="set-row"><label>Biyometrik kilit</label><button id="biometricSetupBtn" class="ghost-btn small" type="button">Etkinleştir</button></div><div class="set-row set-row-stack"><label for="authEmailInput">Bulut hesabı</label><input id="authEmailInput" type="email" autocomplete="email" class="set-input wide" placeholder="E-posta adresi" /><button id="authEmailBtn" class="ghost-btn" type="button">Giriş bağlantısı gönder</button></div></section>
 
     <h3 class="group-title settings-fun-title">🏅 Özel rozet</h3>
     <section class="card settings-card settings-fun"><div class="set-row set-row-stack"><label for="customBadgeName">Rozet adı</label><input id="customBadgeName" class="set-input wide" maxlength="30" placeholder="Örn. Balkon ustası" /></div><div class="set-row"><label for="customBadgeTarget">Kayıt hedefi</label><input id="customBadgeTarget" class="set-input" type="number" min="1" max="10000" value="50" /></div><button id="customBadgeAddBtn" class="ghost-btn" type="button">Özel rozeti ekle</button><div id="customBadgeList" class="custom-badge-list"></div></section>
@@ -560,7 +499,7 @@
       <button class="add-opt" data-who="gozde" aria-label="Gözde ekle"><img class="avatar" src="icons/avatar-gozde.png" alt="Gözde" /><span>Gözde</span></button>
       <button class="add-opt" data-who="utku" aria-label="Utku ekle"><img class="avatar" src="icons/avatar-utku.png" alt="Utku" /><span>Utku</span></button>
     </div>
-    <button id="addFab" class="add-fab" title="Dokun: Menü · Basılı tut: Hızlı ekle" aria-label="Kayıt ekle">＋</button>
+    <button id="addFab" class="add-fab" title="Kayıt ekle" aria-label="Kayıt ekle">＋</button>
   </div>
 
   <!-- Global geri-al + etiket toast'ı (tüm sayfalarda) -->
